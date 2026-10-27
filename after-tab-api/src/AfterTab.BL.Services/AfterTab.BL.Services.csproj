@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <RootNamespace>AfterTab.BL.Services</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\AfterTab.Common\AfterTab.Common.csproj" />
+    <ProjectReference Include="..\AfterTab.BL.DTO\AfterTab.BL.DTO.csproj" />
+    <ProjectReference Include="..\AfterTab.BL.Interfaces\AfterTab.BL.Interfaces.csproj" />
+    <ProjectReference Include="..\AfterTab.DAL.Interfaces\AfterTab.DAL.Interfaces.csproj" />
+    <ProjectReference Include="..\AfterTab.DAL.Entities\AfterTab.DAL.Entities.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" />
+  </ItemGroup>
+</Project>

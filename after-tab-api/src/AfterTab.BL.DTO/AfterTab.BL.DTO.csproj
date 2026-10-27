@@ -1,0 +1,5 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <RootNamespace>AfterTab.BL.DTO</RootNamespace>
+  </PropertyGroup>
+</Project>

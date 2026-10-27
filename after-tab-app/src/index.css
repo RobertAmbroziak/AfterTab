@@ -1,0 +1,8 @@
+* { box-sizing: border-box; }
+:root { font-family: Inter, 'Segoe UI', system-ui, sans-serif; color: #eff5f5; background: #0c1214; font-synthesis: none; text-rendering: optimizeLegibility; -webkit-font-smoothing: antialiased; color-scheme: dark; }
+body { margin: 0; min-width: 320px; min-height: 100vh; background: radial-gradient(ellipse at top left, #172428 0, transparent 60%), #0c1214; }
+button, input, select, textarea { font: inherit; }
+button, a, input, summary { -webkit-tap-highlight-color: transparent; }
+button { cursor: pointer; }
+a { color: #9ccfff; }
+::selection { background: #86e3c4; color: #10201c; }

@@ -1,0 +1,11 @@
+**/bin/
+**/obj/
+.vs/
+TestResults/
+artifacts/
+*.user
+*.suo
+src/AfterTab.API/appsettings.Local.json
+*.db
+*.db-shm
+*.db-wal

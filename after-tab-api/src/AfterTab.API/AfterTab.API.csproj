@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+  <PropertyGroup>
+    <RootNamespace>AfterTab.API</RootNamespace>
+    <UserSecretsId>aftertab-api-development</UserSecretsId>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\AfterTab.Common\AfterTab.Common.csproj" />
+    <ProjectReference Include="..\AfterTab.BL.DTO\AfterTab.BL.DTO.csproj" />
+    <ProjectReference Include="..\AfterTab.BL.Interfaces\AfterTab.BL.Interfaces.csproj" />
+    <ProjectReference Include="..\AfterTab.BL.Services\AfterTab.BL.Services.csproj" />
+    <ProjectReference Include="..\AfterTab.DAL.EF\AfterTab.DAL.EF.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" PrivateAssets="all" />
+  </ItemGroup>
+</Project>

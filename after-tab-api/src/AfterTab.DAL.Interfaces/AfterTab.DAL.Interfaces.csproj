@@ -1,0 +1,8 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <RootNamespace>AfterTab.DAL.Interfaces</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\AfterTab.DAL.Entities\AfterTab.DAL.Entities.csproj" />
+  </ItemGroup>
+</Project>

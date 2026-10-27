@@ -1,0 +1,8 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <RootNamespace>AfterTab.BL.Interfaces</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\AfterTab.BL.DTO\AfterTab.BL.DTO.csproj" />
+  </ItemGroup>
+</Project>

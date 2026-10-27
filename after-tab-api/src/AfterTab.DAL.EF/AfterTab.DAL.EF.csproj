@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <RootNamespace>AfterTab.DAL.EF</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\AfterTab.Common\AfterTab.Common.csproj" />
+    <ProjectReference Include="..\AfterTab.DAL.Entities\AfterTab.DAL.Entities.csproj" />
+    <ProjectReference Include="..\AfterTab.DAL.Interfaces\AfterTab.DAL.Interfaces.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" PrivateAssets="all" />
+  </ItemGroup>
+</Project>

@@ -1,0 +1,5 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <RootNamespace>AfterTab.DAL.Entities</RootNamespace>
+  </PropertyGroup>
+</Project>
