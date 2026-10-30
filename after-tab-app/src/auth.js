@@ -1,6 +1,7 @@
 import { captureInvitation } from './navigation'
 import { redirectForAuthentication } from './authNavigation'
 import { fetchSessionResponse, SESSION_CHECK_MS } from './sessionCheck'
+import { rememberExternalFlow, recoverExternalFlow, forgetExternalFlow } from './externalLoginFlow'
 
 const tokenKey = 'aftertab.session'
 const rememberedKey = 'aftertab.guestRemembered'
@@ -83,6 +84,12 @@ async function beginFlow(action, displayName) {
   }
 }
 
+function accountPending(state) {
+  let pending
+  try { pending = JSON.parse(sessionStorage.getItem(accountFlowKey) || 'null') } catch { /* Ignore invalid local state. */ }
+  return pending?.state === state ? pending : recoverExternalFlow(state)
+}
+
 async function loadSession(check) {
   if (location.hash.startsWith('#account-error=')) {
     sessionStorage.removeItem(accountFlowKey)
@@ -91,15 +98,16 @@ async function loadSession(check) {
   }
   if (location.hash.startsWith('#account-ready=')) {
     const state = new URLSearchParams(location.hash.slice(1)).get('account-ready')
-    const pending = JSON.parse(sessionStorage.getItem(accountFlowKey) || 'null')
+    const pending = accountPending(state)
     sessionStorage.removeItem(accountFlowKey)
     history.replaceState(null, '', location.pathname + location.search)
     if (!pending || pending.state !== state) throw new Error('Nieprawidłowe potwierdzenie przeglądarki. Zaloguj się ponownie.')
+    forgetExternalFlow(state)
     return getToken() ? request('me', {}, { ...check, retry: true }) : null
   }
   if (location.hash.startsWith('#account-code=')) {
     const callback = new URLSearchParams(location.hash.slice(1))
-    const pending = JSON.parse(sessionStorage.getItem(accountFlowKey) || 'null')
+    const pending = accountPending(callback.get('state'))
     history.replaceState(null, '', location.pathname + location.search)
     if (!pending || pending.state !== callback.get('state')) throw new Error('Logowanie wygasło lub pochodzi z innej karty. Spróbuj ponownie.')
     const result = await request('account/exchange', {
@@ -114,6 +122,7 @@ async function loadSession(check) {
       return await navigateForAuthentication(`${apiBase}/api/auth/account/remember?request=${encodeURIComponent(result.rememberRequest)}#verifier=${pending.verifier}`, accountFlowKey)
     }
     sessionStorage.removeItem(accountFlowKey)
+    forgetExternalFlow(pending.state)
     return result.session
   }
   if (location.hash.startsWith('#aftertab-code=')) {
@@ -178,6 +187,7 @@ async function beginAccountFlow(action, fields = {}, check) {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ action, challenge, state, returnOrigin: location.origin, ...fields }),
     }, check)
+    if (action === 'Google' || action === 'Facebook') rememberExternalFlow({ state, verifier })
     return await navigateForAuthentication(`${apiBase}/api/auth/account/continue?request=${encodeURIComponent(prepared.request)}&action=${encodeURIComponent(action)}#verifier=${verifier}`, accountFlowKey)
   } catch (error) {
     navigating = false
