@@ -4,6 +4,7 @@ using AfterTab.DAL.Entities.Enums;
 using AfterTab.DAL.Entities.Events;
 using AfterTab.DAL.Entities.Users;
 using AfterTab.DAL.Interfaces.Events;
+using AfterTab.DAL.Interfaces.Expenses;
 using Microsoft.EntityFrameworkCore;
 
 namespace AfterTab.DAL.EF.Repositories;
@@ -30,11 +31,93 @@ public sealed class EventRepository(AppDbContext db) : IEventRepository
         => ReadQuery(db.Events.AsNoTracking().Where(x => x.Id == id)).SingleOrDefaultAsync(ct);
     public Task<bool> IsMemberAsync(Guid eventId, Guid userId, CancellationToken ct)
         => db.EventParticipants.AnyAsync(p => p.EventId == eventId && p.UserId == userId && p.Status == ParticipantStatus.Active, ct);
-    public async Task<IReadOnlyList<User>> ParticipantsAsync(Guid eventId, CancellationToken ct)
-        => await (from p in db.EventParticipants.AsNoTracking()
-                  join user in db.Users.AsNoTracking() on p.UserId equals user.Id
-                  where p.EventId == eventId && p.Status == ParticipantStatus.Active
-                  orderby user.DisplayName, user.Id select user).ToListAsync(ct);
+    public async Task<IReadOnlyList<ExpenseParticipant>> ParticipantsAsync(Guid eventId, CancellationToken ct)
+        => (await new ExpenseRepository(db).GetEventAsync(eventId, ct))?.Participants ?? [];
+
+    private async Task<Event> OwnedOpen(Guid eventId, Guid ownerId, CancellationToken ct)
+    {
+        var ev = await db.Events.SingleOrDefaultAsync(x => x.Id == eventId, ct)
+            ?? throw new AppException(ErrorKind.NotFound, "Nie znaleziono wydarzenia.");
+        if (ev.OwnerUserId != ownerId) throw new AppException(ErrorKind.Forbidden, "Tylko autor wydarzenia może zarządzać uczestnikami bez konta.");
+        if (ev.Status != EventStatus.Active) throw new AppException(ErrorKind.Conflict, "Najpierw otwórz wydarzenie.");
+        return ev;
+    }
+    private async Task<EventParticipant> Virtual(Guid eventId, Guid participantId, CancellationToken ct)
+        => await db.EventParticipants.SingleOrDefaultAsync(x => x.EventId == eventId && x.Id == participantId
+            && x.UserId == null && x.Status == ParticipantStatus.Active && x.MergedIntoParticipantId == null, ct)
+            ?? throw new AppException(ErrorKind.Conflict, "Uczestnik bez konta nie jest już dostępny. Odśwież wydarzenie.");
+    public Task AddVirtualAsync(Guid eventId, Guid ownerId, string name, DateTimeOffset now, CancellationToken ct)
+        => InTransaction(async () =>
+        {
+            await OwnedOpen(eventId, ownerId, ct);
+            if (await db.EventParticipants.CountAsync(x => x.EventId == eventId && x.Status == ParticipantStatus.Active, ct) >= 1000)
+                throw new AppException(ErrorKind.Validation, "Wydarzenie może mieć najwyżej 1000 uczestników.");
+            db.EventParticipants.Add(new EventParticipant { EventId = eventId, DisplayName = name, JoinedAtUtc = now });
+            await db.SaveChangesAsync(ct); return true;
+        }, ct);
+    public Task RenameVirtualAsync(Guid eventId, Guid ownerId, Guid participantId, string name, CancellationToken ct)
+        => InTransaction(async () =>
+        {
+            await OwnedOpen(eventId, ownerId, ct);
+            (await Virtual(eventId, participantId, ct)).DisplayName = name;
+            await db.SaveChangesAsync(ct); return true;
+        }, ct);
+    public Task RemoveVirtualAsync(Guid eventId, Guid ownerId, Guid participantId, CancellationToken ct)
+        => InTransaction(async () =>
+        {
+            await OwnedOpen(eventId, ownerId, ct);
+            var participant = await Virtual(eventId, participantId, ct);
+            if (await db.ExpenseSplits.AnyAsync(x => x.ParticipantId == participantId, ct)
+                || await db.Expenses.AnyAsync(x => x.PaidByParticipantId == participantId, ct)
+                || await db.TransferConfirmations.AnyAsync(x => x.FromParticipantId == participantId || x.ToParticipantId == participantId, ct))
+                throw new AppException(ErrorKind.Conflict, "Uczestnik ma już wydatki lub podziały. Najpierw je popraw albo połącz go z osobą, która dołączyła.");
+            participant.Status = ParticipantStatus.Removed;
+            await db.SaveChangesAsync(ct); return true;
+        }, ct);
+    public Task LinkVirtualAsync(Guid eventId, Guid ownerId, Guid participantId, Guid targetParticipantId, CancellationToken ct)
+        => InTransaction(async () =>
+        {
+            await OwnedOpen(eventId, ownerId, ct);
+            var source = await Virtual(eventId, participantId, ct);
+            var target = await db.EventParticipants.SingleOrDefaultAsync(x => x.Id == targetParticipantId && x.EventId == eventId
+                && x.Status == ParticipantStatus.Active && x.UserId != null, ct)
+                ?? throw new AppException(ErrorKind.Validation, "Wybierz osobę z kontem, która już dołączyła do tego wydarzenia.");
+            var user = await db.Users.SingleAsync(x => x.Id == target.UserId, ct);
+            if (user.Status != UserStatus.Active) throw new AppException(ErrorKind.Conflict, "Konto uczestnika jest nieaktywne.");
+            var affected = await db.Expenses.Include(x => x.Splits).Where(x => x.EventId == eventId
+                && (x.PaidByParticipantId == targetParticipantId || x.Splits.Any(s => s.ParticipantId == targetParticipantId))).ToListAsync(ct);
+            foreach (var expense in affected)
+            {
+                if (expense.PaidByParticipantId == targetParticipantId) expense.PaidByParticipantId = source.Id;
+                var old = expense.Splits.SingleOrDefault(x => x.ParticipantId == targetParticipantId);
+                if (old is not null)
+                {
+                    var existing = expense.Splits.SingleOrDefault(x => x.ParticipantId == source.Id);
+                    if (existing is null) old.ParticipantId = source.Id;
+                    else
+                    {
+                        existing.AmountMinor = checked(existing.AmountMinor + old.AmountMinor);
+                        existing.PercentageBps = existing.PercentageBps is null && old.PercentageBps is null ? null
+                            : checked((existing.PercentageBps ?? 0) + (old.PercentageBps ?? 0));
+                        db.ExpenseSplits.Remove(old);
+                    }
+                }
+                // Invalidate forms opened before linking, including split-only changes.
+                db.Entry(expense).Property(x => x.Balanced).IsModified = true;
+            }
+            // Keep historical transfer confirmations attached to their original rows.
+            // Flatten aliases so their private history remains accessible to the same account.
+            var aliases = await db.EventParticipants.Where(x => x.EventId == eventId && x.MergedIntoParticipantId == target.Id).ToListAsync(ct);
+            foreach (var alias in aliases) alias.MergedIntoParticipantId = source.Id;
+            var userId = target.UserId;
+            target.DisplayName = user.DisplayName;
+            target.UserId = null; target.Status = ParticipantStatus.Removed; target.MergedIntoParticipantId = source.Id;
+            // Release the filtered unique account membership before attaching it to the preserved row.
+            await db.SaveChangesAsync(ct);
+            source.UserId = userId; source.DisplayName = user.DisplayName;
+            await db.SaveChangesAsync(ct);
+            return true;
+        }, ct);
 
     public async Task CreateAsync(Event ev, EventParticipant owner, EventInvite invite, CancellationToken ct)
     {

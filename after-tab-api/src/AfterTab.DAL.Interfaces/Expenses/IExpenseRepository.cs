@@ -5,8 +5,8 @@ namespace AfterTab.DAL.Interfaces.Expenses;
 public sealed record ExpenseParticipant(EventParticipant Participant, string DisplayName);
 public sealed record ExpenseEvent(Event Event, IReadOnlyList<ExpenseParticipant> Participants);
 public sealed record ExpenseReadModel(Expense Expense, string AuthorName, Guid AuthorUserId,
-    IReadOnlyList<ExpenseSplitReadModel> Splits, Guid? PaidByUserId = null, string? PayerName = null);
-public sealed record ExpenseSplitReadModel(Guid UserId, string DisplayName, long AmountMinor, int? PercentageBps);
+    IReadOnlyList<ExpenseSplitReadModel> Splits, Guid? PaidByParticipantId = null, string? PayerName = null);
+public sealed record ExpenseSplitReadModel(Guid ParticipantId, string DisplayName, long AmountMinor, int? PercentageBps);
 public interface IExpenseRepository
 {
     Task<ExpenseEvent?> GetEventAsync(Guid eventId, CancellationToken ct);

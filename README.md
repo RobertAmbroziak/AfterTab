@@ -98,6 +98,40 @@ Formularz **Dołącz linkiem lub kodem** pozwala również wprowadzić zaproszen
 Przeglądarka komunikatora może korzystać z innego konta niż zainstalowana PWA.
 Nowy link wygenerowany przez autora unieważnia poprzedni; obecni uczestnicy pozostają.
 
+### Uczestnicy bez konta
+
+Osoba bez telefonu lub konta nie musi dołączać do aplikacji, żeby rozliczenie było pełne.
+Autor **otwartego** wydarzenia może rozwinąć **Uczestnicy bez konta**, podać imię
+i wybrać **Dodaj uczestnika bez konta**. Nie powstaje konto użytkownika ani sesja.
+Taka osoba jest widoczna dla wszystkich uczestników z oznaczeniem **Bez konta**,
+kolorowym awatarem i inicjałem. Można przypisywać jej udziały i wskazać jako płacącego.
+Wskazanie innego płacącego nadal jest dostępne wyłącznie autorowi wydarzenia.
+
+Autor może zmienić imię uczestnika bez konta. Usunąć można tylko osobę, która nie ma
+wydatków, udziałów ani historycznych oznaczeń przelewów. Osoby już uwzględnione
+w kosztach trzeba najpierw usunąć z odpowiednich podziałów albo połączyć z kontem.
+Zamknięte wydarzenie należy przed takimi zmianami ponownie otworzyć.
+
+#### Połączenie z osobą, która później dołączyła
+
+1. Grzegorz dołącza do wydarzenia zwykłym linkiem zaproszenia.
+2. Autor otwiera **Uczestnicy bez konta** i znajduje wcześniejszego Grzegorza bez konta.
+3. W polu **Połącz z osobą, która dołączyła** wybiera właściwego uczestnika z kontem.
+4. Klika **Połącz uczestników** i potwierdza wybór. Operacji nie można cofnąć w interfejsie.
+
+Pozostaje jeden aktywny uczestnik powiązany z kontem Grzegorza. Zachowuje on udziały
+i wydatki obu wpisów; jeżeli oba były w tej samej pozycji, ich kwoty i zadane procenty
+są sumowane. Płacący zostają przypisani do połączonego uczestnika, a autorzy wpisów
+pozostają bez zmian. Łączenie nie przenosi danych z innych wydarzeń ani nie łączy kont.
+Takie samo imię nigdy nie powoduje automatycznego połączenia. Dodanie lub połączenie
+uczestnika nie rozdziela automatycznie kwoty **Inni** — autor pozycji nadal poprawia podział.
+
+Uczestnik bez konta nie może sam oznaczać **Wysłane/Odebrane**. Zalogowana druga
+strona może oznaczyć wyłącznie własną stronę przelewu; autor wydarzenia nie uzyskuje
+prawa do potwierdzania w imieniu innych osób. Po połączeniu konto przejmuje uprawnienia
+uczestnika. Prywatna historia oznaczeń wcześniejszych wersji zostaje zachowana;
+wcześniejsze płatności nadal nie są automatycznie odliczane od nowego planu.
+
 ### Dodawanie wydatków
 
 1. W wydarzeniu wybierz **Dodaj pozycję** i podaj nazwę oraz kwotę w złotych.
@@ -112,7 +146,8 @@ wprowadziła; płacący to osoba, która poniosła koszt. Domyślnie jest to ta 
 Tylko **autor wydarzenia** może wskazać innego płacącego lub zmienić go później
 w szczegółach pozycji przez **Zmień płacącego**.
 
-Nierozdzielona kwota trafia do **Inni**, np. gdy część osób jeszcze nie dołączyła.
+Nierozdzielona kwota trafia do **Inni**. Znane osoby bez konta warto dodać jako
+uczestników bez konta i wskazać je w podziale, zamiast pozostawiać ich koszt w „Inni”.
 Przycisk **Wyrównaj** dopisuje resztę osobie z największą kwotą udziału,
 a przy remisie autorowi pozycji. Suma udziałów wraz z „Inni” zawsze odpowiada całej kwocie.
 
@@ -393,3 +428,37 @@ Odłączenie Facebooka/Google, wylogowanie i „Zapomnij gościa” nie realizuj
 usunięcia danych serwerowych. Strony opisują obecny stan funkcji; przy zmianie
 retencji, dostawców, opłat lub sposobu usuwania trzeba zaktualizować ich treść.
 Sprawdź i zatwierdź treść przed publikacją. Sam build nie udostępnia stron na Azure.
+
+## Model uczestników i migracja lokalna
+
+`EventParticipants.Id` jest identyfikatorem uczestnika rozliczenia. `UserId` jest
+opcjonalnym powiązaniem z kontem; `DisplayName` przechowuje imię osoby bez konta.
+Uczestnicy z kontem wyświetlają aktualne imię z `Users`. Łączenie zachowuje identyfikator
+uczestnika bez konta, a wycofany wiersz staje się aliasem `MergedIntoParticipantId`,
+żeby zachować prywatną historię płatności. Nie tworzymy fikcyjnych rekordów `Users`.
+
+Migracja `VirtualEventParticipants` zmienia `UserId` uczestnika na opcjonalny,
+uzupełnia dotychczasowe imiona i zamienia identyfikatory kont w historycznych
+`TransferConfirmations` na identyfikatory uczestników tego samego wydarzenia.
+Istniejące wydarzenia, kwoty i oznaczenia przelewów pozostają zachowane.
+Migracja w dół odmawia wykonania, jeżeli istnieją osoby bez konta lub aliasy po połączeniu,
+aby nie usuwać ich danych finansowych. Przed aktualizacją rzeczywistej bazy wykonaj kopię.
+
+Po pobraniu tej wersji uruchom lokalne `dotnet ef database update` z instrukcji powyżej.
+Do testów używaj lokalnej LocalDB i frontendu z `VITE_API_BASE_URL=https://localhost:7180`.
+Frontend oraz API muszą pochodzić z tej samej wersji: pola rozliczeń odnoszą się teraz
+do uczestników (`participantId`, `paidByParticipantId`, `fromParticipantId`, `toParticipantId`),
+a nie kont. `authorUserId` nadal oznacza konto autora wpisu. Aktualizacja frontend/API
+na Azure wymaga osobnego, świadomego wdrożenia i migracji bazy; push kodu nie zastępuje migracji.
+
+Zarządzanie osobami bez konta (tylko autor otwartego wydarzenia):
+
+- `POST /api/events/{eventId}/participants/virtual` — `{ "displayName": "Grzegorz" }`.
+- `PUT /api/events/{eventId}/participants/{participantId}` — zmiana imienia osoby bez konta.
+- `DELETE /api/events/{eventId}/participants/{participantId}` — wycofanie nieużywanej osoby bez konta.
+- `POST /api/events/{eventId}/participants/{participantId}/link` — `{ "targetParticipantId": "..." }`;
+  cel musi być aktywnym uczestnikiem z kontem w tym samym wydarzeniu.
+
+Testy: `dotnet test AfterTabApi.sln` w backendzie; `npm test`, `npm run lint` i `npm run build`
+w frontendzie. Testy `VirtualParticipantTests` sprawdzają kwoty, łączenie, uprawnienia,
+blokadę zamkniętych wydarzeń i prywatną historię. Nie łączymy osób automatycznie po imieniu.

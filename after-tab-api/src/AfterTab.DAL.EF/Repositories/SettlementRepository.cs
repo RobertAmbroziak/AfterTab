@@ -14,9 +14,13 @@ public sealed class SettlementRepository(AppDbContext db) : ISettlementRepositor
         var data = await expenses.GetEventAsync(eventId, ct);
         if (data is null || !data.Participants.Any(x => x.Participant.UserId == userId))
             throw new AppException(ErrorKind.NotFound, "Nie znaleziono wydarzenia na Twojej liście.");
+        var participantId = data.Participants.Single(x => x.Participant.UserId == userId).Participant.Id;
+        var aliases = await db.EventParticipants.AsNoTracking().Where(x => x.EventId == eventId
+            && (x.Id == participantId || x.MergedIntoParticipantId == participantId)).Select(x => x.Id).ToListAsync(ct);
         var confirmations = await db.TransferConfirmations.AsNoTracking().Where(x => x.EventId == eventId
-            && (x.FromUserId == userId || x.ToUserId == userId)).ToListAsync(ct);
-        return new(data, await expenses.ListAsync(eventId, ct), confirmations);
+            && (aliases.Contains(x.FromParticipantId) || aliases.Contains(x.ToParticipantId))).ToListAsync(ct);
+        var names = await db.EventParticipants.AsNoTracking().Where(x => x.EventId == eventId).ToDictionaryAsync(x => x.Id, x => x.DisplayName, ct);
+        return new(data, await expenses.ListAsync(eventId, ct), confirmations, names);
     }
     public Task<SettlementReadModel> ReadAsync(Guid eventId, Guid userId, CancellationToken ct)
         => InTransaction(() => Read(eventId, userId, ct), ct);
@@ -41,19 +45,19 @@ public sealed class SettlementRepository(AppDbContext db) : ISettlementRepositor
             }
             return data with { Event = new ExpenseEvent(ev, data.Event.Participants) };
         }, ct);
-    public Task MarkAsync(Guid eventId, Guid userId, int version, Guid fromUserId, Guid toUserId, long amountMinor, string side, bool value, DateTimeOffset now, CancellationToken ct)
+    public Task MarkAsync(Guid eventId, Guid userId, int version, Guid fromParticipantId, Guid toParticipantId, long amountMinor, string side, bool value, DateTimeOffset now, CancellationToken ct)
         => InTransaction(async () =>
         {
             var data = await Read(eventId, userId, ct);
             if (data.Event.Event.Status != EventStatus.Closed || data.Event.Event.SettlementVersion != version)
                 throw new AppException(ErrorKind.Conflict, "Odśwież zatwierdzone rozliczenie przed oznaczeniem przelewu.");
-            if ((side != "Sent" && side != "Received") || (side == "Sent" ? fromUserId : toUserId) != userId)
+            if ((side != "Sent" && side != "Received") || (side == "Sent" ? fromParticipantId : toParticipantId) != data.Event.Participants.Single(x => x.Participant.UserId == userId).Participant.Id)
                 throw new AppException(ErrorKind.Forbidden, "Możesz oznaczyć tylko własne wysłanie lub odbiór przelewu.");
             var row = await db.TransferConfirmations.SingleOrDefaultAsync(x => x.EventId == eventId && x.SettlementVersion == version
-                && x.FromUserId == fromUserId && x.ToUserId == toUserId, ct);
+                && x.FromParticipantId == fromParticipantId && x.ToParticipantId == toParticipantId, ct);
             if (row is null)
             {
-                row = new() { EventId = eventId, SettlementVersion = version, FromUserId = fromUserId, ToUserId = toUserId, AmountMinor = amountMinor };
+                row = new() { EventId = eventId, SettlementVersion = version, FromParticipantId = fromParticipantId, ToParticipantId = toParticipantId, AmountMinor = amountMinor };
                 db.TransferConfirmations.Add(row);
             }
             if (row.AmountMinor != amountMinor) throw new AppException(ErrorKind.Conflict, "Kwota przelewu jest nieaktualna.");

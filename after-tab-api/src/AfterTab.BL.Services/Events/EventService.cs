@@ -38,7 +38,7 @@ public sealed class EventService(IEventRepository events, IUserRepository users,
         if (data is null || (data.Event.OwnerUserId != userId && !await events.IsMemberAsync(id, userId, ct)))
             throw new AppException(ErrorKind.NotFound, "Nie znaleziono wydarzenia na Twojej liście.");
         var participants = await events.ParticipantsAsync(id, ct);
-        return new(Summary(data, userId), participants.Select(x => new EventMemberDto(x.Id, x.DisplayName, x.Id == data.Event.OwnerUserId))
+        return new(Summary(data, userId), participants.Select(x => new EventMemberDto(x.Participant.Id, x.DisplayName, x.Participant.UserId == data.Event.OwnerUserId, x.Participant.UserId))
             .OrderByDescending(x => x.IsOwner).ThenBy(x => x.DisplayName).ToList());
     }
     public async Task<CreatedEventDto> CreateAsync(CreateEventDto input, CancellationToken ct)
@@ -78,6 +78,26 @@ public sealed class EventService(IEventRepository events, IUserRepository users,
     public async Task<EventDetailsDto> JoinAsync(string token, CancellationToken ct)
     {
         var id = await events.JoinAsync(ValidateToken(token), await ActorAsync(true, ct), clock.GetUtcNow(), ct);
+        return await GetAsync(id, ct);
+    }
+    public async Task<EventDetailsDto> AddVirtualAsync(Guid id, VirtualParticipantDto input, CancellationToken ct)
+    {
+        await events.AddVirtualAsync(id, await ActorAsync(true, ct), AfterTab.Common.Validation.DisplayNames.Normalize(input.DisplayName), clock.GetUtcNow(), ct);
+        return await GetAsync(id, ct);
+    }
+    public async Task<EventDetailsDto> RenameVirtualAsync(Guid id, Guid participantId, VirtualParticipantDto input, CancellationToken ct)
+    {
+        await events.RenameVirtualAsync(id, await ActorAsync(true, ct), participantId, AfterTab.Common.Validation.DisplayNames.Normalize(input.DisplayName), ct);
+        return await GetAsync(id, ct);
+    }
+    public async Task<EventDetailsDto> RemoveVirtualAsync(Guid id, Guid participantId, CancellationToken ct)
+    {
+        await events.RemoveVirtualAsync(id, await ActorAsync(true, ct), participantId, ct);
+        return await GetAsync(id, ct);
+    }
+    public async Task<EventDetailsDto> LinkVirtualAsync(Guid id, Guid participantId, LinkParticipantDto input, CancellationToken ct)
+    {
+        await events.LinkVirtualAsync(id, await ActorAsync(true, ct), participantId, input.TargetParticipantId, ct);
         return await GetAsync(id, ct);
     }
     private static string ValidateToken(string? token)

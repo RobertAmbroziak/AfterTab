@@ -25,6 +25,18 @@ public sealed class EventsController(IEventService events) : ControllerBase
         var created = await events.CreateAsync(input, ct);
         return CreatedAtAction(nameof(Get), new { id = created.Details.Event.Id }, created);
     }
+    [HttpPost("{id:guid}/participants/virtual")]
+    public async Task<IActionResult> AddVirtual(Guid id, VirtualParticipantDto input, CancellationToken ct)
+        => Ok(await events.AddVirtualAsync(id, input, ct));
+    [HttpPut("{id:guid}/participants/{participantId:guid}")]
+    public async Task<IActionResult> RenameVirtual(Guid id, Guid participantId, VirtualParticipantDto input, CancellationToken ct)
+        => Ok(await events.RenameVirtualAsync(id, participantId, input, ct));
+    [HttpDelete("{id:guid}/participants/{participantId:guid}")]
+    public async Task<IActionResult> RemoveVirtual(Guid id, Guid participantId, CancellationToken ct)
+        => Ok(await events.RemoveVirtualAsync(id, participantId, ct));
+    [HttpPost("{id:guid}/participants/{participantId:guid}/link")]
+    public async Task<IActionResult> LinkVirtual(Guid id, Guid participantId, LinkParticipantDto input, CancellationToken ct)
+        => Ok(await events.LinkVirtualAsync(id, participantId, input, ct));
     [HttpPost("{id:guid}/invite")]
     public async Task<IActionResult> Rotate(Guid id, CancellationToken ct) => Ok(await events.RotateInviteAsync(id, ct));
     [HttpDelete("{id:guid}/invite")]

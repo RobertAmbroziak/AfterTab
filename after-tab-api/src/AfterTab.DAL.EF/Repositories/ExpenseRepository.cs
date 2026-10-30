@@ -13,35 +13,39 @@ public sealed class ExpenseRepository(AppDbContext db) : IExpenseRepository
         var ev = await db.Events.AsNoTracking().SingleOrDefaultAsync(x => x.Id == eventId, ct);
         if (ev is null) return null;
         var participants = await (from p in db.EventParticipants.AsNoTracking()
-            join u in db.Users on p.UserId equals u.Id
-            where p.EventId == eventId && p.Status == ParticipantStatus.Active && u.Status == UserStatus.Active
-            select new ExpenseParticipant(p, u.DisplayName)).ToListAsync(ct);
+            join account in db.Users on p.UserId equals account.Id into accounts
+            from u in accounts.DefaultIfEmpty()
+            where p.EventId == eventId && p.Status == ParticipantStatus.Active && (p.UserId == null || u.Status == UserStatus.Active)
+            select new ExpenseParticipant(p, u == null ? p.DisplayName : u.DisplayName)).ToListAsync(ct);
         return new(ev, participants);
     }
     public async Task<IReadOnlyList<ExpenseReadModel>> ListAsync(Guid eventId, CancellationToken ct)
     {
         var expenses = await (from e in db.Expenses.AsNoTracking()
             join p in db.EventParticipants on e.PaidByParticipantId equals p.Id
-            join u in db.Users on p.UserId equals u.Id
+            join account in db.Users on p.UserId equals account.Id into accounts
+            from u in accounts.DefaultIfEmpty()
             join author in db.Users on e.AuthorUserId equals author.Id
             where e.EventId == eventId
             orderby e.CreatedAtUtc, e.Id
-            select new { Expense = e, AuthorName = author.DisplayName, AuthorUserId = author.Id, PaidByUserId = u.Id, PayerName = u.DisplayName }).ToListAsync(ct);
+            select new { Expense = e, AuthorName = author.DisplayName, AuthorUserId = author.Id, PaidByParticipantId = p.Id, PayerName = u == null ? p.DisplayName : u.DisplayName }).ToListAsync(ct);
         var splits = await (from s in db.ExpenseSplits.AsNoTracking()
             join p in db.EventParticipants on s.ParticipantId equals p.Id
-            join u in db.Users on p.UserId equals u.Id
+            join account in db.Users on p.UserId equals account.Id into accounts
+            from u in accounts.DefaultIfEmpty()
             where s.EventId == eventId
-            select new { s.ExpenseId, Row = new ExpenseSplitReadModel(u.Id, u.DisplayName, s.AmountMinor, s.PercentageBps) }).ToListAsync(ct);
+            select new { s.ExpenseId, Row = new ExpenseSplitReadModel(p.Id, u == null ? p.DisplayName : u.DisplayName, s.AmountMinor, s.PercentageBps) }).ToListAsync(ct);
         return expenses.Select(x => new ExpenseReadModel(x.Expense, x.AuthorName, x.AuthorUserId,
-            splits.Where(s => s.ExpenseId == x.Expense.Id).Select(s => s.Row).OrderBy(s => s.DisplayName).ThenBy(s => s.UserId).ToList(), x.PaidByUserId, x.PayerName)).ToList();
+            splits.Where(s => s.ExpenseId == x.Expense.Id).Select(s => s.Row).OrderBy(s => s.DisplayName).ThenBy(s => s.ParticipantId).ToList(), x.PaidByParticipantId, x.PayerName)).ToList();
     }
     private async Task ValidateWrite(Expense expense, Guid userId, CancellationToken ct)
     {
         var ev = await db.Events.SingleOrDefaultAsync(x => x.Id == expense.EventId, ct);
         if (ev is null) throw new AppException(ErrorKind.NotFound, "Nie znaleziono wydarzenia.");
         if (ev.Status != EventStatus.Active) throw new AppException(ErrorKind.Conflict, "Wydarzenie jest zamknięte. Autor musi je najpierw otworzyć.");
-        var participants = await (from p in db.EventParticipants join u in db.Users on p.UserId equals u.Id
-            where p.EventId == expense.EventId && p.Status == ParticipantStatus.Active && u.Status == UserStatus.Active
+        var participants = await (from p in db.EventParticipants join account in db.Users on p.UserId equals account.Id into accounts
+            from u in accounts.DefaultIfEmpty()
+            where p.EventId == expense.EventId && p.Status == ParticipantStatus.Active && (p.UserId == null || u.Status == UserStatus.Active)
             select p).ToListAsync(ct);
         if (!participants.Any(x => x.UserId == userId) || !participants.Any(x => x.Id == expense.PaidByParticipantId))
             throw new AppException(ErrorKind.Forbidden, "Nie masz uprawnień do zmiany tej pozycji.");
@@ -90,8 +94,9 @@ public sealed class ExpenseRepository(AppDbContext db) : IExpenseRepository
                 ?? throw new AppException(ErrorKind.NotFound, "Nie znaleziono wydarzenia.");
             if (ev.OwnerUserId != userId) throw new AppException(ErrorKind.Forbidden, "Tylko autor wydarzenia może zmienić płacącego.");
             if (ev.Status != EventStatus.Active) throw new AppException(ErrorKind.Conflict, "Najpierw otwórz wydarzenie.");
-            var payer = await (from p in db.EventParticipants join u in db.Users on p.UserId equals u.Id
-                where p.EventId == eventId && p.UserId == payerId && p.Status == ParticipantStatus.Active && u.Status == UserStatus.Active select p).SingleOrDefaultAsync(ct)
+            var payer = await (from p in db.EventParticipants join account in db.Users on p.UserId equals account.Id into accounts
+            from u in accounts.DefaultIfEmpty()
+                where p.EventId == eventId && p.Id == payerId && p.Status == ParticipantStatus.Active && (p.UserId == null || u.Status == UserStatus.Active) select p).SingleOrDefaultAsync(ct)
                 ?? throw new AppException(ErrorKind.Validation, "Płacący musi być aktywnym uczestnikiem wydarzenia.");
             var expense = await db.Expenses.SingleOrDefaultAsync(x => x.Id == expenseId && x.EventId == eventId, ct)
                 ?? throw new AppException(ErrorKind.NotFound, "Nie znaleziono pozycji.");

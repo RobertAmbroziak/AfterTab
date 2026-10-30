@@ -53,7 +53,7 @@ public sealed class ExpenseTests
             db.Users.AddRange(owner, member, stranger); await db.SaveChangesAsync();
             var ev = new Event { Name = "Kolacja", OwnerUserId = owner.Id };
             db.Events.Add(ev);
-            db.EventParticipants.AddRange(new EventParticipant { EventId = ev.Id, UserId = owner.Id }, new EventParticipant { EventId = ev.Id, UserId = member.Id });
+            db.EventParticipants.AddRange(new EventParticipant { Id = owner.Id, EventId = ev.Id, UserId = owner.Id }, new EventParticipant { Id = member.Id, EventId = ev.Id, UserId = member.Id });
             await db.SaveChangesAsync(); actor.UserId = member.Id;
             return new() { Connection = connection, Db = db, Actor = actor, Event = ev, Owner = owner, Member = member, Stranger = stranger,
                 Service = new ExpenseService(new ExpenseRepository(db), new UserRepository(db), actor, TimeProvider.System) };
@@ -73,7 +73,7 @@ public sealed class ExpenseTests
         s.Actor.UserId = s.Owner.Id;
         var listed = (await s.Service.ListAsync(s.Event.Id, default)).Single();
         Assert.AreEqual("Adam Nowy", listed.AuthorName);
-        Assert.AreEqual("Adam Nowy", listed.Splits.Single(x => x.UserId == s.Member.Id).DisplayName);
+        Assert.AreEqual("Adam Nowy", listed.Splits.Single(x => x.ParticipantId == s.Member.Id).DisplayName);
     }
     [TestMethod]
     public async Task Invalid_Person_OverAllocation_And_Unrelated_User_Do_Not_Write()
@@ -111,9 +111,9 @@ public sealed class ExpenseTests
         var partial = await s.Service.CreateAsync(s.Event.Id, input, default);
         Assert.AreEqual(2126L, partial.OthersAmountMinor);
         var balanced = await s.Service.CreateAsync(s.Event.Id, input with { Balance = true }, default);
-        Assert.AreEqual(4188L, balanced.Splits.Single(x => x.UserId == s.Member.Id).AmountMinor);
+        Assert.AreEqual(4188L, balanced.Splits.Single(x => x.ParticipantId == s.Member.Id).AmountMinor);
         Assert.AreEqual(0L, balanced.OthersAmountMinor);
-        s.Db.EventParticipants.Add(new EventParticipant { EventId = s.Event.Id, UserId = s.Stranger.Id }); await s.Db.SaveChangesAsync();
+        s.Db.EventParticipants.Add(new EventParticipant { Id = s.Stranger.Id, EventId = s.Event.Id, UserId = s.Stranger.Id }); await s.Db.SaveChangesAsync();
         s.Actor.UserId = s.Stranger.Id;
         var listed = await s.Service.ListAsync(s.Event.Id, default);
         Assert.AreEqual(2126L, listed.Single(x => x.Id == partial.Id).OthersAmountMinor);
@@ -159,7 +159,7 @@ public sealed class ExpenseTests
         s.Actor.UserId = s.Member.Id;
         await Assert.ThrowsExactlyAsync<AppException>(() => s.Service.UpdateSplitAsync(s.Event.Id, item.Id, new("Amount", [], true, "Ag=="), default));
         var fixedItem = await s.Service.UpdateSplitAsync(s.Event.Id, item.Id, new("Amount", [new(s.Owner.Id, 2000), new(s.Member.Id, 2000)], true, item.RowVersion!), default);
-        Assert.AreEqual(0L, fixedItem.OthersAmountMinor); Assert.AreEqual(4250L, fixedItem.Splits.Single(x => x.UserId == s.Member.Id).AmountMinor);
+        Assert.AreEqual(0L, fixedItem.OthersAmountMinor); Assert.AreEqual(4250L, fixedItem.Splits.Single(x => x.ParticipantId == s.Member.Id).AmountMinor);
         s.Actor.UserId = s.Owner.Id;
         Assert.IsTrue((await settlements.SetClosedAsync(s.Event.Id, true, default)).IsFinal);
     }
@@ -180,14 +180,14 @@ public sealed class ExpenseTests
     public async Task Only_Event_Owner_Selects_Or_Changes_Payer_Without_Changing_Author()
     {
         await using var s = await Scope.Create();
-        var forbidden = new AfterTab.BL.DTO.Expenses.CreateExpenseDto("Pizza", 3000, "Amount", [new(s.Owner.Id, 3000)], PaidByUserId: s.Owner.Id);
+        var forbidden = new AfterTab.BL.DTO.Expenses.CreateExpenseDto("Pizza", 3000, "Amount", [new(s.Owner.Id, 3000)], PaidByParticipantId: s.Owner.Id);
         await Assert.ThrowsExactlyAsync<AppException>(() => s.Service.CreateAsync(s.Event.Id, forbidden, default));
         s.Actor.UserId = s.Owner.Id;
-        var item = await s.Service.CreateAsync(s.Event.Id, forbidden with { PaidByUserId = s.Member.Id }, default);
-        Assert.AreEqual(s.Owner.Id, item.AuthorUserId); Assert.AreEqual(s.Member.Id, item.PaidByUserId);
+        var item = await s.Service.CreateAsync(s.Event.Id, forbidden with { PaidByParticipantId = s.Member.Id }, default);
+        Assert.AreEqual(s.Owner.Id, item.AuthorUserId); Assert.AreEqual(s.Member.Id, item.PaidByParticipantId);
         var settlements = new SettlementService(new SettlementRepository(s.Db), s.Actor, TimeProvider.System);
         var transfer = (await settlements.GetAsync(s.Event.Id, default)).Transfers.Single();
-        Assert.AreEqual(s.Owner.Id, transfer.FromUserId); Assert.AreEqual(s.Member.Id, transfer.ToUserId); Assert.AreEqual(3000L, transfer.AmountMinor);
+        Assert.AreEqual(s.Owner.Id, transfer.FromParticipantId); Assert.AreEqual(s.Member.Id, transfer.ToParticipantId); Assert.AreEqual(3000L, transfer.AmountMinor);
         // The original author retains split-edit rights even when someone else paid.
         item = await s.Service.UpdateSplitAsync(s.Event.Id, item.Id, new("Amount", [new(s.Owner.Id, 3000)], false, item.RowVersion!), default);
         s.Actor.UserId = s.Member.Id;
@@ -196,7 +196,7 @@ public sealed class ExpenseTests
         s.Actor.UserId = s.Owner.Id;
         await Assert.ThrowsExactlyAsync<AppException>(() => s.Service.UpdatePayerAsync(s.Event.Id, item.Id, new(s.Stranger.Id, item.RowVersion!), default));
         var changed = await s.Service.UpdatePayerAsync(s.Event.Id, item.Id, new(s.Owner.Id, item.RowVersion!), default);
-        Assert.AreEqual(s.Owner.Id, changed.PaidByUserId); Assert.AreEqual(s.Owner.Id, changed.AuthorUserId);
+        Assert.AreEqual(s.Owner.Id, changed.PaidByParticipantId); Assert.AreEqual(s.Owner.Id, changed.AuthorUserId);
         Assert.AreEqual(0, (await settlements.GetAsync(s.Event.Id, default)).Transfers.Count);
         await settlements.SetClosedAsync(s.Event.Id, true, default);
         await Assert.ThrowsExactlyAsync<AppException>(() => s.Service.UpdatePayerAsync(s.Event.Id, item.Id, new(s.Member.Id, changed.RowVersion!), default));
@@ -205,9 +205,9 @@ public sealed class ExpenseTests
     public async Task Transfer_Marks_Are_Private_Party_Restricted_And_Scoped_To_Version()
     {
         await using var s = await Scope.Create();
-        s.Db.EventParticipants.Add(new EventParticipant { EventId = s.Event.Id, UserId = s.Stranger.Id }); await s.Db.SaveChangesAsync();
+        s.Db.EventParticipants.Add(new EventParticipant { Id = s.Stranger.Id, EventId = s.Event.Id, UserId = s.Stranger.Id }); await s.Db.SaveChangesAsync();
         s.Actor.UserId = s.Owner.Id;
-        await s.Service.CreateAsync(s.Event.Id, new("Pizza", 3000, "Amount", [new(s.Stranger.Id, 3000)], PaidByUserId: s.Member.Id), default);
+        await s.Service.CreateAsync(s.Event.Id, new("Pizza", 3000, "Amount", [new(s.Stranger.Id, 3000)], PaidByParticipantId: s.Member.Id), default);
         var settlements = new SettlementService(new SettlementRepository(s.Db), s.Actor, TimeProvider.System);
         await Assert.ThrowsExactlyAsync<AppException>(() => settlements.MarkAsync(s.Event.Id, new(0, s.Stranger.Id, s.Member.Id, 3000, "Sent", true), default));
         var closed = await settlements.SetClosedAsync(s.Event.Id, true, default);

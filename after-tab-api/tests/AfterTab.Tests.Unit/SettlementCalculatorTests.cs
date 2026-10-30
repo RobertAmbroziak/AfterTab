@@ -17,13 +17,13 @@ public sealed class SettlementCalculatorTests
     {
         var result = Calculate(Expense(Tomek, Jarek, 300), Expense(Jarek, Tomek, 1200));
         var transfer = result.Transfers.Single();
-        Assert.AreEqual(Tomek, transfer.FromUserId); Assert.AreEqual(Jarek, transfer.ToUserId); Assert.AreEqual(900L, transfer.AmountMinor);
+        Assert.AreEqual(Tomek, transfer.FromParticipantId); Assert.AreEqual(Jarek, transfer.ToParticipantId); Assert.AreEqual(900L, transfer.AmountMinor);
     }
     [TestMethod]
     public void Chains_Are_Netted_And_Cycles_Disappear()
     {
         var chain = Calculate(Expense(Tomek, Jarek, 1500), Expense(Jarek, Adam, 1500));
-        Assert.AreEqual(Adam, chain.Transfers.Single().FromUserId); Assert.AreEqual(Tomek, chain.Transfers.Single().ToUserId);
+        Assert.AreEqual(Adam, chain.Transfers.Single().FromParticipantId); Assert.AreEqual(Tomek, chain.Transfers.Single().ToParticipantId);
         var cycle = Calculate(Expense(Tomek, Jarek, 1500), Expense(Jarek, Adam, 1500), Expense(Adam, Tomek, 1500));
         Assert.AreEqual(0, cycle.Transfers.Count); Assert.IsTrue(cycle.Balances.All(x => x.NetMinor == 0));
     }
@@ -33,8 +33,8 @@ public sealed class SettlementCalculatorTests
         var result = Calculate(Expense(Tomek, Tomek, 500), Expense(Jarek, Adam, 1000, 400));
         Assert.AreEqual(1500L, result.TotalMinor); Assert.AreEqual(400L, result.UnassignedMinor);
         Assert.AreEqual(600L, result.Transfers.Single().AmountMinor);
-        Assert.AreEqual(400L, result.Balances.Single(x => x.UserId == Jarek).UnassignedMinor);
-        Assert.AreEqual(0L, result.Balances.Single(x => x.UserId == Tomek).NetMinor);
+        Assert.AreEqual(400L, result.Balances.Single(x => x.ParticipantId == Jarek).UnassignedMinor);
+        Assert.AreEqual(0L, result.Balances.Single(x => x.ParticipantId == Tomek).NetMinor);
     }
     [TestMethod]
     public void Same_Name_Does_Not_Merge_People_And_Empty_Event_Is_Zero()
@@ -53,11 +53,11 @@ public sealed class SettlementCalculatorTests
         var reversed = Calculate(expenses.Reverse().ToArray());
         CollectionAssert.AreEqual(result.Transfers.ToArray(), reversed.Transfers.ToArray());
         foreach (var person in result.Balances)
-            Assert.AreEqual(person.NetMinor, result.Transfers.Where(x => x.ToUserId == person.UserId).Sum(x => x.AmountMinor)
-                - result.Transfers.Where(x => x.FromUserId == person.UserId).Sum(x => x.AmountMinor));
-        Assert.IsTrue(result.Transfers.All(x => x.AmountMinor > 0 && x.FromUserId != x.ToUserId));
+            Assert.AreEqual(person.NetMinor, result.Transfers.Where(x => x.ToParticipantId == person.ParticipantId).Sum(x => x.AmountMinor)
+                - result.Transfers.Where(x => x.FromParticipantId == person.ParticipantId).Sum(x => x.AmountMinor));
+        Assert.IsTrue(result.Transfers.All(x => x.AmountMinor > 0 && x.FromParticipantId != x.ToParticipantId));
         Assert.IsTrue(result.Transfers.Count <= people.Length - 1);
-        Assert.IsFalse(result.Transfers.Any(x => result.Transfers.Any(y => y.FromUserId == x.ToUserId && y.ToUserId == x.FromUserId)));
+        Assert.IsFalse(result.Transfers.Any(x => result.Transfers.Any(y => y.FromParticipantId == x.ToParticipantId && y.ToParticipantId == x.FromParticipantId)));
     }
     [TestMethod]
     public void Inconsistent_Expense_Is_Rejected_Instead_Of_Producing_False_Debts()

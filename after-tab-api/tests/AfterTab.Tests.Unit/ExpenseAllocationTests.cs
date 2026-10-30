@@ -18,18 +18,18 @@ public sealed class ExpenseAllocationTests
         Assert.IsTrue(result.Splits.All(x => x.AmountMinor == 2062));
         Assert.AreEqual(64L, result.OthersAmountMinor);
         var balanced = ExpenseAllocation.Calculate(input with { Balance = true }, Author);
-        Assert.AreEqual(2126L, balanced.Splits.Single(x => x.UserId == Author).AmountMinor);
+        Assert.AreEqual(2126L, balanced.Splits.Single(x => x.ParticipantId == Author).AmountMinor);
         Assert.AreEqual(0L, balanced.OthersAmountMinor);
         Assert.AreEqual(6250L, balanced.Splits.Sum(x => x.AmountMinor));
-        Assert.AreEqual(3300, balanced.Splits.Single(x => x.UserId == Author).PercentageBps);
+        Assert.AreEqual(3300, balanced.Splits.Single(x => x.ParticipantId == Author).PercentageBps);
     }
     [TestMethod]
     public void Amount_Remainder_Goes_To_Largest_And_Tie_Adds_Unselected_Author()
     {
         var input = new CreateExpenseDto("Pizza", 6250, "Amount", [new(B, 3000), new(C, 2000)], true);
-        Assert.AreEqual(4250L, ExpenseAllocation.Calculate(input, Author).Splits.Single(x => x.UserId == B).AmountMinor);
+        Assert.AreEqual(4250L, ExpenseAllocation.Calculate(input, Author).Splits.Single(x => x.ParticipantId == B).AmountMinor);
         var tied = ExpenseAllocation.Calculate(input with { Shares = [new(B, 2000), new(C, 2000)] }, Author);
-        Assert.AreEqual(2250L, tied.Splits.Single(x => x.UserId == Author).AmountMinor);
+        Assert.AreEqual(2250L, tied.Splits.Single(x => x.ParticipantId == Author).AmountMinor);
         Assert.AreEqual(6250L, tied.Splits.Sum(x => x.AmountMinor));
     }
     [TestMethod]
@@ -56,7 +56,7 @@ public sealed class ExpenseAllocationTests
     {
         var input = new CreateExpenseDto("Pizza", 1, "Percentage", [new(Author, PercentageBps: 5000), new(B, PercentageBps: 5000)]);
         Assert.AreEqual(1L, ExpenseAllocation.Calculate(input, Author).OthersAmountMinor);
-        Assert.AreEqual(1L, ExpenseAllocation.Calculate(input with { Balance = true }, Author).Splits.Single(x => x.UserId == Author).AmountMinor);
+        Assert.AreEqual(1L, ExpenseAllocation.Calculate(input with { Balance = true }, Author).Splits.Single(x => x.ParticipantId == Author).AmountMinor);
         var big = ExpenseAllocation.Calculate(input with { AmountMinor = ExpenseAllocation.MaximumAmountMinor }, Author);
         Assert.AreEqual(ExpenseAllocation.MaximumAmountMinor, big.Splits.Sum(x => x.AmountMinor) + big.OthersAmountMinor);
     }

@@ -25,7 +25,7 @@ public sealed class ExpenseService(IExpenseRepository expenses, IUserRepository 
     }
     private static ExpenseDto Map(ExpenseReadModel x) => new(x.Expense.Id, x.Expense.Name, x.Expense.AmountMinor,
         x.AuthorName, x.AuthorUserId, x.Expense.SplitMethod.ToString(), x.Expense.Balanced, x.Expense.OthersAmountMinor,
-        x.Splits.Select(s => new ExpensePersonDto(s.UserId, s.DisplayName, s.AmountMinor, s.PercentageBps)).ToList(), Convert.ToBase64String(x.Expense.RowVersion), x.PaidByUserId, x.PayerName);
+        x.Splits.Select(s => new ExpensePersonDto(s.ParticipantId, s.DisplayName, s.AmountMinor, s.PercentageBps)).ToList(), Convert.ToBase64String(x.Expense.RowVersion), x.PaidByParticipantId, x.PayerName);
     public async Task<IReadOnlyList<ExpenseDto>> ListAsync(Guid eventId, CancellationToken ct)
     {
         await Access(eventId, false, ct);
@@ -37,24 +37,25 @@ public sealed class ExpenseService(IExpenseRepository expenses, IUserRepository 
         var name = input.Name?.Trim();
         if (string.IsNullOrEmpty(name) || name.Length > 200 || name.Any(char.IsControl))
             throw new AppException(ErrorKind.Validation, "Nazwa pozycji musi mieć od 1 do 200 znaków.");
-        var calculated = ExpenseAllocation.Calculate(input, actor.UserId!.Value);
-        var participants = ev.Participants.ToDictionary(x => x.Participant.UserId);
-        var payerId = input.PaidByUserId ?? actor.UserId.Value;
-        if (payerId != actor.UserId.Value && ev.Event.OwnerUserId != actor.UserId.Value)
+        var author = ev.Participants.Single(x => x.Participant.UserId == actor.UserId);
+        var calculated = ExpenseAllocation.Calculate(input, author.Participant.Id);
+        var participants = ev.Participants.ToDictionary(x => x.Participant.Id);
+        var payerId = input.PaidByParticipantId ?? author.Participant.Id;
+        if (payerId != author.Participant.Id && ev.Event.OwnerUserId != actor.UserId!.Value)
             throw new AppException(ErrorKind.Forbidden, "Tylko autor wydarzenia może wskazać innego płacącego.");
         if (!participants.ContainsKey(payerId)) throw new AppException(ErrorKind.Validation, "Płacący musi być aktywnym uczestnikiem wydarzenia.");
-        if (calculated.Splits.Any(x => !participants.ContainsKey(x.UserId)))
+        if (calculated.Splits.Any(x => !participants.ContainsKey(x.ParticipantId)))
             throw new AppException(ErrorKind.Validation, "Podział może zawierać tylko aktywnych uczestników tego wydarzenia.");
-        var expense = new Expense { EventId = eventId, AuthorUserId = actor.UserId.Value, Name = name, AmountMinor = input.AmountMinor,
+        var expense = new Expense { EventId = eventId, AuthorUserId = actor.UserId!.Value, Name = name, AmountMinor = input.AmountMinor,
             OthersAmountMinor = calculated.OthersAmountMinor, Balanced = input.Balance,
             PaidByParticipantId = participants[payerId].Participant.Id,
             SplitMethod = input.SplitMethod == "Percentage" ? SplitMethod.Percentage : SplitMethod.Amount,
             ExpenseDate = DateOnly.FromDateTime(clock.GetUtcNow().UtcDateTime) };
         expense.Splits = calculated.Splits.Select(x => new ExpenseSplit { ExpenseId = expense.Id, EventId = eventId,
-            ParticipantId = participants[x.UserId].Participant.Id, AmountMinor = x.AmountMinor, PercentageBps = x.PercentageBps }).ToList();
+            ParticipantId = participants[x.ParticipantId].Participant.Id, AmountMinor = x.AmountMinor, PercentageBps = x.PercentageBps }).ToList();
         await expenses.CreateAsync(expense, ct);
-        return Map(new(expense, participants[actor.UserId.Value].DisplayName, actor.UserId.Value,
-            calculated.Splits.Select(x => new ExpenseSplitReadModel(x.UserId, participants[x.UserId].DisplayName, x.AmountMinor, x.PercentageBps)).ToList(), payerId, participants[payerId].DisplayName));
+        return Map(new(expense, author.DisplayName, actor.UserId!.Value,
+            calculated.Splits.Select(x => new ExpenseSplitReadModel(x.ParticipantId, participants[x.ParticipantId].DisplayName, x.AmountMinor, x.PercentageBps)).ToList(), payerId, participants[payerId].DisplayName));
     }
     public async Task<ExpenseDto> UpdateSplitAsync(Guid eventId, Guid expenseId, UpdateExpenseSplitDto input, CancellationToken ct)
     {
@@ -67,16 +68,16 @@ public sealed class ExpenseService(IExpenseRepository expenses, IUserRepository 
         try { version = Convert.FromBase64String(input.RowVersion ?? ""); }
         catch (FormatException) { throw new AppException(ErrorKind.Validation, "Nieprawidłowa wersja pozycji."); }
         if (version.Length == 0) throw new AppException(ErrorKind.Validation, "Odśwież wydarzenie przed zmianą podziału.");
-        var result = ExpenseAllocation.Calculate(new(existing.Expense.Name, existing.Expense.AmountMinor, input.SplitMethod, input.Shares, input.Balance), actor.UserId!.Value);
-        var people = ev.Participants.ToDictionary(x => x.Participant.UserId, x => x.Participant.Id);
-        if (result.Splits.Any(x => !people.ContainsKey(x.UserId)))
+        var result = ExpenseAllocation.Calculate(new(existing.Expense.Name, existing.Expense.AmountMinor, input.SplitMethod, input.Shares, input.Balance), ev.Participants.Single(x => x.Participant.UserId == actor.UserId).Participant.Id);
+        var people = ev.Participants.ToDictionary(x => x.Participant.Id, x => x.Participant.Id);
+        if (result.Splits.Any(x => !people.ContainsKey(x.ParticipantId)))
             throw new AppException(ErrorKind.Validation, "Podział może zawierać tylko aktywnych uczestników tego wydarzenia.");
         var replacement = new Expense { Id = expenseId, EventId = eventId, AuthorUserId = existing.AuthorUserId, PaidByParticipantId = existing.Expense.PaidByParticipantId,
             SplitMethod = input.SplitMethod == "Percentage" ? SplitMethod.Percentage : SplitMethod.Amount,
             Balanced = input.Balance, OthersAmountMinor = result.OthersAmountMinor,
             Splits = result.Splits.Select(x => new ExpenseSplit { ExpenseId = expenseId, EventId = eventId,
-                ParticipantId = people[x.UserId], AmountMinor = x.AmountMinor, PercentageBps = x.PercentageBps }).ToList() };
-        await expenses.UpdateSplitAsync(replacement, actor.UserId.Value, version, ct);
+                ParticipantId = people[x.ParticipantId], AmountMinor = x.AmountMinor, PercentageBps = x.PercentageBps }).ToList() };
+        await expenses.UpdateSplitAsync(replacement, actor.UserId!.Value, version, ct);
         return Map((await expenses.ListAsync(eventId, ct)).Single(x => x.Expense.Id == expenseId));
     }
     public async Task<ExpenseDto> UpdatePayerAsync(Guid eventId, Guid expenseId, UpdateExpensePayerDto input, CancellationToken ct)
@@ -87,7 +88,7 @@ public sealed class ExpenseService(IExpenseRepository expenses, IUserRepository 
         try { version = Convert.FromBase64String(input.RowVersion ?? ""); }
         catch (FormatException) { throw new AppException(ErrorKind.Validation, "Nieprawidłowa wersja pozycji."); }
         if (version.Length == 0) throw new AppException(ErrorKind.Validation, "Odśwież wydarzenie przed zmianą płacącego.");
-        await expenses.UpdatePayerAsync(eventId, expenseId, actor.UserId!.Value, input.PaidByUserId, version, ct);
+        await expenses.UpdatePayerAsync(eventId, expenseId, actor.UserId!.Value, input.PaidByParticipantId, version, ct);
         return Map((await expenses.ListAsync(eventId, ct)).Single(x => x.Expense.Id == expenseId));
     }
 }

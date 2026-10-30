@@ -136,6 +136,11 @@ namespace AfterTab.DAL.EF.Migrations
                     b.Property<Guid?>("CreatedByUserId")
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<string>("DisplayName")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
                     b.Property<Guid>("EventId")
                         .HasColumnType("uniqueidentifier");
 
@@ -144,6 +149,9 @@ namespace AfterTab.DAL.EF.Migrations
 
                     b.Property<DateTimeOffset?>("LeftAtUtc")
                         .HasColumnType("datetimeoffset");
+
+                    b.Property<Guid?>("MergedIntoParticipantId")
+                        .HasColumnType("uniqueidentifier");
 
                     b.Property<DateTimeOffset?>("ModifiedAtUtc")
                         .HasColumnType("datetimeoffset");
@@ -156,7 +164,7 @@ namespace AfterTab.DAL.EF.Migrations
                         .HasMaxLength(20)
                         .HasColumnType("nvarchar(20)");
 
-                    b.Property<Guid>("UserId")
+                    b.Property<Guid?>("UserId")
                         .HasColumnType("uniqueidentifier");
 
                     b.HasKey("Id");
@@ -168,7 +176,10 @@ namespace AfterTab.DAL.EF.Migrations
                     b.HasIndex("UserId");
 
                     b.HasIndex("EventId", "UserId")
-                        .IsUnique();
+                        .IsUnique()
+                        .HasFilter("[UserId] IS NOT NULL");
+
+                    b.HasIndex("MergedIntoParticipantId", "EventId");
 
                     b.ToTable("EventParticipants", (string)null);
                 });
@@ -190,7 +201,7 @@ namespace AfterTab.DAL.EF.Migrations
                     b.Property<Guid>("EventId")
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<Guid>("FromUserId")
+                    b.Property<Guid>("FromParticipantId")
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<DateTimeOffset?>("ModifiedAtUtc")
@@ -208,25 +219,25 @@ namespace AfterTab.DAL.EF.Migrations
                     b.Property<int>("SettlementVersion")
                         .HasColumnType("int");
 
-                    b.Property<Guid>("ToUserId")
+                    b.Property<Guid>("ToParticipantId")
                         .HasColumnType("uniqueidentifier");
 
                     b.HasKey("Id");
 
                     b.HasIndex("CreatedByUserId");
 
-                    b.HasIndex("FromUserId");
-
                     b.HasIndex("ModifiedByUserId");
 
-                    b.HasIndex("ToUserId");
+                    b.HasIndex("FromParticipantId", "EventId");
 
-                    b.HasIndex("EventId", "SettlementVersion", "FromUserId", "ToUserId")
+                    b.HasIndex("ToParticipantId", "EventId");
+
+                    b.HasIndex("EventId", "SettlementVersion", "FromParticipantId", "ToParticipantId")
                         .IsUnique();
 
                     b.ToTable("TransferConfirmations", null, t =>
                         {
-                            t.HasCheckConstraint("CK_TransferConfirmations_Valid", "[AmountMinor] > 0 AND [SettlementVersion] > 0 AND [FromUserId] <> [ToUserId]");
+                            t.HasCheckConstraint("CK_TransferConfirmations_Valid", "[AmountMinor] > 0 AND [SettlementVersion] > 0 AND [FromParticipantId] <> [ToParticipantId]");
                         });
                 });
 
@@ -804,8 +815,13 @@ namespace AfterTab.DAL.EF.Migrations
                     b.HasOne("AfterTab.DAL.Entities.Users.User", null)
                         .WithMany()
                         .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.NoAction)
-                        .IsRequired();
+                        .OnDelete(DeleteBehavior.NoAction);
+
+                    b.HasOne("AfterTab.DAL.Entities.Events.EventParticipant", null)
+                        .WithMany()
+                        .HasForeignKey("MergedIntoParticipantId", "EventId")
+                        .HasPrincipalKey("Id", "EventId")
+                        .OnDelete(DeleteBehavior.NoAction);
                 });
 
             modelBuilder.Entity("AfterTab.DAL.Entities.Events.TransferConfirmation", b =>
@@ -823,18 +839,20 @@ namespace AfterTab.DAL.EF.Migrations
 
                     b.HasOne("AfterTab.DAL.Entities.Users.User", null)
                         .WithMany()
-                        .HasForeignKey("FromUserId")
-                        .OnDelete(DeleteBehavior.NoAction)
-                        .IsRequired();
-
-                    b.HasOne("AfterTab.DAL.Entities.Users.User", null)
-                        .WithMany()
                         .HasForeignKey("ModifiedByUserId")
                         .OnDelete(DeleteBehavior.NoAction);
 
-                    b.HasOne("AfterTab.DAL.Entities.Users.User", null)
+                    b.HasOne("AfterTab.DAL.Entities.Events.EventParticipant", null)
                         .WithMany()
-                        .HasForeignKey("ToUserId")
+                        .HasForeignKey("FromParticipantId", "EventId")
+                        .HasPrincipalKey("Id", "EventId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+
+                    b.HasOne("AfterTab.DAL.Entities.Events.EventParticipant", null)
+                        .WithMany()
+                        .HasForeignKey("ToParticipantId", "EventId")
+                        .HasPrincipalKey("Id", "EventId")
                         .OnDelete(DeleteBehavior.NoAction)
                         .IsRequired();
                 });

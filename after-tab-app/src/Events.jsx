@@ -4,6 +4,7 @@ import { invitationLink, openInvitation, showEvent, showEvents } from './navigat
 import { Expenses, PersonAvatar } from './Expenses'
 import { Settlement } from './Settlement'
 import { money } from './expenseAllocation'
+import ParticipantManager from './ParticipantManager'
 
 function ErrorMessage({ error }) { return error ? <p className="auth-error" role="alert">{error}</p> : null }
 
@@ -131,8 +132,9 @@ function EventDetails({ id, knownToken, onToken, user }) {
     finally { lock.current = false; setBusy(false) }
   }
   if (!details) return <section className="workspace"><p>{error || 'Wczytywanie wydarzenia…'}</p><button className="secondary-button" onClick={showEvents}>Moje wydarzenia</button></section>
-  const outgoing = summary?.transfers.filter(row => row.fromUserId === user.id && !row.acknowledgement?.sent).reduce((sum, row) => sum + row.amountMinor, 0) || 0
-  const incoming = summary?.transfers.filter(row => row.toUserId === user.id && !row.acknowledgement?.received).reduce((sum, row) => sum + row.amountMinor, 0) || 0
+  const eventUser = { ...user, participantId: details.participants.find(person => person.userId === user.id)?.participantId }
+  const outgoing = summary?.transfers.filter(row => row.fromParticipantId === eventUser.participantId && !row.acknowledgement?.sent).reduce((sum, row) => sum + row.amountMinor, 0) || 0
+  const incoming = summary?.transfers.filter(row => row.toParticipantId === eventUser.participantId && !row.acknowledgement?.received).reduce((sum, row) => sum + row.amountMinor, 0) || 0
   return <section className={`event-page tab-${tab}`} aria-label="Szczegóły wydarzenia">
     <div className="event-hero">
     <div className="section-heading"><button className="text-button" onClick={showEvents}>← Moje wydarzenia</button><button className="text-button" onClick={() => { setError(''); setRefresh(x => x + 1) }}>Odśwież</button></div>
@@ -141,14 +143,15 @@ function EventDetails({ id, knownToken, onToken, user }) {
     {details.event.status !== 'Active' && <p className="settlement-warning">Wydarzenie zamknięte — dodawanie pozycji, zmiana podziałów i dołączanie są zablokowane.</p>}
     {details.event.description && <p className="event-description">{details.event.description}</p>}
     <h3 className="sr-only">Uczestnicy ({details.participants.length})</h3>
-    <ul className="participant-list">{details.participants.map(person => <li key={person.userId}><PersonAvatar person={person} /><span>{person.displayName}</span>{person.isOwner && <span className="badge">Autor</span>}</li>)}</ul>
+    <ul className="participant-list">{details.participants.map(person => <li key={person.participantId}><PersonAvatar person={person} /><span>{person.displayName}</span>{person.isOwner && <span className="badge">Autor</span>}{person.isVirtual && <span className="badge virtual-badge">Bez konta</span>}</li>)}</ul>
     <div className="event-stats"><div><span>Łączne wydatki</span><strong>{summary ? money(summary.totalMinor) : '—'}</strong></div><div><span>Pozycje</span><strong>{summary?.expenseCount ?? '—'}</strong></div><div><span>Uczestnicy</span><strong>{details.participants.length}</strong></div></div>
     </div>
+    {details.event.isOwner && <ParticipantManager eventId={id} participants={details.participants} active={details.event.status === 'Active'} editing={editing} onChanged={() => setRefresh(value => value + 1)} />}
     <div className="personal-balance"><span>{outgoing > 0 ? 'Do oddania' : incoming > 0 ? 'Do otrzymania' : 'Twoje przelewy'}</span><strong>{summary ? money(outgoing > 0 ? outgoing : incoming) : '—'}</strong><small>{summary?.isFinal ? 'Na podstawie zatwierdzonego rozliczenia i Twoich oznaczeń.' : 'Na podstawie bieżącego rozliczenia.'}</small></div>
     <div className="mobile-tabs" role="tablist" aria-label="Widok wydarzenia"><button role="tab" aria-selected={tab === 'expenses'} aria-controls="expenses-panel" id="expenses-tab" onClick={() => setTab('expenses')}>Wydatki</button><button role="tab" aria-selected={tab === 'settlement'} aria-controls="settlement-panel" id="settlement-tab" onClick={() => setTab('settlement')}>Rozliczenie</button></div>
     <div className="event-columns">
-      <div id="expenses-panel" className="expenses-panel" aria-labelledby="expenses-tab"><Expenses ref={expenseActions} key={`${id}-${details.event.status}`} eventId={id} participants={details.participants} user={user} isOwner={details.event.isOwner} refresh={refresh} active={details.event.status === 'Active'} onChanged={() => setRefresh(value => value + 1)} onEditing={setEditing} /></div>
-      <div id="settlement-panel" className="settlement-panel" aria-labelledby="settlement-tab"><Settlement eventId={id} user={user} isOwner={details.event.isOwner} refresh={refresh} onData={setSummary} onChanged={() => { setEditing(false); setRefresh(value => value + 1) }} editing={editing} /></div>
+      <div id="expenses-panel" className="expenses-panel" aria-labelledby="expenses-tab"><Expenses ref={expenseActions} key={`${id}-${details.event.status}`} eventId={id} participants={details.participants} user={eventUser} isOwner={details.event.isOwner} refresh={refresh} active={details.event.status === 'Active'} onChanged={() => setRefresh(value => value + 1)} onEditing={setEditing} /></div>
+      <div id="settlement-panel" className="settlement-panel" aria-labelledby="settlement-tab"><Settlement eventId={id} user={eventUser} isOwner={details.event.isOwner} refresh={refresh} onData={setSummary} onChanged={() => { setEditing(false); setRefresh(value => value + 1) }} editing={editing} /></div>
     </div>
     {details.event.status === 'Active' && !editing && <button className="primary-button mobile-add" onClick={() => { setTab('expenses'); expenseActions.current?.add(); document.getElementById('expenses-panel')?.scrollIntoView({ behavior: 'smooth', block: 'start' }) }}>＋ Dodaj pozycję</button>}
     {details.event.isOwner && details.event.status === 'Active' && <details className="event-invite-tools">
