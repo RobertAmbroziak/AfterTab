@@ -9,4 +9,6 @@ public sealed class UserIdentity : BaseEntity
     public string? NormalizedEmail { get; set; }
     public DateTimeOffset? EmailVerifiedAtUtc { get; set; }
     public string? PasswordHash { get; set; }
+    public int FailedLoginCount { get; set; }
+    public DateTimeOffset? LockedUntilUtc { get; set; }
 }

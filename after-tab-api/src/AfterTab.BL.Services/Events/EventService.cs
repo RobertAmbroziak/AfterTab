@@ -24,10 +24,12 @@ public sealed class EventService(IEventRepository events, IUserRepository users,
         => new(data.Event.Id, data.Event.Name, data.Event.Description, data.Event.Currency, data.OwnerName,
             data.Event.OwnerUserId == userId, data.Event.Status.ToString(), data.ParticipantCount);
 
-    public async Task<IReadOnlyList<EventSummaryDto>> ListAsync(CancellationToken ct)
+    public async Task<EventPageDto> ListAsync(int page, CancellationToken ct)
     {
+        if (page < 1 || page > 1000000) throw new AppException(ErrorKind.Validation, "Nieprawidłowy numer strony.");
         var id = await ActorAsync(false, ct);
-        return (await events.ListAsync(id, ct)).Select(x => Summary(x, id)).ToList();
+        var result = await events.ListAsync(id, page, ct);
+        return new(result.Items.Select(x => Summary(x, id)).ToList(), page, 10, result.TotalCount);
     }
     public async Task<EventDetailsDto> GetAsync(Guid id, CancellationToken ct)
     {

@@ -79,7 +79,7 @@ public sealed class PersistenceTests
             .UseSqlServer("Server=localhost;Database=ModelOnly;Integrated Security=true;TrustServerCertificate=true").Options;
         using var db = new AppDbContext(options, new Actor(), new Clock());
         var types = db.Model.GetEntityTypes().ToList();
-        Assert.AreEqual(11, types.Count);
+        Assert.AreEqual(12, types.Count);
         Assert.IsTrue(types.All(x => x.BaseType is null));
         var split = db.Model.FindEntityType(typeof(AfterTab.DAL.Entities.Expenses.ExpenseSplit))!;
         Assert.AreEqual(2, split.GetForeignKeys().Count(x => x.Properties.Count == 2));

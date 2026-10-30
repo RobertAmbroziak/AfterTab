@@ -170,3 +170,226 @@ npm run build
 Lokalne konfiguracje, poświadczenia, bazy, zależności i pliki wynikowe są wykluczone
 z Git. Publikacja aplikacji jest osobną czynnością — wysłanie kodu na GitHub
 nie uruchamia automatycznego deployu.
+
+### Konto trwałe
+
+Wybierz **ZALOGUJ / UTWÓRZ KONTO**. Możesz zarejestrować e-mail i hasło albo użyć
+Google/Facebooka, jeśli administrator skonfigurował danego dostawcę.
+
+- Rejestracja e-mail wymaga imienia i hasła o długości 12–128 znaków. Przed pierwszym
+  logowaniem trzeba potwierdzić adres jednorazowym linkiem z wiadomości (ważność 24 godziny).
+- **Nie pamiętam hasła** wysyła link ważny 30 minut. Ustawienie nowego hasła unieważnia
+  dotychczasowe sesje i pozostałe linki resetu. Link sam w sobie nie loguje użytkownika.
+- Po pięciu błędnych hasłach konto ma 15 minut blokady. Formularze mają też limity żądań.
+- Nowa osoba z Google/Facebooka potwierdza lub poprawia imię po pierwszym zalogowaniu.
+  Odzyskiwanie hasła do Google/Facebooka odbywa się u dostawcy, a nie w AfterTab.
+- Zalogowany gość ma w menu **Zachowaj konto / Zaloguj**. Rejestracja nowego konta
+  zachowuje jego identyfikator, wydarzenia i wydatki. Pierwsze użycie nowego konta Google
+  lub Facebook również może zachować tego gościa. Logowanie do już istniejącego konta
+  otwiera dane tamtego konta; aplikacja nie scala dwóch użytkowników automatycznie.
+- Konta e-mail, Google i Facebook nie łączą się automatycznie na podstawie identycznego
+  adresu e-mail. Zarządzanie dodatkowymi metodami logowania do istniejącego konta
+  nie jest częścią tego wdrożenia.
+- Trwałe ciasteczko API jest `HttpOnly`, `Secure`, `SameSite=Lax`, ważne do roku.
+  Aplikacja przechowuje też sesję API i wskazówkę przywracania w swojej przeglądarce.
+  Po wygaśnięciu sesji może przywrócić ją przez krótkie przekierowanie do API.
+  **Wyloguj** usuwa zapamiętane logowanie konta trwałego w tej przeglądarce.
+  Usunięcie cookies, cofnięcie sesji albo upływ terminu wymaga ponownego logowania.
+
+Lista **Moje wydarzenia** pokazuje zawsze po **10 wydarzeń**, od najnowszych.
+Przyciski **Poprzednia / Następna** przełączają strony. Znaczniki **Otwarte / Zamknięte**
+oraz inny wygląd zamkniętych wierszy wskazują stan wydarzenia.
+
+## Konfiguracja kont trwałych krok po kroku
+
+### 1. Migracja lokalna i e-maile testowe
+
+W katalogu `after-tab-api` wykonaj migrację jak w instrukcji uruchamiania.
+Nowa migracja `PermanentAccountsAndEventPaging` dodaje tabelę jednorazowych operacji
+konta, pola blokady logowania oraz indeks listy wydarzeń. Nie usuwa danych.
+
+Do sprawdzenia potwierdzania i resetu bez prawdziwej skrzynki, w terminalu backendu:
+
+```powershell
+$env:ASPNETCORE_ENVIRONMENT = 'Development'
+$env:Mail__PickupDirectory = Join-Path $PWD 'artifacts\mail'
+dotnet run --project src/AfterTab.API --launch-profile https
+```
+
+Wiadomości `.eml` pojawią się w ignorowanym przez Git katalogu `artifacts\mail`.
+Otwórz je programem pocztowym i użyj linku. Ten tryb działa tylko w Development;
+w produkcji trzeba skonfigurować SMTP. Nie publikuj plików `.eml` — zawierają jednorazowe linki.
+
+### 2. Google
+
+Możesz używać tego samego konta administracyjnego Google co do drugiej aplikacji.
+Można dopisać adresy przekierowania do istniejącego klienta, ale oddzielny klient OAuth
+ułatwia zarządzanie AfterTab. Nie usuwaj adresów drugiej aplikacji.
+
+1. Otwórz [Google Cloud Console](https://console.cloud.google.com/) i wybierz projekt.
+2. Otwórz **Google Auth Platform → Clients** (w starszym widoku **APIs & Services → Credentials**).
+3. Utwórz klienta **Web application**, np. `AfterTab`, lub edytuj wybranego istniejącego.
+4. W **Authorized redirect URIs** dodaj dokładnie:
+   - `https://localhost:7180/signin-google`
+   - `https://aftertab-api-ambro.azurewebsites.net/signin-google`
+5. Skonfiguruj **Branding / Audience** i użytkowników testowych. Nazwa i ekran zgody
+   dotyczą projektu Google; zmiana ich we wspólnym projekcie może wpłynąć na drugą aplikację.
+6. Zapisz Client ID i Client secret w lokalnych User Secrets backendu:
+
+```powershell
+dotnet user-secrets set 'Authentication:Google:ClientId' '<client-id>' --project src/AfterTab.API
+dotnet user-secrets set 'Authentication:Google:ClientSecret' '<client-secret>' --project src/AfterTab.API
+```
+
+Nie potrzebujesz konfiguracji JavaScript SDK ani kluczy Google we frontendzie.
+Logowanie obsługuje backend. Restart API uaktywni przycisk.
+
+[Instrukcja Microsoft](https://learn.microsoft.com/en-us/aspnet/core/security/authentication/social/google-logins?view=aspnetcore-9.0)
+i [reguły przekierowań Google](https://developers.google.com/identity/protocols/oauth2/web-server).
+
+### 3. Facebook
+
+Możesz używać tego samego konta administratora Meta. Istniejąca aplikacja Meta może
+obsługiwać dodatkowe przekierowania, ale ma wspólną nazwę, ustawienia i identyfikatory
+użytkowników. Dla osobnej aplikacji AfterTab najlepiej utworzyć osobną aplikację Meta.
+
+1. Otwórz [Meta for Developers](https://developers.facebook.com/apps/) i wybierz lub utwórz aplikację.
+2. Włącz przypadek użycia / produkt **Facebook Login** dla witryny.
+3. W **Facebook Login → Settings → Valid OAuth Redirect URIs** dodaj:
+   - `https://localhost:7180/signin-facebook`
+   - `https://aftertab-api-ambro.azurewebsites.net/signin-facebook`
+4. Włącz logowanie przez WWW i HTTPS. Sprawdź dostępność uprawnienia `email`.
+   AfterTab identyfikuje użytkownika identyfikatorem dostawcy i działa także bez e-maila Facebooka.
+5. Na początku testuj kontem administratora/dewelopera/testera aplikacji Meta.
+   Udostępnienie innym osobom może wymagać przełączenia trybu, polityki prywatności,
+   informacji o usuwaniu danych i spełnienia wymagań widocznych w panelu Meta.
+6. W **Settings → Basic** odczytaj App ID / App secret i zapisz lokalnie:
+
+```powershell
+dotnet user-secrets set 'Authentication:Facebook:AppId' '<app-id>' --project src/AfterTab.API
+dotnet user-secrets set 'Authentication:Facebook:AppSecret' '<app-secret>' --project src/AfterTab.API
+```
+
+Restart API uaktywni przycisk. Callbacki obu dostawców wskazują **API**, nie adres PWA.
+
+[Instrukcja konfiguracji Facebook Login](https://learn.microsoft.com/en-us/aspnet/core/security/authentication/social/facebook-logins?view=aspnetcore-9.0).
+
+### 4. Wysyłka prawdziwych e-maili
+
+Potrzebujesz usługi SMTP, która obsługuje uwierzytelnianie loginem/hasłem lub kluczem
+SMTP i szyfrowane połączenie STARTTLS. Ustaw nadawcę zaakceptowanego przez tę usługę.
+Po otrzymaniu danych od dostawcy zapisz je lokalnie:
+
+```powershell
+dotnet user-secrets set 'Mail:Host' '<host-smtp>' --project src/AfterTab.API
+dotnet user-secrets set 'Mail:Port' '587' --project src/AfterTab.API
+dotnet user-secrets set 'Mail:Username' '<login-smtp>' --project src/AfterTab.API
+dotnet user-secrets set 'Mail:Password' '<haslo-lub-klucz-smtp>' --project src/AfterTab.API
+dotnet user-secrets set 'Mail:From' '<zweryfikowany-adres-nadawcy>' --project src/AfterTab.API
+```
+
+Nie wpisuj sekretów do repozytorium ani do zmiennych `VITE_*`. Nie wysyłaj ich na czacie.
+Tryb PickupDirectory nie jest używany, jeśli podasz `Mail:Host`.
+
+### 5. Przy późniejszym deployu Azure
+
+Ta zmiana kodu nie wykonuje deployu. Gdy zostanie zlecony, poza migracją i publikacją
+trzeba ustawić w konfiguracji API odpowiedniki powyższych sekretów:
+
+```text
+Authentication__FrontendOrigin=https://orange-stone-063c89710.4.azurestaticapps.net
+Authentication__Google__ClientId
+Authentication__Google__ClientSecret
+Authentication__Facebook__AppId
+Authentication__Facebook__AppSecret
+Mail__Host
+Mail__Port
+Mail__Username
+Mail__Password
+Mail__From
+```
+
+Zachowaj właściwe `Cors__AllowedOrigins__0`, HTTPS i konfigurację forwarded headers
+App Service — dostawca musi dostać callback HTTPS. Klucze ASP.NET Data Protection
+muszą przetrwać restart API, aby trwające logowanie OAuth mogło się zakończyć.
+Sekrety ustawiaj w Azure, nie w kodzie ani w komendach przechowywanych w repozytorium.
+
+### 6. Sprawdzenie po konfiguracji
+
+1. Zarejestruj e-mail; przed potwierdzeniem logowanie ma być odrzucone.
+2. Potwierdź wiadomość i zaloguj się. Zamknij i otwórz aplikację — sesja ma wrócić.
+3. Wyloguj się — aplikacja nie powinna automatycznie logować ponownie.
+4. Użyj odzyskiwania hasła; po zmianie stare hasło i poprzednie sesje mają nie działać.
+5. Sprawdź Google i Facebook oraz anulowanie zgody dostawcy.
+6. Zaloguj się na innym urządzeniu tym samym kontem — lista wydarzeń ma być ta sama.
+7. Jako gość utwórz wydarzenie, potem zarejestruj nowe konto z menu gościa i sprawdź,
+   czy wydarzenie pozostało. Nie używaj tu istniejącego konta z innymi wydarzeniami.
+
+Testy automatyczne nie zastępują logowania prawdziwym kontem Google/Facebook ani testu
+dostarczania e-maili z wybranej usługi SMTP. Te sprawdzenia wymagają Twojej konfiguracji.
+
+### Gmail na start
+
+1. W koncie Google otwórz **Bezpieczeństwo → Weryfikacja dwuetapowa** i włącz ją.
+2. Otwórz [Hasła aplikacji](https://myaccount.google.com/apppasswords), utwórz hasło
+   `AfterTab` i zapisz je w User Secrets. Dostępność tej funkcji zależy od ustawień konta.
+3. Ustaw `Mail:Host=smtp.gmail.com`, `Mail:Port=587`, a `Mail:Username` i `Mail:From`
+   na pełny adres Gmail. `Mail:Password` to wygenerowane hasło aplikacji, nie zwykłe hasło Google.
+4. Uruchom ponownie API i przetestuj rejestrację oraz reset na swojej skrzynce.
+
+Ten wariant korzysta ze skrzynki Gmail i jej limitów. Dla większego ruchu przejdź
+na usługę do wiadomości transakcyjnych.
+
+[Wymagania haseł aplikacji Google](https://support.google.com/mail/answer/185833)
+i [serwer SMTP Gmail](https://developers.google.com/workspace/gmail/imap/imap-smtp).
+
+### Azure Communication Services Email
+
+Rozliczenie jest za użycie. Dokumentacja podaje przykładowo **0,00025 USD za wiadomość**
+oraz **0,00012 USD za MB danych**, czyli około **0,25 USD za 1000 krótkich maili** plus
+dane, podatki i przeliczenie waluty. To szacunek z dokumentacji, nie gwarantowana oferta;
+sprawdź cenę dla subskrypcji przed utworzeniem zasobów.
+
+1. W Azure utwórz **Email Communication Services** i dodaj domenę zarządzaną Azure
+   albo zweryfikuj własną domenę. Domena Azure pozwala zacząć bez kupowania domeny.
+2. Utwórz **Communication Services** i połącz ją z tą domeną e-mail.
+3. Zgodnie z instrukcją SMTP zarejestruj aplikację Microsoft Entra, nadaj jej uprawnienia
+   do wysyłki w tym zasobie i utwórz sekret klienta.
+4. W **Communication Services → SMTP Usernames** utwórz login powiązany z aplikacją Entra.
+5. Ustaw `Mail:Host=smtp.azurecomm.net`, `Mail:Port=587`, `Mail:Username` na utworzony
+   login SMTP, `Mail:Password` na sekret aplikacji Entra, `Mail:From` na adres nadawcy
+   widoczny w skonfigurowanej domenie e-mail.
+6. Sprawdź dostarczenie maila i spam. Pilnuj terminu ważności sekretu Entra.
+
+Regiony/dostępne obszary danych sprawdź dla usługi e-mail osobno; lokalizacja API
+w Poland Central nie oznacza automatycznie przetwarzania poczty w tym samym regionie.
+
+[Cennik przykładowy](https://learn.microsoft.com/en-us/azure/communication-services/concepts/email-pricing)
+i [konfiguracja SMTP w Azure](https://learn.microsoft.com/en-us/azure/communication-services/quickstarts/email/send-email-smtp/smtp-authentication).
+
+
+## Publiczne strony informacyjne AfterTab
+
+Administrator wskazany przez właściciela: **AmbroDev Robert Ambroziak**.
+Kontakt: **amb77ro@gmail.com**.
+Strony są statyczne, dostępne bez JavaScript, konta i połączenia z API:
+
+- `/privacy.html` — polityka prywatności.
+- `/data-deletion.html` — instrukcja zgłoszenia usunięcia danych e-mailem.
+- `/terms.html` — zasady korzystania.
+
+W Meta → App settings → Basic po opublikowaniu tych plików wpisz:
+
+```text
+Privacy policy URL: https://orange-stone-063c89710.4.azurestaticapps.net/privacy.html
+Terms of Service URL: https://orange-stone-063c89710.4.azurestaticapps.net/terms.html
+User data deletion → Data deletion instructions URL:
+https://orange-stone-063c89710.4.azurestaticapps.net/data-deletion.html
+```
+
+Instrukcja usuwania nie jest callbackiem API. Żądania trzeba obsługiwać ręcznie,
+potwierdzając własność konta i usuwając lub anonimizując odpowiednie dane.
+Odłączenie Facebooka/Google, wylogowanie i „Zapomnij gościa” nie realizują same
+usunięcia danych serwerowych. Strony opisują obecny stan funkcji; przy zmianie
+retencji, dostawców, opłat lub sposobu usuwania trzeba zaktualizować ich treść.
+Sprawdź i zatwierdź treść przed publikacją. Sam build nie udostępnia stron na Azure.

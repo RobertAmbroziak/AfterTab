@@ -13,6 +13,7 @@ public sealed class AppDbContext(
     TimeProvider timeProvider) : DbContext(options), IUnitOfWork
 {
     public DbSet<User> Users => Set<User>();
+    public DbSet<AccountAction> AccountActions => Set<AccountAction>();
     public DbSet<UserIdentity> UserIdentities => Set<UserIdentity>();
     public DbSet<Session> Sessions => Set<Session>();
     public DbSet<GuestDevice> GuestDevices => Set<GuestDevice>();

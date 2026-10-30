@@ -33,7 +33,8 @@ public sealed class EventTests
             var connection = new SqliteConnection("Data Source=:memory:");
             await connection.OpenAsync();
             var actor = new Actor();
-            var db = new AppDbContext(new DbContextOptionsBuilder<AppDbContext>().UseSqlite(connection).Options, actor, TimeProvider.System);
+            var db = new AppDbContext(new DbContextOptionsBuilder<AppDbContext>().UseSqlite(connection)
+                .ReplaceService<Microsoft.EntityFrameworkCore.Infrastructure.IModelCustomizer, SqliteUtcModelCustomizer>().Options, actor, TimeProvider.System);
             await db.Database.EnsureCreatedAsync();
             var owner = new User { DisplayName = "Ola", DisplayNameConfirmed = true };
             var guest = new User { DisplayName = "Michał", DisplayNameConfirmed = true };
@@ -58,7 +59,7 @@ public sealed class EventTests
         Assert.AreEqual("PLN", created.Details.Event.Currency);
         Assert.IsTrue(created.Details.Event.IsOwner);
         Assert.AreEqual(s.Owner.Id, created.Details.Participants.Single().UserId);
-        Assert.AreEqual(1, (await s.Events.ListAsync(default)).Count);
+        Assert.AreEqual(1, (await s.Events.ListAsync(1, default)).Items.Count);
         Assert.AreNotEqual(created.InviteToken, (await s.Db.EventInvites.SingleAsync()).TokenHash);
     }
 
@@ -68,13 +69,13 @@ public sealed class EventTests
         await using var s = await Scope.Create();
         var created = await s.Events.CreateAsync(new("Weekend"), default);
         s.Actor.UserId = s.Guest.Id;
-        Assert.AreEqual(0, (await s.Events.ListAsync(default)).Count);
+        Assert.AreEqual(0, (await s.Events.ListAsync(1, default)).Items.Count);
         Assert.IsFalse((await s.Events.PreviewAsync(created.InviteToken, default)).AlreadyMember);
         Assert.AreEqual(1, await s.Db.EventParticipants.CountAsync());
         await Assert.ThrowsExactlyAsync<AppException>(() => s.Events.GetAsync(created.Details.Event.Id, default));
         await s.Events.JoinAsync(created.InviteToken, default);
         await s.Events.JoinAsync(created.InviteToken, default);
-        Assert.AreEqual(1, (await s.Events.ListAsync(default)).Count);
+        Assert.AreEqual(1, (await s.Events.ListAsync(1, default)).Items.Count);
         Assert.IsTrue((await s.Events.PreviewAsync(created.InviteToken, default)).AlreadyMember);
         Assert.AreEqual(2, await s.Db.EventParticipants.CountAsync());
         s.Actor.UserId = s.Owner.Id;
@@ -89,7 +90,7 @@ public sealed class EventTests
         await using var s = await Scope.Create();
         var created = await s.Events.CreateAsync(new("Kolacja"), default);
         s.Actor.UserId = s.Stranger.Id;
-        Assert.AreEqual(0, (await s.Events.ListAsync(default)).Count);
+        Assert.AreEqual(0, (await s.Events.ListAsync(1, default)).Items.Count);
         var read = await Assert.ThrowsExactlyAsync<AppException>(() => s.Events.GetAsync(created.Details.Event.Id, default));
         Assert.AreEqual(ErrorKind.NotFound, read.Kind);
         var rotate = await Assert.ThrowsExactlyAsync<AppException>(() => s.Events.RotateInviteAsync(created.Details.Event.Id, default));
@@ -111,7 +112,7 @@ public sealed class EventTests
         await Assert.ThrowsExactlyAsync<AppException>(() => s.Events.PreviewAsync(replacement.Token, default));
         s.Actor.UserId = s.Guest.Id;
         Assert.AreEqual(2, (await s.Events.GetAsync(created.Details.Event.Id, default)).Participants.Count);
-        Assert.AreEqual(1, (await s.Events.ListAsync(default)).Count);
+        Assert.AreEqual(1, (await s.Events.ListAsync(1, default)).Items.Count);
         await Assert.ThrowsExactlyAsync<AppException>(() => s.Events.JoinAsync(replacement.Token, default));
     }
 
@@ -160,7 +161,52 @@ public sealed class EventTests
         var details = await s.Events.GetAsync(created.Details.Event.Id, default);
         Assert.AreEqual("Ola", details.Event.OwnerName);
         Assert.AreEqual("Ola", details.Participants.Single().DisplayName);
-        Assert.AreEqual(1, (await s.Events.ListAsync(default)).Count);
+        Assert.AreEqual(1, (await s.Events.ListAsync(1, default)).Items.Count);
+    }
+
+    [TestMethod]
+    public async Task Legacy_Pwa_Gets_Array_And_New_Pwa_Gets_Page_Metadata()
+    {
+        await using var s = await Scope.Create();
+        for (var i = 0; i < 11; i++) s.Db.Events.Add(new Event { OwnerUserId = s.Owner.Id, Name = $"Existing {i}" });
+        await s.Db.SaveChangesAsync();
+        var controller = new AfterTab.API.Controllers.EventsController(s.Events);
+        var legacy = (Microsoft.AspNetCore.Mvc.OkObjectResult)await controller.List(default);
+        Assert.AreEqual(10, ((IReadOnlyList<EventSummaryDto>)legacy.Value!).Count);
+        var current = (Microsoft.AspNetCore.Mvc.OkObjectResult)await controller.List(default, 2);
+        var page = (EventPageDto)current.Value!;
+        Assert.AreEqual(11, page.TotalCount);
+        Assert.AreEqual(2, page.Page);
+        Assert.AreEqual(1, page.Items.Count);
+    }
+
+    [TestMethod]
+    public async Task Pagination_Is_Ten_Newest_Stable_And_Excludes_Unrelated_Events()
+    {
+        await using var s = await Scope.Create();
+        for (var i = 0; i < 23; i++)
+            s.Db.Events.Add(new Event { Name = $"Event {i:D2}", OwnerUserId = s.Owner.Id, Status = i % 2 == 0 ? EventStatus.Closed : EventStatus.Active });
+        s.Db.Events.Add(new Event { Name = "Private", OwnerUserId = s.Stranger.Id });
+        await s.Db.SaveChangesAsync();
+        var records = await s.Db.Events.Where(x => x.OwnerUserId == s.Owner.Id).ToListAsync();
+        foreach (var record in records)
+            await s.Db.Database.ExecuteSqlInterpolatedAsync($"UPDATE Events SET CreatedAtUtc = {new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero).AddMinutes(int.Parse(record.Name[6..])).UtcTicks} WHERE Id = {record.Id}");
+        s.Db.ChangeTracker.Clear();
+        var first = await s.Events.ListAsync(1, default);
+        var second = await s.Events.ListAsync(2, default);
+        var third = await s.Events.ListAsync(3, default);
+        Assert.AreEqual(10, first.PageSize);
+        Assert.AreEqual(23, first.TotalCount);
+        Assert.AreEqual(10, first.Items.Count);
+        Assert.AreEqual("Event 22", first.Items[0].Name);
+        Assert.AreEqual("Event 13", first.Items[^1].Name);
+        Assert.AreEqual("Event 12", second.Items[0].Name);
+        Assert.AreEqual(3, third.Items.Count);
+        Assert.AreEqual(23, first.Items.Concat(second.Items).Concat(third.Items).Select(x => x.Id).Distinct().Count());
+        Assert.AreEqual("Closed", first.Items[0].Status);
+        Assert.AreEqual("Active", first.Items[1].Status);
+        Assert.AreEqual(0, (await s.Events.ListAsync(4, default)).Items.Count);
+        await Assert.ThrowsExactlyAsync<AppException>(() => s.Events.ListAsync(0, default));
     }
 
     [TestMethod]

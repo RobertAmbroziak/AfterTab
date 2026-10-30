@@ -6,7 +6,7 @@ namespace AfterTab.DAL.Interfaces.Events;
 public sealed record EventReadModel(Event Event, string OwnerName, int ParticipantCount);
 public interface IEventRepository
 {
-    Task<IReadOnlyList<EventReadModel>> ListAsync(Guid userId, CancellationToken ct);
+    Task<(IReadOnlyList<EventReadModel> Items, int TotalCount)> ListAsync(Guid userId, int page, CancellationToken ct);
     Task<EventReadModel?> GetAsync(Guid id, CancellationToken ct);
     Task<bool> IsMemberAsync(Guid eventId, Guid userId, CancellationToken ct);
     Task<IReadOnlyList<User>> ParticipantsAsync(Guid eventId, CancellationToken ct);

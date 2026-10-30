@@ -16,10 +16,15 @@ public sealed class EventRepository(AppDbContext db) : IEventRepository
            select new EventReadModel(ev, owner.DisplayName,
                db.EventParticipants.Count(p => p.EventId == ev.Id && p.Status == ParticipantStatus.Active));
 
-    public async Task<IReadOnlyList<EventReadModel>> ListAsync(Guid userId, CancellationToken ct)
-        => await ReadQuery(db.Events.AsNoTracking().Where(ev => ev.OwnerUserId == userId || db.EventParticipants.Any(p =>
-            p.EventId == ev.Id && p.UserId == userId && p.Status == ParticipantStatus.Active))
-            .OrderBy(ev => ev.Name).ThenBy(ev => ev.Id)).ToListAsync(ct);
+    public async Task<(IReadOnlyList<EventReadModel> Items, int TotalCount)> ListAsync(Guid userId, int page, CancellationToken ct)
+    {
+        var query = db.Events.AsNoTracking().Where(ev => ev.OwnerUserId == userId || db.EventParticipants.Any(p =>
+            p.EventId == ev.Id && p.UserId == userId && p.Status == ParticipantStatus.Active));
+        var count = await query.CountAsync(ct);
+        var items = await ReadQuery(query.OrderByDescending(ev => ev.CreatedAtUtc).ThenByDescending(ev => ev.Id)
+            .Skip((page - 1) * 10).Take(10)).ToListAsync(ct);
+        return (items, count);
+    }
 
     public Task<EventReadModel?> GetAsync(Guid id, CancellationToken ct)
         => ReadQuery(db.Events.AsNoTracking().Where(x => x.Id == id)).SingleOrDefaultAsync(ct);

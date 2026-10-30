@@ -13,6 +13,7 @@ public sealed class EventConfiguration : IEntityTypeConfiguration<Event>
         b.Property(x => x.Description).HasMaxLength(2000);
         b.Property(x => x.Currency).HasMaxLength(3).IsRequired();
         b.Property(x => x.Status).HasConversion<string>().HasMaxLength(20);
+        b.HasIndex(x => new { x.CreatedAtUtc, x.Id });
         b.HasOne<User>().WithMany().HasForeignKey(x => x.OwnerUserId).OnDelete(DeleteBehavior.NoAction);
     }
 }

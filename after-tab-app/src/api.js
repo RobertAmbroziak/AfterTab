@@ -1,10 +1,13 @@
+import { fetchSessionResponse } from './sessionCheck'
+
 export async function api(path, { method = 'GET', body } = {}) {
   const configuredBase = import.meta.env.VITE_API_BASE_URL
   const base = (configuredBase ?? (import.meta.env.DEV ? 'https://localhost:7180' : '')).replace(/\/$/, '')
   const token = localStorage.getItem('aftertab.session')
   let response
   try {
-    response = await fetch(`${base}/api/${path}`, {
+    const fetchResponse = path === 'auth/account/providers' && method === 'GET' ? fetchSessionResponse : fetch
+    response = await fetchResponse(`${base}/api/${path}`, {
       signal: AbortSignal.timeout(25000),
       method, cache: 'no-store',
       headers: { ...(token ? { Authorization: `Bearer ${token}` } : {}), ...(body !== undefined ? { 'Content-Type': 'application/json' } : {}) },

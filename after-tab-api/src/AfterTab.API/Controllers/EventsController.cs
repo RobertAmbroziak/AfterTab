@@ -10,7 +10,13 @@ namespace AfterTab.API.Controllers;
 public sealed class EventsController(IEventService events) : ControllerBase
 {
     [HttpGet]
-    public async Task<IActionResult> List(CancellationToken ct) => Ok(await events.ListAsync(ct));
+    public async Task<IActionResult> List(CancellationToken ct, [FromQuery] int? page = null)
+    {
+        var result = await events.ListAsync(page ?? 1, ct);
+        // Installed PWAs can keep the previous bundle until the user accepts an update.
+        // Their request has no page parameter and expects an array; still limit it to ten.
+        return page.HasValue ? Ok(result) : Ok(result.Items);
+    }
     [HttpGet("{id:guid}")]
     public async Task<IActionResult> Get(Guid id, CancellationToken ct) => Ok(await events.GetAsync(id, ct));
     [HttpPost]

@@ -165,24 +165,39 @@ function EventDetails({ id, knownToken, onToken, user }) {
 
 export function EventWorkspace({ route, user }) {
   const [items, setItems] = useState(null)
+  const [page, setPage] = useState(1)
+  const [total, setTotal] = useState(0)
+  const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [creating, setCreating] = useState(false)
   const [tokens, setTokens] = useState({})
   const [refresh, setRefresh] = useState(0)
   useEffect(() => {
     let active = true
-    api('events').then(value => { if (active) setItems(value) }).catch(reason => { if (active) setError(reason.message) })
+    api(`events?page=${page}`).then(value => {
+      if (active) {
+        const last = Math.max(1, Math.ceil(value.totalCount / 10))
+        if (page > last) { setPage(last); return }
+        setItems(value.items); setTotal(value.totalCount)
+      }
+    }).catch(reason => { if (active) setError(reason.message) }).finally(() => { if (active) setLoading(false) })
     return () => { active = false }
-  }, [refresh, route.kind, user.displayName])
+  }, [page, refresh, route.kind, user.displayName])
+  function changePage(value) { setPage(value); setLoading(true); setError(''); setItems(null) }
   function onToken(id, token) { setTokens(previous => ({ ...previous, [id]: token })) }
   if (route.kind === 'event') return <EventDetails key={route.id} id={route.id} knownToken={tokens[route.id]} onToken={onToken} user={user} />
   return <section className="workspace" aria-label="Moje wydarzenia">
     <div className="section-heading"><h2>Moje wydarzenia</h2><button className="text-button" onClick={() => { setError(''); setRefresh(x => x + 1) }}>Odśwież</button></div>
-    {creating ? <CreateEvent onCancel={() => setCreating(false)} onCreated={result => { onToken(result.details.event.id, result.inviteToken); setCreating(false); showEvent(result.details.event.id) }} />
+    {creating ? <CreateEvent onCancel={() => setCreating(false)} onCreated={result => { onToken(result.details.event.id, result.inviteToken); setCreating(false); setPage(1); showEvent(result.details.event.id) }} />
       : <button className="primary-button" onClick={() => setCreating(true)}>Utwórz wydarzenie</button>}
     <ErrorMessage error={error} />
     {!items && !error ? <p>Wczytywanie wydarzeń…</p> : items?.length === 0 ? <p className="empty-state">Nie masz jeszcze wydarzeń. Utwórz pierwsze albo dołącz przez zaproszenie.</p>
-      : <ul className="event-list">{items?.map(event => <li key={event.id}><button onClick={() => showEvent(event.id)}><strong>{event.name}</strong><span>{event.isOwner ? 'Autor' : 'Uczestnik'} · {event.participantCount} os. · {event.status === 'Active' ? 'Otwarte' : 'Zamknięte'}</span></button></li>)}</ul>}
+      : <ul className="event-list">{items?.map(event => <li key={event.id} className={event.status === 'Active' ? 'event-open' : 'event-closed'}><button onClick={() => showEvent(event.id)}><strong>{event.name}</strong><span className={`event-status ${event.status === 'Active' ? 'is-open' : 'is-closed'}`}>{event.status === 'Active' ? 'Otwarte' : 'Zamknięte'}</span><span>{event.isOwner ? 'Autor' : 'Uczestnik'} · {event.participantCount} os. · {event.status === 'Active' ? 'Otwarte' : 'Zamknięte'}</span></button></li>)}</ul>}
+    {total > 0 && <nav className="pagination" aria-label="Strony wydarzeń">
+      <button className="secondary-button" disabled={loading || page <= 1} onClick={() => changePage(page - 1)}>← Poprzednia</button>
+      <span role="status">Strona {page} z {Math.max(1, Math.ceil(total / 10))} · {total} wydarzeń</span>
+      <button className="secondary-button" disabled={loading || page * 10 >= total} onClick={() => changePage(page + 1)}>Następna →</button>
+    </nav>}
     <PasteInvitation />
   </section>
 }

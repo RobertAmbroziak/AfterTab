@@ -5,6 +5,7 @@
     <IsPackable>false</IsPackable>
   </PropertyGroup>
   <ItemGroup>
+    <ProjectReference Include="..\..\src\AfterTab.API\AfterTab.API.csproj" />
     <ProjectReference Include="..\..\src\AfterTab.DAL.EF\AfterTab.DAL.EF.csproj" />
     <ProjectReference Include="..\..\src\AfterTab.BL.Services\AfterTab.BL.Services.csproj" />
   </ItemGroup>
