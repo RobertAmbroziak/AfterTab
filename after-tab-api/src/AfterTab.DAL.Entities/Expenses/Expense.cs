@@ -8,6 +8,8 @@ public sealed class Expense : BaseEntity
     public long AmountMinor { get; set; }
     public long OthersAmountMinor { get; set; }
     public bool Balanced { get; set; }
+    public Guid? BalanceParticipantId { get; set; }
+    public long BalanceAmountMinor { get; set; }
     public Guid PaidByParticipantId { get; set; }
     public SplitMethod SplitMethod { get; set; }
     public DateOnly ExpenseDate { get; set; }

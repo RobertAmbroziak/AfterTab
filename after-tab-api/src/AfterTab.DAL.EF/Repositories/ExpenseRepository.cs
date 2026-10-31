@@ -49,6 +49,8 @@ public sealed class ExpenseRepository(AppDbContext db) : IExpenseRepository
             select p).ToListAsync(ct);
         if (!participants.Any(x => x.UserId == userId) || !participants.Any(x => x.Id == expense.PaidByParticipantId))
             throw new AppException(ErrorKind.Forbidden, "Nie masz uprawnień do zmiany tej pozycji.");
+        if (expense.BalanceParticipantId.HasValue && !expense.Splits.Any(x => x.ParticipantId == expense.BalanceParticipantId))
+            throw new AppException(ErrorKind.Validation, "Wyrównanie wymaga osoby z podziału.");
         if (expense.Splits.Any(x => !participants.Any(p => p.Id == x.ParticipantId)))
             throw new AppException(ErrorKind.Validation, "Podział może zawierać tylko aktywnych uczestników wydarzenia.");
     }
@@ -63,18 +65,24 @@ public sealed class ExpenseRepository(AppDbContext db) : IExpenseRepository
             db.Expenses.Add(expense);
             await db.SaveChangesAsync(ct);
         }, ct);
-    public Task UpdateSplitAsync(Expense replacement, Guid userId, byte[] expectedVersion, CancellationToken ct)
+    public Task UpdateSplitAsync(Expense replacement, Guid userId, byte[] expectedVersion, CancellationToken ct, bool balanceOnly = false)
         => InTransaction(async () =>
         {
             // Read the event before touching expenses, just like close/create, to serialize lifecycle changes.
             await ValidateWrite(replacement, userId, ct);
             var current = await db.Expenses.Include(x => x.Splits).SingleOrDefaultAsync(x => x.Id == replacement.Id && x.EventId == replacement.EventId, ct)
                 ?? throw new AppException(ErrorKind.NotFound, "Nie znaleziono pozycji.");
-            if (current.AuthorUserId != userId || current.PaidByParticipantId != replacement.PaidByParticipantId)
-                throw new AppException(ErrorKind.Forbidden, "Tylko autor pozycji może poprawić jej podział.");
+            var ev = await db.Events.SingleAsync(x => x.Id == current.EventId, ct);
+            var payer = await db.EventParticipants.SingleAsync(x => x.Id == current.PaidByParticipantId, ct);
+            var canBalance = ev.OwnerUserId == userId || payer.UserId == userId;
+            if (current.PaidByParticipantId != replacement.PaidByParticipantId || (balanceOnly ? !canBalance : current.AuthorUserId != userId))
+                throw new AppException(ErrorKind.Forbidden, "Nie masz uprawnień do zmiany tego podziału lub wyrównania.");
+            if (!canBalance && ((!current.Balanced && replacement.Balanced) || current.BalanceParticipantId != replacement.BalanceParticipantId || current.BalanceAmountMinor != replacement.BalanceAmountMinor))
+                throw new AppException(ErrorKind.Forbidden, "Wyrównanie może zmienić tylko autor wydarzenia albo płacący.");
             if (!current.RowVersion.SequenceEqual(expectedVersion))
                 throw new AppException(ErrorKind.Conflict, "Podział został zmieniony. Odśwież wydarzenie i spróbuj ponownie.");
             current.SplitMethod = replacement.SplitMethod; current.Balanced = replacement.Balanced;
+            current.BalanceParticipantId = replacement.BalanceParticipantId; current.BalanceAmountMinor = replacement.BalanceAmountMinor;
             current.OthersAmountMinor = replacement.OthersAmountMinor;
             foreach (var old in current.Splits.ToList())
             {

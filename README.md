@@ -148,8 +148,25 @@ w szczegółach pozycji przez **Zmień płacącego**.
 
 Nierozdzielona kwota trafia do **Inni**. Znane osoby bez konta warto dodać jako
 uczestników bez konta i wskazać je w podziale, zamiast pozostawiać ich koszt w „Inni”.
-Przycisk **Wyrównaj** dopisuje resztę osobie z największą kwotą udziału,
-a przy remisie autorowi pozycji. Suma udziałów wraz z „Inni” zawsze odpowiada całej kwocie.
+Mały przycisk **Wyrównaj** przy każdej osobie w podziale przypisuje resztę właśnie
+tej osobie — bez automatycznego wyboru największego udziału ani autora wpisu.
+Wybrany przycisk jest podświetlony. Kliknięcie przy innej osobie przenosi wyrównanie:
+poprzednia osoba wraca do swojego udziału bazowego, a nowa dostaje tę samą resztę.
+Ponowne kliknięcie podświetlonego przycisku wycofuje wyrównanie do **Inni**.
+Gdy nie ma reszty ani wcześniej przypisanego wyrównania, przyciski są wyszarzone.
+Suma udziałów wraz z „Inni” zawsze odpowiada całej kwocie.
+
+Wyrównanie może zmienić tylko **autor wydarzenia lub wskazany płacący** i tylko
+w otwartym wydarzeniu. Samo autorstwo pozycji nie daje tego uprawnienia, jeżeli
+płacił ktoś inny. Ta zasada jest sprawdzana również w API. Dla płacącego bez konta
+czynność wykonuje autor wydarzenia, bez podszywania się pod wirtualnego uczestnika.
+
+W formularzu wybór zostanie zapisany po **Zatwierdź**. W rozwiniętej, już zapisanej
+pozycji przyciski przy osobach zapisują zmianę od razu i aktualizują rozliczenie.
+Autor wydarzenia i płacący mogą w ten sposób przenieść samo wyrównanie również
+w pozycji dodanej przez inną osobę; nie uzyskują przez to prawa do dowolnej edycji
+jej udziałów. Gdy formularz pozycji jest otwarty, przyciski przy zapisanych pozycjach
+są zablokowane do jego zatwierdzenia lub anulowania.
 
 Szczegóły pozycji są rozwijane. Jej autor może wybrać **Popraw podział**, dopóki
 wydarzenie jest otwarte. Dołączenie nowych osób nie zmienia wcześniejszych podziałów
@@ -462,3 +479,27 @@ Zarządzanie osobami bez konta (tylko autor otwartego wydarzenia):
 Testy: `dotnet test AfterTabApi.sln` w backendzie; `npm test`, `npm run lint` i `npm run build`
 w frontendzie. Testy `VirtualParticipantTests` sprawdzają kwoty, łączenie, uprawnienia,
 blokadę zamkniętych wydarzeń i prywatną historię. Nie łączymy osób automatycznie po imieniu.
+
+### Jawne wyrównanie na uczestnika
+
+Migracja `ExplicitParticipantBalance` dodaje do `Expenses` opcjonalne
+`BalanceParticipantId` i kwotę `BalanceAmountMinor`. Dzięki temu wyrównanie można
+przenosić po zapisie bez zgadywania poprzednich udziałów. Istniejące kwoty i podziały
+nie są przeliczane przez migrację. Dla starych pozycji wyrównanych wcześniejszym
+mechanizmem nie znamy osoby ani kwoty korekty — dostają `null` i `0`, zachowując
+dotychczasowe finalne udziały oraz znacznik `Balanced`. Aby wybrać nowe wyrównanie
+w takiej pozycji, jej autor musi najpierw poprawić bazowy podział; nowe wyrównanie
+wskazuje następnie płacący albo autor wydarzenia.
+
+Tworzenie i edycja podziału przyjmują `balanceParticipantId` zamiast automatycznego
+wyboru. Pozostawione pole `balance=true` bez wybranej osoby jest odrzucane.
+`PUT /api/events/{eventId}/expenses/{expenseId}/balance` przyjmuje
+`{ "participantId": "...", "rowVersion": "..." }`; `participantId: null` wycofuje korektę.
+Osoba musi być już wybrana w podziale tej pozycji. Stare formularze są chronione
+przez `rowVersion`, a zamknięte wydarzenie nie pozwala zmienić wyrównania.
+Łączenie uczestnika bez konta przenosi także wskazanie odbiorcy wyrównania.
+
+Przed lokalnym uruchomieniem zastosuj brakującą migrację standardowym poleceniem
+`dotnet ef database update --project src/AfterTab.DAL.EF --startup-project src/AfterTab.API`.
+Ta zmiana wymaga zgodnych wersji API i frontendu oraz migracji bazy; nie wprowadza
+automatycznego deployu ani zmian w Azure.

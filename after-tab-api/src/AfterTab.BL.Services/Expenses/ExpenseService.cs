@@ -25,7 +25,7 @@ public sealed class ExpenseService(IExpenseRepository expenses, IUserRepository 
     }
     private static ExpenseDto Map(ExpenseReadModel x) => new(x.Expense.Id, x.Expense.Name, x.Expense.AmountMinor,
         x.AuthorName, x.AuthorUserId, x.Expense.SplitMethod.ToString(), x.Expense.Balanced, x.Expense.OthersAmountMinor,
-        x.Splits.Select(s => new ExpensePersonDto(s.ParticipantId, s.DisplayName, s.AmountMinor, s.PercentageBps)).ToList(), Convert.ToBase64String(x.Expense.RowVersion), x.PaidByParticipantId, x.PayerName);
+        x.Splits.Select(s => new ExpensePersonDto(s.ParticipantId, s.DisplayName, s.AmountMinor, s.PercentageBps)).ToList(), Convert.ToBase64String(x.Expense.RowVersion), x.PaidByParticipantId, x.PayerName, x.Expense.BalanceParticipantId, x.Expense.BalanceAmountMinor);
     public async Task<IReadOnlyList<ExpenseDto>> ListAsync(Guid eventId, CancellationToken ct)
     {
         await Access(eventId, false, ct);
@@ -38,7 +38,7 @@ public sealed class ExpenseService(IExpenseRepository expenses, IUserRepository 
         if (string.IsNullOrEmpty(name) || name.Length > 200 || name.Any(char.IsControl))
             throw new AppException(ErrorKind.Validation, "Nazwa pozycji musi mieć od 1 do 200 znaków.");
         var author = ev.Participants.Single(x => x.Participant.UserId == actor.UserId);
-        var calculated = ExpenseAllocation.Calculate(input, author.Participant.Id);
+        var calculated = ExpenseAllocation.Calculate(input);
         var participants = ev.Participants.ToDictionary(x => x.Participant.Id);
         var payerId = input.PaidByParticipantId ?? author.Participant.Id;
         if (payerId != author.Participant.Id && ev.Event.OwnerUserId != actor.UserId!.Value)
@@ -47,7 +47,7 @@ public sealed class ExpenseService(IExpenseRepository expenses, IUserRepository 
         if (calculated.Splits.Any(x => !participants.ContainsKey(x.ParticipantId)))
             throw new AppException(ErrorKind.Validation, "Podział może zawierać tylko aktywnych uczestników tego wydarzenia.");
         var expense = new Expense { EventId = eventId, AuthorUserId = actor.UserId!.Value, Name = name, AmountMinor = input.AmountMinor,
-            OthersAmountMinor = calculated.OthersAmountMinor, Balanced = input.Balance,
+            OthersAmountMinor = calculated.OthersAmountMinor, Balanced = calculated.BalanceAmountMinor > 0, BalanceParticipantId = calculated.BalanceParticipantId, BalanceAmountMinor = calculated.BalanceAmountMinor,
             PaidByParticipantId = participants[payerId].Participant.Id,
             SplitMethod = input.SplitMethod == "Percentage" ? SplitMethod.Percentage : SplitMethod.Amount,
             ExpenseDate = DateOnly.FromDateTime(clock.GetUtcNow().UtcDateTime) };
@@ -68,16 +68,47 @@ public sealed class ExpenseService(IExpenseRepository expenses, IUserRepository 
         try { version = Convert.FromBase64String(input.RowVersion ?? ""); }
         catch (FormatException) { throw new AppException(ErrorKind.Validation, "Nieprawidłowa wersja pozycji."); }
         if (version.Length == 0) throw new AppException(ErrorKind.Validation, "Odśwież wydarzenie przed zmianą podziału.");
-        var result = ExpenseAllocation.Calculate(new(existing.Expense.Name, existing.Expense.AmountMinor, input.SplitMethod, input.Shares, input.Balance), ev.Participants.Single(x => x.Participant.UserId == actor.UserId).Participant.Id);
+        if (!CanBalance(ev, existing.Expense) && (existing.Expense.BalanceAmountMinor > 0 || input.Balance || input.BalanceParticipantId.HasValue))
+            throw new AppException(ErrorKind.Forbidden, "Wyrównanie może zmienić tylko autor wydarzenia albo płacący.");
+        var result = ExpenseAllocation.Calculate(new(existing.Expense.Name, existing.Expense.AmountMinor, input.SplitMethod, input.Shares, input.Balance, BalanceParticipantId: input.BalanceParticipantId));
         var people = ev.Participants.ToDictionary(x => x.Participant.Id, x => x.Participant.Id);
         if (result.Splits.Any(x => !people.ContainsKey(x.ParticipantId)))
             throw new AppException(ErrorKind.Validation, "Podział może zawierać tylko aktywnych uczestników tego wydarzenia.");
         var replacement = new Expense { Id = expenseId, EventId = eventId, AuthorUserId = existing.AuthorUserId, PaidByParticipantId = existing.Expense.PaidByParticipantId,
             SplitMethod = input.SplitMethod == "Percentage" ? SplitMethod.Percentage : SplitMethod.Amount,
-            Balanced = input.Balance, OthersAmountMinor = result.OthersAmountMinor,
+            Balanced = result.BalanceAmountMinor > 0, BalanceParticipantId = result.BalanceParticipantId, BalanceAmountMinor = result.BalanceAmountMinor, OthersAmountMinor = result.OthersAmountMinor,
             Splits = result.Splits.Select(x => new ExpenseSplit { ExpenseId = expenseId, EventId = eventId,
                 ParticipantId = people[x.ParticipantId], AmountMinor = x.AmountMinor, PercentageBps = x.PercentageBps }).ToList() };
         await expenses.UpdateSplitAsync(replacement, actor.UserId!.Value, version, ct);
+        return Map((await expenses.ListAsync(eventId, ct)).Single(x => x.Expense.Id == expenseId));
+    }
+    private bool CanBalance(ExpenseEvent ev, Expense expense)
+        => ev.Event.OwnerUserId == actor.UserId || ev.Participants.Any(x => x.Participant.Id == expense.PaidByParticipantId && x.Participant.UserId == actor.UserId);
+    public async Task<ExpenseDto> UpdateBalanceAsync(Guid eventId, Guid expenseId, UpdateExpenseBalanceDto input, CancellationToken ct)
+    {
+        var ev = await Access(eventId, true, ct);
+        var existing = (await expenses.ListAsync(eventId, ct)).SingleOrDefault(x => x.Expense.Id == expenseId)
+            ?? throw new AppException(ErrorKind.NotFound, "Nie znaleziono pozycji.");
+        if (!CanBalance(ev, existing.Expense))
+            throw new AppException(ErrorKind.Forbidden, "Wyrównanie może zmienić tylko autor wydarzenia albo płacący.");
+        byte[] version;
+        try { version = Convert.FromBase64String(input.RowVersion ?? ""); }
+        catch (FormatException) { throw new AppException(ErrorKind.Validation, "Nieprawidłowa wersja pozycji."); }
+        if (version.Length == 0) throw new AppException(ErrorKind.Validation, "Odśwież wydarzenie przed wyrównaniem.");
+        // Undo only the previously recorded adjustment, never infer it from a percentage
+        // or from the largest share. This also preserves historical rounded amounts.
+        var basis = existing.Splits.Select(x => new ExpenseShareDto(x.ParticipantId,
+            checked(x.AmountMinor - (x.ParticipantId == existing.Expense.BalanceParticipantId ? existing.Expense.BalanceAmountMinor : 0)))).ToList();
+        var result = ExpenseAllocation.Calculate(new(existing.Expense.Name, existing.Expense.AmountMinor, "Amount", basis,
+            BalanceParticipantId: input.ParticipantId));
+        var replacement = new Expense { Id = expenseId, EventId = eventId, AuthorUserId = existing.AuthorUserId,
+            PaidByParticipantId = existing.Expense.PaidByParticipantId, SplitMethod = existing.Expense.SplitMethod,
+            Balanced = result.BalanceAmountMinor > 0, BalanceParticipantId = result.BalanceParticipantId,
+            BalanceAmountMinor = result.BalanceAmountMinor, OthersAmountMinor = result.OthersAmountMinor,
+            Splits = result.Splits.Select(x => new ExpenseSplit { ExpenseId = expenseId, EventId = eventId,
+                ParticipantId = x.ParticipantId, AmountMinor = x.AmountMinor,
+                PercentageBps = existing.Splits.Single(s => s.ParticipantId == x.ParticipantId).PercentageBps }).ToList() };
+        await expenses.UpdateSplitAsync(replacement, actor.UserId!.Value, version, ct, balanceOnly: true);
         return Map((await expenses.ListAsync(eventId, ct)).Single(x => x.Expense.Id == expenseId));
     }
     public async Task<ExpenseDto> UpdatePayerAsync(Guid eventId, Guid expenseId, UpdateExpensePayerDto input, CancellationToken ct)

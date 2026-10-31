@@ -12,3 +12,5 @@
 - Only the authenticated sender or recipient may change their own payment flag. An event owner cannot confirm on behalf of a virtual participant. Historical aliases must not expose flags to unrelated members.
 - Keep migrations data-preserving. Refuse rollback that would discard virtual participants or merged aliases. Test migrations against a separate local database before touching real data.
 - Do not deploy, commit or push unless explicitly requested. Do not include secrets or generated test/deployment artifacts in Git.
+
+- Expense balancing is explicit: only the event owner or current payer may assign the remainder to a selected split participant. Never fall back to the largest share or item author. Persist both `BalanceParticipantId` and `BalanceAmountMinor`, undo the previous adjustment before moving it, and preserve base amounts and percentage inputs. Keep this permission on the server as well as in the UI. Linking participants must also remap the balance target. Legacy balanced items have no inferred target or correction amount.

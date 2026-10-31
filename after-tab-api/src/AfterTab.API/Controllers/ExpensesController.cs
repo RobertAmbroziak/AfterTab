@@ -15,6 +15,9 @@ public sealed class ExpensesController(IExpenseService expenses) : ControllerBas
     [HttpPut("{expenseId:guid}/split")]
     public async Task<IActionResult> UpdateSplit(Guid eventId, Guid expenseId, UpdateExpenseSplitDto input, CancellationToken ct)
         => Ok(await expenses.UpdateSplitAsync(eventId, expenseId, input, ct));
+    [HttpPut("{expenseId:guid}/balance")]
+    public async Task<IActionResult> UpdateBalance(Guid eventId, Guid expenseId, UpdateExpenseBalanceDto input, CancellationToken ct)
+        => Ok(await expenses.UpdateBalanceAsync(eventId, expenseId, input, ct));
     [HttpPut("{expenseId:guid}/payer")]
     public async Task<IActionResult> UpdatePayer(Guid eventId, Guid expenseId, UpdateExpensePayerDto input, CancellationToken ct)
         => Ok(await expenses.UpdatePayerAsync(eventId, expenseId, input, ct));

@@ -6,7 +6,7 @@ namespace AfterTab.BL.Services.Expenses;
 public static class ExpenseAllocation
 {
     public const long MaximumAmountMinor = 100_000_000_000;
-    public static ExpenseCalculationDto Calculate(CreateExpenseDto input, Guid authorId)
+    public static ExpenseCalculationDto Calculate(CreateExpenseDto input)
     {
         if (input.AmountMinor <= 0 || input.AmountMinor > MaximumAmountMinor)
             throw Invalid("Podaj dodatnią kwotę do 1 000 000 000 zł.");
@@ -25,18 +25,19 @@ public static class ExpenseAllocation
             percentage && x.PercentageBps > 0 ? x.PercentageBps : null)).ToList();
         var remaining = input.AmountMinor - rows.Sum(x => x.AmountMinor);
         if (remaining < 0) throw Invalid("Suma podziału przekracza kwotę pozycji.");
-        if (input.Balance && remaining > 0)
+        if (input.Balance && input.BalanceParticipantId is null)
+            throw Invalid("Wybierz osobę, na którą chcesz wyrównać. Wyrównanie nie jest przydzielane automatycznie.");
+        if (input.BalanceParticipantId is Guid target && !rows.Any(x => x.ParticipantId == target))
+            throw Invalid("Wyrównanie można przypisać tylko osobie wybranej do podziału.");
+        var balanceAmount = input.BalanceParticipantId.HasValue ? remaining : 0;
+        if (balanceAmount > 0)
         {
-            var maximum = rows.Count == 0 ? 0 : rows.Max(x => x.AmountMinor);
-            var largest = rows.Where(x => x.AmountMinor == maximum).ToList();
-            // A tie always goes to the item author, even when not selected yet.
-            var target = largest.Count == 1 ? largest[0].ParticipantId : authorId;
-            var index = rows.FindIndex(x => x.ParticipantId == target);
-            if (index < 0) rows.Add(new(target, remaining, null));
-            else rows[index] = rows[index] with { AmountMinor = checked(rows[index].AmountMinor + remaining) };
+            var index = rows.FindIndex(x => x.ParticipantId == input.BalanceParticipantId);
+            rows[index] = rows[index] with { AmountMinor = checked(rows[index].AmountMinor + balanceAmount) };
             remaining = 0;
         }
-        return new(rows, remaining);
+        return new(rows, remaining, balanceAmount > 0 ? input.BalanceParticipantId : null, balanceAmount);
     }
+
     private static AppException Invalid(string message) => new(ErrorKind.Validation, message);
 }

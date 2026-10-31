@@ -202,3 +202,12 @@ details[open] > summary .chevron { transform: rotate(180deg); }
 .virtual-member-editor .app-form { margin-top: 12px; }
 .virtual-badge { color: #c5c9dd; background: #272b3b; border-color: #464963; }
 .person-chip small { display: block; font-size: 11px; color: var(--muted); }
+
+.share-row { display: flex; gap: 10px; align-items: end; }
+.share-row > label { flex: 1; min-width: 0; }
+.balance-button { display: inline-flex; justify-content: center; align-items: center; gap: 4px; flex-shrink: 0; min-height: 36px; padding: 6px 8px; border: 1px solid #52676d; border-radius: 9px; background: #1c2a2e; color: #bdd0d7; font-size: 11px; }
+.balance-button.is-selected { background: #204a3f; border-color: var(--mint); color: var(--mint); box-shadow: 0 0 0 1px var(--mint); }
+.balance-button:disabled { opacity: .38; cursor: not-allowed; box-shadow: none; }
+.balance-button:focus-visible { outline: 2px solid var(--mint); outline-offset: 3px; }
+.split-amount { display: inline-flex; align-items: center; gap: 8px; flex-shrink: 0; }
+@media (max-width: 480px) { .split-amount { flex-direction: column; align-items: flex-end; gap: 5px; } .share-input { grid-template-columns: minmax(0, 1fr) 78px; } .balance-button { min-height: 40px; } }

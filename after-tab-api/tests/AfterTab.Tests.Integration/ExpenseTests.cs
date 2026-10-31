@@ -110,7 +110,7 @@ public sealed class ExpenseTests
         var input = new CreateExpenseDto("Pizza", 6250, "Percentage", [new(s.Owner.Id, PercentageBps: 3300), new(s.Member.Id, PercentageBps: 3300)]);
         var partial = await s.Service.CreateAsync(s.Event.Id, input, default);
         Assert.AreEqual(2126L, partial.OthersAmountMinor);
-        var balanced = await s.Service.CreateAsync(s.Event.Id, input with { Balance = true }, default);
+        var balanced = await s.Service.CreateAsync(s.Event.Id, input with { BalanceParticipantId = s.Member.Id }, default);
         Assert.AreEqual(4188L, balanced.Splits.Single(x => x.ParticipantId == s.Member.Id).AmountMinor);
         Assert.AreEqual(0L, balanced.OthersAmountMinor);
         s.Db.EventParticipants.Add(new EventParticipant { Id = s.Stranger.Id, EventId = s.Event.Id, UserId = s.Stranger.Id }); await s.Db.SaveChangesAsync();
@@ -155,10 +155,10 @@ public sealed class ExpenseTests
         s.Actor.UserId = s.Owner.Id;
         var failed = await Assert.ThrowsExactlyAsync<AppException>(() => settlements.SetClosedAsync(s.Event.Id, true, default));
         Assert.AreEqual(ErrorKind.Conflict, failed.Kind); Assert.IsFalse((await settlements.GetAsync(s.Event.Id, default)).IsFinal);
-        await Assert.ThrowsExactlyAsync<AppException>(() => s.Service.UpdateSplitAsync(s.Event.Id, item.Id, new("Amount", [], true, item.RowVersion!), default));
+        await Assert.ThrowsExactlyAsync<AppException>(() => s.Service.UpdateSplitAsync(s.Event.Id, item.Id, new("Amount", [], false, item.RowVersion!), default));
         s.Actor.UserId = s.Member.Id;
-        await Assert.ThrowsExactlyAsync<AppException>(() => s.Service.UpdateSplitAsync(s.Event.Id, item.Id, new("Amount", [], true, "Ag=="), default));
-        var fixedItem = await s.Service.UpdateSplitAsync(s.Event.Id, item.Id, new("Amount", [new(s.Owner.Id, 2000), new(s.Member.Id, 2000)], true, item.RowVersion!), default);
+        await Assert.ThrowsExactlyAsync<AppException>(() => s.Service.UpdateSplitAsync(s.Event.Id, item.Id, new("Amount", [new(s.Member.Id, 0)], false, "Ag==", s.Member.Id), default));
+        var fixedItem = await s.Service.UpdateSplitAsync(s.Event.Id, item.Id, new("Amount", [new(s.Owner.Id, 2000), new(s.Member.Id, 2000)], false, item.RowVersion!, s.Member.Id), default);
         Assert.AreEqual(0L, fixedItem.OthersAmountMinor); Assert.AreEqual(4250L, fixedItem.Splits.Single(x => x.ParticipantId == s.Member.Id).AmountMinor);
         s.Actor.UserId = s.Owner.Id;
         Assert.IsTrue((await settlements.SetClosedAsync(s.Event.Id, true, default)).IsFinal);
@@ -192,7 +192,7 @@ public sealed class ExpenseTests
         item = await s.Service.UpdateSplitAsync(s.Event.Id, item.Id, new("Amount", [new(s.Owner.Id, 3000)], false, item.RowVersion!), default);
         s.Actor.UserId = s.Member.Id;
         await Assert.ThrowsExactlyAsync<AppException>(() => s.Service.UpdatePayerAsync(s.Event.Id, item.Id, new(s.Member.Id, item.RowVersion!), default));
-        await Assert.ThrowsExactlyAsync<AppException>(() => s.Service.UpdateSplitAsync(s.Event.Id, item.Id, new("Amount", [], true, item.RowVersion!), default));
+        await Assert.ThrowsExactlyAsync<AppException>(() => s.Service.UpdateSplitAsync(s.Event.Id, item.Id, new("Amount", [], false, item.RowVersion!), default));
         s.Actor.UserId = s.Owner.Id;
         await Assert.ThrowsExactlyAsync<AppException>(() => s.Service.UpdatePayerAsync(s.Event.Id, item.Id, new(s.Stranger.Id, item.RowVersion!), default));
         var changed = await s.Service.UpdatePayerAsync(s.Event.Id, item.Id, new(s.Owner.Id, item.RowVersion!), default);

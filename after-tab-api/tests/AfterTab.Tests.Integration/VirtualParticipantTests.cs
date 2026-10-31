@@ -73,7 +73,7 @@ public sealed class VirtualParticipantTests
         Assert.AreEqual(3, await s.Db.Users.CountAsync());
         Assert.AreEqual(0, await s.Db.Sessions.CountAsync());
         var pizza = await s.Expenses.CreateAsync(s.EventId, new("Pizza", 6250, "Percentage",
-            [new(owner.ParticipantId, PercentageBps: 3300), new(guest.ParticipantId, PercentageBps: 3300), new(another.ParticipantId, PercentageBps: 3300)], true), default);
+            [new(owner.ParticipantId, PercentageBps: 3300), new(guest.ParticipantId, PercentageBps: 3300), new(another.ParticipantId, PercentageBps: 3300)], BalanceParticipantId: owner.ParticipantId), default);
         Assert.AreEqual(0L, pizza.OthersAmountMinor); Assert.AreEqual(6250L, pizza.Splits.Sum(x => x.AmountMinor));
         var closed = await s.Settlements.SetClosedAsync(s.EventId, true, default);
         Assert.AreEqual(3, closed.Balances.Count); Assert.AreEqual(0L, closed.Balances.Sum(x => x.NetMinor));

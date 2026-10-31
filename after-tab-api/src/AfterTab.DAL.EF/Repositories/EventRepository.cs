@@ -89,6 +89,7 @@ public sealed class EventRepository(AppDbContext db) : IEventRepository
             foreach (var expense in affected)
             {
                 if (expense.PaidByParticipantId == targetParticipantId) expense.PaidByParticipantId = source.Id;
+                if (expense.BalanceParticipantId == targetParticipantId) expense.BalanceParticipantId = source.Id;
                 var old = expense.Splits.SingleOrDefault(x => x.ParticipantId == targetParticipantId);
                 if (old is not null)
                 {

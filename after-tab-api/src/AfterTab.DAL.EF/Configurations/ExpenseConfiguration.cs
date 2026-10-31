@@ -19,6 +19,9 @@ public sealed class ExpenseConfiguration : IEntityTypeConfiguration<Expense>
         b.HasOne<EventParticipant>().WithMany()
             .HasForeignKey(x => new { x.PaidByParticipantId, x.EventId })
             .HasPrincipalKey(x => new { x.Id, x.EventId }).OnDelete(DeleteBehavior.NoAction);
+        b.HasOne<EventParticipant>().WithMany().HasForeignKey(x => new { x.BalanceParticipantId, x.EventId })
+            .HasPrincipalKey(x => new { x.Id, x.EventId }).OnDelete(DeleteBehavior.NoAction);
+        b.ToTable("Expenses", t => t.HasCheckConstraint("CK_Expenses_Balance", "[BalanceAmountMinor] >= 0 AND [BalanceAmountMinor] <= [AmountMinor] AND (([BalanceParticipantId] IS NULL AND [BalanceAmountMinor] = 0) OR ([BalanceParticipantId] IS NOT NULL AND [BalanceAmountMinor] > 0 AND [Balanced] = 1 AND [OthersAmountMinor] = 0))"));
         b.ToTable("Expenses", t => t.HasCheckConstraint("CK_Expenses_Amount", "[AmountMinor] > 0"));
         b.ToTable("Expenses", t => t.HasCheckConstraint("CK_Expenses_Others", "[OthersAmountMinor] >= 0 AND [OthersAmountMinor] <= [AmountMinor]"));
     }

@@ -252,6 +252,12 @@ namespace AfterTab.DAL.EF.Migrations
                     b.Property<Guid>("AuthorUserId")
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<long>("BalanceAmountMinor")
+                        .HasColumnType("bigint");
+
+                    b.Property<Guid?>("BalanceParticipantId")
+                        .HasColumnType("uniqueidentifier");
+
                     b.Property<bool>("Balanced")
                         .HasColumnType("bit");
 
@@ -309,11 +315,15 @@ namespace AfterTab.DAL.EF.Migrations
 
                     b.HasIndex("ModifiedByUserId");
 
+                    b.HasIndex("BalanceParticipantId", "EventId");
+
                     b.HasIndex("PaidByParticipantId", "EventId");
 
                     b.ToTable("Expenses", null, t =>
                         {
                             t.HasCheckConstraint("CK_Expenses_Amount", "[AmountMinor] > 0");
+
+                            t.HasCheckConstraint("CK_Expenses_Balance", "[BalanceAmountMinor] >= 0 AND [BalanceAmountMinor] <= [AmountMinor] AND (([BalanceParticipantId] IS NULL AND [BalanceAmountMinor] = 0) OR ([BalanceParticipantId] IS NOT NULL AND [BalanceAmountMinor] > 0 AND [Balanced] = 1 AND [OthersAmountMinor] = 0))");
 
                             t.HasCheckConstraint("CK_Expenses_Others", "[OthersAmountMinor] >= 0 AND [OthersAmountMinor] <= [AmountMinor]");
                         });
@@ -879,6 +889,12 @@ namespace AfterTab.DAL.EF.Migrations
                     b.HasOne("AfterTab.DAL.Entities.Users.User", null)
                         .WithMany()
                         .HasForeignKey("ModifiedByUserId")
+                        .OnDelete(DeleteBehavior.NoAction);
+
+                    b.HasOne("AfterTab.DAL.Entities.Events.EventParticipant", null)
+                        .WithMany()
+                        .HasForeignKey("BalanceParticipantId", "EventId")
+                        .HasPrincipalKey("Id", "EventId")
                         .OnDelete(DeleteBehavior.NoAction);
 
                     b.HasOne("AfterTab.DAL.Entities.Events.EventParticipant", null)

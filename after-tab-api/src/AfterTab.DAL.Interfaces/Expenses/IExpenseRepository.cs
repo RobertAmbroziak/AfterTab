@@ -12,6 +12,6 @@ public interface IExpenseRepository
     Task<ExpenseEvent?> GetEventAsync(Guid eventId, CancellationToken ct);
     Task<IReadOnlyList<ExpenseReadModel>> ListAsync(Guid eventId, CancellationToken ct);
     Task CreateAsync(Expense expense, CancellationToken ct);
-    Task UpdateSplitAsync(Expense replacement, Guid userId, byte[] expectedVersion, CancellationToken ct);
+    Task UpdateSplitAsync(Expense replacement, Guid userId, byte[] expectedVersion, CancellationToken ct, bool balanceOnly = false);
     Task UpdatePayerAsync(Guid eventId, Guid expenseId, Guid userId, Guid payerId, byte[] expectedVersion, CancellationToken ct);
 }

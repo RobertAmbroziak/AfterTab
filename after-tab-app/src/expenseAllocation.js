@@ -9,7 +9,7 @@ export function parseHundredths(value) {
   const [whole, fraction = ''] = text.split('.')
   return Number(whole) * 100 + Number(fraction.padEnd(2, '0'))
 }
-export function calculateAllocation(amount, method, shares, authorId, balance) {
+export function calculateAllocation(amount, method, shares, balanceParticipantId = null) {
   const total = parseHundredths(amount)
   if (!Number.isSafeInteger(total) || total <= 0 || total > 100_000_000_000) return { error: 'Podaj dodatnią kwotę (najwyżej dwa miejsca po przecinku), do 1 000 000 000 zł.' }
   const rows = Object.entries(shares).map(([participantId, value]) => ({ participantId, value: parseHundredths(value || '0') }))
@@ -18,13 +18,13 @@ export function calculateAllocation(amount, method, shares, authorId, balance) {
   const splits = rows.map(row => ({ participantId: row.participantId, amountMinor: method === 'Percentage' ? Math.floor(total * row.value / 10000) : row.value }))
   let others = total - splits.reduce((sum, row) => sum + row.amountMinor, 0)
   if (others < 0) return { error: 'Suma podziału przekracza kwotę pozycji.' }
-  if (balance && others > 0) {
-    const maximum = Math.max(0, ...splits.map(row => row.amountMinor))
-    const largest = splits.filter(row => row.amountMinor === maximum)
-    const targetId = largest.length === 1 ? largest[0].participantId : authorId
-    const target = splits.find(row => row.participantId === targetId)
-    if (target) target.amountMinor += others; else splits.push({ participantId: targetId, amountMinor: others })
+  if (balanceParticipantId && !splits.some(row => row.participantId === balanceParticipantId)) return { error: 'Wybierz do wyrównania osobę z podziału.' }
+  const balanceAmount = balanceParticipantId ? others : 0
+  const remainingBeforeBalance = others
+  if (balanceAmount > 0) {
+    splits.find(row => row.participantId === balanceParticipantId).amountMinor += balanceAmount
     others = 0
   }
-  return { splits, others, total }
+  return { splits, others, total, remainingBeforeBalance, balanceAmount, balanceParticipantId: balanceAmount > 0 ? balanceParticipantId : null }
+
 }

@@ -8,19 +8,27 @@ export function PersonAvatar({ person }) {
   return <span className="person-avatar" aria-hidden="true" style={{ backgroundColor: colors[hash % colors.length] }}>{[...person.displayName][0]?.toLocaleUpperCase('pl') || '?'}</span>
 }
 
+function BalanceButton({ name, selected, disabled, onClick }) {
+  return <button type="button" className={`balance-button${selected ? ' is-selected' : ''}`} aria-label={`Wyrównaj na ${name}`} aria-pressed={selected} disabled={disabled} title={selected ? `Wyrównano na ${name}. Kliknij, aby wycofać wyrównanie.` : `Wyrównaj na ${name}`} onClick={onClick}>
+    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M4 8h15m-4-4 4 4-4 4M20 16H5m4-4-4 4 4 4" /></svg><span>Wyrównaj</span>
+  </button>
+}
+
 function CreateExpense({ eventId, participants, user, isOwner, onCreated, onCancel, item }) {
   const [name, setName] = useState(item?.name || '')
   const [amount, setAmount] = useState(item ? (item.amountMinor / 100).toFixed(2) : '')
   const [method, setMethod] = useState(item?.splitMethod || 'Percentage')
-  const [shares, setShares] = useState(item ? Object.fromEntries(item.splits.map(person => [person.participantId, String((item.splitMethod === 'Percentage' ? person.percentageBps || 0 : person.amountMinor) / 100)])) : equalPercentages(participants.map(person => person.participantId)))
+  const [shares, setShares] = useState(item ? Object.fromEntries(item.splits.map(person => [person.participantId, String((item.splitMethod === 'Percentage' ? person.percentageBps || 0 : person.amountMinor - (person.participantId === item.balanceParticipantId ? item.balanceAmountMinor || 0 : 0)) / 100)])) : equalPercentages(participants.map(person => person.participantId)))
   const [payerId, setPayerId] = useState(item?.paidByParticipantId || user.participantId)
-  const [balanced, setBalanced] = useState(item?.balanced || false)
+  const [balanceTarget, setBalanceTarget] = useState(item?.balanceParticipantId || null)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
   const lock = useRef(false)
   const people = new Map(participants.map(person => [person.participantId, person]))
-  const calculation = calculateAllocation(amount, method, shares, user.participantId, balanced)
-  function change(action) { action(); setBalanced(false); setError('') }
+  const canBalance = isOwner || payerId === user.participantId
+  const calculation = calculateAllocation(amount, method, shares, balanceTarget)
+  const selectedBalance = calculation.balanceParticipantId
+  function change(action) { action(); setBalanceTarget(null); setError('') }
   function toggle(id) {
     change(() => setShares(previous => {
       const next = { ...previous }
@@ -36,7 +44,7 @@ function CreateExpense({ eventId, participants, user, isOwner, onCreated, onCanc
       const result = await api(`events/${eventId}/expenses${item ? `/${item.id}/split` : ''}`, { method: item ? 'PUT' : 'POST', body: {
         rowVersion: item?.rowVersion,
         paidByParticipantId: payerId,
-        name: name.trim(), amountMinor: parseHundredths(amount), splitMethod: method, balance: balanced,
+        name: name.trim(), amountMinor: parseHundredths(amount), splitMethod: method, balanceParticipantId: selectedBalance,
         shares: Object.entries(shares).map(([participantId, value]) => ({ participantId,
           amountMinor: method === 'Amount' ? parseHundredths(value || '0') : 0,
           percentageBps: method === 'Percentage' ? parseHundredths(value || '0') : 0 })),
@@ -56,16 +64,16 @@ function CreateExpense({ eventId, participants, user, isOwner, onCreated, onCanc
       </div>
       <p>Wybierz osoby do podziału. Kolor i litera pomagają je rozpoznać.</p>
       <div className="person-picker" role="group" aria-label="Osoby do podziału">{participants.map(person => <button key={person.participantId} type="button" className="person-chip" aria-pressed={person.participantId in shares} onClick={() => toggle(person.participantId)}><PersonAvatar person={person} /><span>{person.displayName}{person.isVirtual && <small>Bez konta</small>}</span></button>)}</div>
-      {Object.entries(shares).map(([id, value]) => <label className="share-input" key={id}><span>{people.get(id)?.displayName || 'Uczestnik'} ({method === 'Amount' ? 'zł' : '%'})</span><input aria-label={`Udział ${people.get(id)?.displayName || 'uczestnika'}`} inputMode="decimal" value={value} placeholder="0" onChange={e => change(() => setShares(previous => ({ ...previous, [id]: e.target.value })))} /></label>)}
+      {Object.entries(shares).map(([id, value]) => <div className="share-row" key={id}><label className="share-input"><span>{people.get(id)?.displayName || 'Uczestnik'} ({method === 'Amount' ? 'zł' : '%'})</span><input aria-label={`Udział ${people.get(id)?.displayName || 'uczestnika'}`} inputMode="decimal" value={value} placeholder="0" onChange={e => change(() => setShares(previous => ({ ...previous, [id]: e.target.value })))} /></label><BalanceButton name={people.get(id)?.displayName || 'uczestnika'} selected={selectedBalance === id} disabled={busy || !canBalance || !!calculation.error || !(calculation.remainingBeforeBalance > 0)} onClick={() => setBalanceTarget(previous => previous === id ? null : id)} /></div>)}
       <div className="allocation-preview" aria-live="polite">
         <h4>Podgląd podziału</h4>
         {calculation.error ? <p>{calculation.error}</p> : <>
           <ul className="allocation-list">{calculation.splits.map(row => <li key={row.participantId}><span>{people.get(row.participantId)?.displayName || user.displayName}</span><strong>{money(row.amountMinor)}</strong></li>)}<li><span>Inni</span><strong>{money(calculation.others)}</strong></li><li className="allocation-total"><span>Razem</span><strong>{money(calculation.total)}</strong></li></ul>
-          {balanced && <p>Wyrównano: pozostała kwota została doliczona osobie z największym udziałem, a przy remisie autorowi pozycji. Podgląd pokazuje końcowe kwoty.</p>}
+          {selectedBalance && <p>Wyrównanie {money(calculation.balanceAmount)}: <strong>{people.get(selectedBalance)?.displayName}</strong>. Kliknij przy innej osobie, aby przenieść tę samą resztę, albo ponownie przy wybranej, aby ją wycofać.</p>}
         </>}
       </div>
       <p className="helper-text">Nierozdzielona kwota trafi do „Inni”. Osobę bez telefonu autor wydarzenia może dodać jako uczestnika bez konta. Dodanie osoby nie zmienia już zapisanych podziałów.</p>
-      <div className="form-actions"><button type="button" className="secondary-button" disabled={!!calculation.error || calculation.others === 0} onClick={() => setBalanced(true)}>Wyrównaj</button><button className="primary-button" disabled={!!calculation.error}>{busy ? 'Zapisywanie…' : 'Zatwierdź'}</button><button type="button" className="text-button" onClick={onCancel}>Anuluj</button></div>
+      <div className="form-actions"><button className="primary-button" disabled={!!calculation.error}>{busy ? 'Zapisywanie…' : 'Zatwierdź'}</button><button type="button" className="text-button" onClick={onCancel}>Anuluj</button></div>
     </fieldset>
     {error && <p className="auth-error" role="alert">{error}</p>}
   </form>
@@ -89,6 +97,17 @@ export function Expenses({ ref, eventId, participants, user, isOwner, refresh, a
   const [creating, setCreating] = useState(false)
   const [editing, setEditing] = useState(null)
   const [error, setError] = useState('')
+  const [balancing, setBalancing] = useState(null)
+  const balanceLock = useRef(false)
+  async function balance(item, participantId) {
+    if (balanceLock.current) return
+    balanceLock.current = true; setBalancing(item.id); setError('')
+    try {
+      const result = await api(`events/${eventId}/expenses/${item.id}/balance`, { method: 'PUT', body: { participantId: item.balanceParticipantId === participantId ? null : participantId, rowVersion: item.rowVersion } })
+      setItems(previous => previous.map(row => row.id === result.id ? result : row)); onChanged()
+    } catch (reason) { setError(reason.message); onChanged() }
+    finally { balanceLock.current = false; setBalancing(null) }
+  }
   useImperativeHandle(ref, () => ({ add() { setCreating(true); setEditing(null); onEditing(true) } }), [onEditing])
   useEffect(() => {
     let current = true
@@ -103,8 +122,11 @@ export function Expenses({ ref, eventId, participants, user, isOwner, refresh, a
     {!items && !error ? <p>Wczytywanie pozycji…</p> : items?.length === 0 ? <p>Nie ma jeszcze pozycji. Każdy uczestnik może dodać pierwszą.</p> : <ul className="expense-list">{items?.map(item => <li className="expense-card" key={item.id}>
       <details className="expense-breakdown"><summary><span className="expense-symbol" aria-hidden="true">▤</span><span><strong>{item.name}</strong><small>Zapłacił(a): {item.payerName || item.authorName}</small><small>{item.splitMethod === 'Percentage' ? 'Podział procentowy' : 'Podział kwotowy'}{item.balanced ? ' · Wyrównano' : ''}</small></span><strong>{money(item.amountMinor)}</strong><span aria-hidden="true" className="chevron">⌄</span></summary>
       <p className="helper-text">Dodał(a): {item.authorName}</p>
-      {active && item.authorUserId === user.id && !creating && !editing && <button className="text-button" onClick={() => { setEditing(item); onEditing(true) }}>Popraw podział</button>}
-      <ul className="allocation-list">{item.splits.map(person => <li key={person.participantId}><span className="split-person"><PersonAvatar person={person} /><span>{person.displayName}{person.percentageBps != null && <small>zadano {(person.percentageBps / 100).toLocaleString('pl-PL')}%</small>}</span></span><strong>{money(person.amountMinor)}</strong></li>)}<li><span>Inni</span><strong>{money(item.othersAmountMinor)}</strong></li><li className="allocation-total"><span>Razem</span><strong>{money(item.amountMinor)}</strong></li></ul>
+      {active && item.authorUserId === user.id && (!item.balanceParticipantId || isOwner || item.paidByParticipantId === user.participantId) && !creating && !editing && <button className="text-button" onClick={() => { setEditing(item); onEditing(true) }}>Popraw podział</button>}
+      <ul className="allocation-list">{item.splits.map(person => <li key={person.participantId}><span className="split-person"><PersonAvatar person={person} /><span>{person.displayName}{person.percentageBps != null && <small>zadano {(person.percentageBps / 100).toLocaleString('pl-PL')}%</small>}</span></span><span className="split-amount"><strong>{money(person.amountMinor)}</strong><BalanceButton name={person.displayName} selected={item.balanceParticipantId === person.participantId} disabled={!active || !!balancing || creating || !!editing || !(isOwner || item.paidByParticipantId === user.participantId) || !((item.othersAmountMinor || 0) + (item.balanceAmountMinor || 0) > 0)} onClick={() => balance(item, person.participantId)} /></span></li>)}<li><span>Inni</span><strong>{money(item.othersAmountMinor)}</strong></li><li className="allocation-total"><span>Razem</span><strong>{money(item.amountMinor)}</strong></li></ul>
+      {item.balanceParticipantId && <p className="helper-text">Wyrównanie {money(item.balanceAmountMinor)}: {item.splits.find(person => person.participantId === item.balanceParticipantId)?.displayName}. Podświetlony przycisk wskazuje wybraną osobę.</p>}
+      {item.balanced && !item.balanceParticipantId && <p className="helper-text">Pozycja została wyrównana w starszej wersji aplikacji. Zapisane kwoty pozostają bez zmian; aby wybrać osobę do nowego wyrównania, autor pozycji musi najpierw poprawić podział.</p>}
+      <p className="helper-text">Wyrównanie może zmienić autor wydarzenia lub płacący. Bez pozostałej kwoty przyciski są nieaktywne.</p>
       {active && isOwner && <PayerEditor key={item.rowVersion} eventId={eventId} item={item} participants={participants} onChanged={onChanged} />}
       </details>
     </li>)}</ul>}

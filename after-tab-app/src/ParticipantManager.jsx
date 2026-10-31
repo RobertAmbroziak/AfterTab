@@ -50,7 +50,7 @@ export default function ParticipantManager({ eventId, participants, active, edit
     {!active ? <p className="helper-text">Aby zmienić uczestników, najpierw otwórz wydarzenie ponownie.</p> : <>
       {editing && <p className="helper-text">Najpierw zatwierdź lub anuluj formularz pozycji.</p>}
       <form className="app-form" onSubmit={event => { event.preventDefault(); action('/virtual', 'POST', { displayName: name.trim() }) }}>
-        <label>Imię nowego uczestnika bez konta<input value={name} onChange={event => setName(event.target.value)} required maxLength={100} placeholder="Np. Grzegorz" disabled={busy || editing} /></label>
+        <label>Imię nowego uczestnika bez konta<input value={name} onChange={event => setName(event.target.value)} required maxLength={100} placeholder="Np. Adam" disabled={busy || editing} /></label>
         <button className="secondary-button" disabled={busy || editing}>{busy ? 'Zapisywanie…' : 'Dodaj uczestnika bez konta'}</button>
       </form>
       {virtual.map(person => <VirtualMember key={`${person.participantId}-${person.displayName}`} person={person} accounts={accounts} disabled={busy || editing} onAction={action} />)}
