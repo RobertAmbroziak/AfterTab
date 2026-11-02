@@ -1,5 +1,6 @@
+import { t } from './i18n.js'
 export const SESSION_CHECK_MS = 120000
-export const SESSION_TIMEOUT_MESSAGE = 'Serwer potrzebuje więcej czasu. Nie udało się sprawdzić sesji w ciągu 2 minut. Ponów połączenie — Twoje konto pozostaje zapamiętane.'
+export const SESSION_TIMEOUT_MESSAGE = t("Serwer potrzebuje więcej czasu. Nie udało się sprawdzić sesji w ciągu 2 minut. Ponów połączenie — Twoje konto pozostaje zapamiętane.")
 
 // Retry only explicitly selected reads and the restore preparation. Never retry
 // passwords, one-use exchanges or expense writes after an ambiguous response.

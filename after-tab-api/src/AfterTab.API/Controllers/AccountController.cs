@@ -101,22 +101,26 @@ public sealed class AccountController(AccountService accounts, AppDbContext db, 
         var origins = string.Join(" ", config.GetSection("Cors:AllowedOrigins").Get<string[]>() ?? []);
         Response.Headers["Content-Security-Policy"] = $"default-src 'none'; script-src 'nonce-{nonce}'; form-action 'self' {origins} https://accounts.google.com https://www.facebook.com; base-uri 'none'; frame-ancestors 'none'";
         return Content("""
-            <!doctype html><html lang="pl"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-            <title>AfterTab — logowanie</title><p>Łączenie z kontem…</p><noscript>Włącz JavaScript i wróć do AfterTab.</noscript>
+            <!doctype html><html lang="LANG_VALUE"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+            <title>AfterTab</title><p>STATUS_VALUE</p><noscript>NOSCRIPT_VALUE</noscript>
             <script nonce="NONCE_VALUE">
             const request = new URLSearchParams(location.search).get('request');
             const verifier = new URLSearchParams(location.hash.slice(1)).get('verifier');
             const action = new URLSearchParams(location.search).get('action');
             history.replaceState(null, '', location.pathname);
             const remembering = REMEMBER_VALUE;
-            if (!request || !verifier || (!remembering && !['login','Google','Facebook','restore','logout'].includes(action))) document.querySelector('p').textContent='Wróć do AfterTab i ponów logowanie.';
+            if (!request || !verifier || (!remembering && !['login','Google','Facebook','restore','logout'].includes(action))) document.querySelector('p').textContent='RETURN_VALUE';
             else {
               const f=document.createElement('form'); f.method='POST'; f.action='/api/auth/account/'+(remembering ? 'remember-authorize' : 'authorize');
               for(const [name,value] of Object.entries({request,verifier,...(remembering ? {} : {action})})) {const i=document.createElement('input');i.type='hidden';i.name=name;i.value=value;f.append(i);}
               document.body.append(f);f.submit();
             }
             </script></html>
-            """.Replace("NONCE_VALUE", nonce).Replace("REMEMBER_VALUE", remembering ? "true" : "false"), "text/html; charset=utf-8");
+            """.Replace("NONCE_VALUE", nonce).Replace("REMEMBER_VALUE", remembering ? "true" : "false")
+            .Replace("LANG_VALUE", Request.Query["lang"] == "en" ? "en" : "pl")
+            .Replace("STATUS_VALUE", Request.Query["lang"] == "en" ? "Connecting to your account…" : "Łączenie z kontem…")
+            .Replace("NOSCRIPT_VALUE", Request.Query["lang"] == "en" ? "Enable JavaScript and return to AfterTab." : "Włącz JavaScript i wróć do AfterTab.")
+            .Replace("RETURN_VALUE", Request.Query["lang"] == "en" ? "Return to AfterTab and sign in again." : "Wróć do AfterTab i ponów logowanie."), "text/html; charset=utf-8");
     }
     [HttpPost("authorize")]
     public async Task<IActionResult> AuthorizeBrowser([FromForm] string request, [FromForm] string verifier, [FromForm] string action, CancellationToken ct)

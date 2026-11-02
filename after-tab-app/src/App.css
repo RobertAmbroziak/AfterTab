@@ -6,6 +6,9 @@
 .header-events, .account-button { display: flex; align-items: center; gap: 10px; border: 0; color: #eef6f6; background: transparent; min-height: 44px; padding: 6px; }
 .header-events { border-left: 1px solid var(--line); padding-left: 24px; }
 .header-install { margin-left: auto; }
+.language-switch { display: inline-flex; flex-shrink: 0; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+.language-switch button { min-width: 40px; min-height: 44px; padding: 6px; border: 0; background: transparent; color: var(--muted); font-size: 13px; font-weight: 700; }
+.language-switch button[aria-pressed="true"] { background: var(--mint); color: #0d2721; }
 .header-install .install-button { display: inline-flex; align-items: center; justify-content: center; gap: 8px; border-color: #50776c; color: var(--mint); }
 .header-events svg { flex-shrink: 0; }
 .account-control { position: relative; }
@@ -33,6 +36,7 @@ p { line-height: 1.6; }
 .secondary-button, .auth-button { border: 1px solid #405358; background: #172226; color: #f0f6f7; }
 .text-button { border: 0; background: transparent; color: #a4d3ff; padding-left: 0; text-decoration: none; }
 .text-button:hover { text-decoration: underline; }
+.invite-card > .primary-button { margin-inline-end: 12px; }
 .danger, .auth-error { color: var(--danger); }
 button:disabled { opacity: .5; cursor: default; }
 button:focus-visible, a:focus-visible, summary:focus-visible { outline: 2px solid var(--mint); outline-offset: 4px; }
@@ -131,8 +135,8 @@ details[open] > summary .chevron { transform: rotate(180deg); }
 @media (max-width: 1050px) { .event-hero { padding-right: 22px; } .event-hero > .section-heading { margin-right: 0; } .event-hero .event-stats { position: static; width: auto; margin-top: 20px; } .event-columns { grid-template-columns: minmax(0, 1.3fr) minmax(300px, 1fr); } }
 @media (max-width: 760px) {
   .app-shell { padding: 0; margin: 0; }
-  .app-header { position: sticky; top: 0; z-index: 20; padding: max(12px, env(safe-area-inset-top)) 12px 12px; gap: 8px; border-radius: 0; border-left: 0; border-right: 0; }
-  .brand { gap: 8px; font-size: 22px; }
+  .app-header { position: sticky; top: 0; z-index: 20; padding: max(12px, env(safe-area-inset-top)) 12px 12px; gap: 8px; flex-wrap: wrap; border-radius: 0; border-left: 0; border-right: 0; }
+  .brand { gap: 8px; font-size: 18px; flex-shrink: 0; }
   .brand img { width: 34px; height: 34px; }
   .header-events { margin-left: auto; padding: 10px; width: 44px; justify-content: center; }
   .header-events span, .header-install .install-button span { display: none; }
@@ -211,3 +215,4 @@ details[open] > summary .chevron { transform: rotate(180deg); }
 .balance-button:focus-visible { outline: 2px solid var(--mint); outline-offset: 3px; }
 .split-amount { display: inline-flex; align-items: center; gap: 8px; flex-shrink: 0; }
 @media (max-width: 480px) { .split-amount { flex-direction: column; align-items: flex-end; gap: 5px; } .share-input { grid-template-columns: minmax(0, 1fr) 78px; } .balance-button { min-height: 40px; } }
+@media (max-width: 360px) { .app-header .brand span { display: none; } }

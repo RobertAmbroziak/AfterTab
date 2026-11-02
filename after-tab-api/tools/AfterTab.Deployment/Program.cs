@@ -2,12 +2,26 @@ using AfterTab.Common.Security;
 using AfterTab.DAL.EF;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 
 // Deliberately scoped to the AfterTab Azure database. Never uses BudgetWalletDb.
+var configuration = new ConfigurationBuilder().AddUserSecrets<DeploymentActor>().Build();
+var connectionString = Environment.GetEnvironmentVariable("AFTERTAB_SQL_CONNECTION_STRING")
+    ?? configuration["Deployment:SqlConnectionString"];
+if (string.IsNullOrWhiteSpace(connectionString))
+    throw new InvalidOperationException(
+        "Missing deployment connection string. Set AFTERTAB_SQL_CONNECTION_STRING or the Deployment:SqlConnectionString user secret.");
+var connectionSettings = new SqlConnectionStringBuilder(connectionString);
+if (connectionSettings.InitialCatalog != "AfterTabDb")
+    throw new InvalidOperationException("Deployment requires the AfterTabDb database.");
+if (!string.IsNullOrEmpty(connectionSettings.UserID) || !string.IsNullOrEmpty(connectionSettings.Password)
+    || connectionSettings.IntegratedSecurity || connectionSettings.Authentication != SqlAuthenticationMethod.NotSpecified)
+    throw new InvalidOperationException("Deployment requires access-token authentication without connection-string credentials.");
+connectionSettings.Encrypt = SqlConnectionEncryptOption.Mandatory;
+connectionSettings.TrustServerCertificate = false;
 var token = Environment.GetEnvironmentVariable("AFTERTAB_SQL_ACCESS_TOKEN")
     ?? throw new InvalidOperationException("Missing deployment SQL access token.");
-await using var connection = new SqlConnection(
-    "Server=tcp:ambrodevserver.database.windows.net,1433;Database=AfterTabDb;Encrypt=True;TrustServerCertificate=False;Connect Timeout=90;")
+await using var connection = new SqlConnection(connectionSettings.ConnectionString)
 {
     AccessToken = token
 };

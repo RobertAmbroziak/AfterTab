@@ -1,4 +1,5 @@
-export function money(minor) { return (minor / 100).toLocaleString('pl-PL', { style: 'currency', currency: 'PLN' }) }
+import { t, getLocale } from './i18n.js'
+export function money(minor) { return (minor / 100).toLocaleString(getLocale(), { style: 'currency', currency: 'PLN' }) }
 export function equalPercentages(ids) {
   if (!ids.length) return {}
   return Object.fromEntries(ids.map(id => [id, String(Math.floor(100 / ids.length))]))
@@ -11,14 +12,14 @@ export function parseHundredths(value) {
 }
 export function calculateAllocation(amount, method, shares, balanceParticipantId = null) {
   const total = parseHundredths(amount)
-  if (!Number.isSafeInteger(total) || total <= 0 || total > 100_000_000_000) return { error: 'Podaj dodatnią kwotę (najwyżej dwa miejsca po przecinku), do 1 000 000 000 zł.' }
+  if (!Number.isSafeInteger(total) || total <= 0 || total > 100_000_000_000) return { error: t("Podaj dodatnią kwotę (najwyżej dwa miejsca po przecinku), do 1 000 000 000 zł.") }
   const rows = Object.entries(shares).map(([participantId, value]) => ({ participantId, value: parseHundredths(value || '0') }))
-  if (rows.some(row => !Number.isSafeInteger(row.value) || row.value < 0 || row.value > (method === 'Percentage' ? 10000 : 100_000_000_000))) return { error: 'Podaj poprawne udziały z najwyżej dwoma miejscami po przecinku.' }
-  if (method === 'Percentage' && rows.reduce((sum, row) => sum + row.value, 0) > 10000) return { error: 'Suma procentów nie może przekraczać 100%.' }
+  if (rows.some(row => !Number.isSafeInteger(row.value) || row.value < 0 || row.value > (method === 'Percentage' ? 10000 : 100_000_000_000))) return { error: t("Podaj poprawne udziały z najwyżej dwoma miejscami po przecinku.") }
+  if (method === 'Percentage' && rows.reduce((sum, row) => sum + row.value, 0) > 10000) return { error: t("Suma procentów nie może przekraczać 100%.") }
   const splits = rows.map(row => ({ participantId: row.participantId, amountMinor: method === 'Percentage' ? Math.floor(total * row.value / 10000) : row.value }))
   let others = total - splits.reduce((sum, row) => sum + row.amountMinor, 0)
-  if (others < 0) return { error: 'Suma podziału przekracza kwotę pozycji.' }
-  if (balanceParticipantId && !splits.some(row => row.participantId === balanceParticipantId)) return { error: 'Wybierz do wyrównania osobę z podziału.' }
+  if (others < 0) return { error: t("Suma podziału przekracza kwotę pozycji.") }
+  if (balanceParticipantId && !splits.some(row => row.participantId === balanceParticipantId)) return { error: t("Wybierz do wyrównania osobę z podziału.") }
   const balanceAmount = balanceParticipantId ? others : 0
   const remainingBeforeBalance = others
   if (balanceAmount > 0) {

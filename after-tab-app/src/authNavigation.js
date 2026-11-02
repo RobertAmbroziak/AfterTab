@@ -1,11 +1,12 @@
+import { t } from './i18n.js'
 // A navigation can be blocked, or this document can return from the back/forward
 // cache with its pending promises and React state intact. Always settle on return.
 export function redirectForAuthentication(url) {
   return new Promise((_, reject) => {
     let away = document.visibilityState === 'hidden'
     let settled = false
-    const interrupted = 'Logowanie zostało przerwane. Możesz spróbować ponownie.'
-    const failed = 'Nie udało się przejść do strony logowania. Możesz ponowić próbę.'
+    const interrupted = t("Logowanie zostało przerwane. Możesz spróbować ponownie.")
+    const failed = t("Nie udało się przejść do strony logowania. Możesz ponowić próbę.")
 
     function cleanup() {
       window.clearTimeout(timer)

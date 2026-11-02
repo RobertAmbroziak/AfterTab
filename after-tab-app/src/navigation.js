@@ -1,3 +1,4 @@
+import { t } from './i18n.js'
 const pendingKey = 'aftertab.pendingInvite'
 const invitePattern = /^#\/join\/([a-f\d]{64})$/i
 
@@ -34,7 +35,7 @@ export function openInvitation(input) {
       if (['https:', 'http:'].includes(url.protocol)) token = url.hash.match(invitePattern)?.[1]
     } catch { /* A pasted value is never followed as a URL. */ }
   }
-  if (!token) throw new Error('Wklej pełny link zaproszenia albo jego 64-znakowy kod.')
+  if (!token) throw new Error(t("Wklej pełny link zaproszenia albo jego 64-znakowy kod."))
   sessionStorage.setItem(pendingKey, token.toUpperCase())
   location.hash = `#/join/${token.toUpperCase()}`
 }

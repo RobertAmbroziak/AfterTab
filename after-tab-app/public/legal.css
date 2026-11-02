@@ -9,6 +9,8 @@ header { border-bottom:1px solid #314145; }
 .brand { display:inline-flex; align-items:center; gap:12px; font-size:1.5rem; font-weight:750; color:#edf4f4; text-decoration:none; }
 .brand img { border-radius:10px; }
 nav { display:flex; flex-wrap:wrap; gap:8px 22px; margin-top:16px; font-size:.95rem; }
+.language-switch a { display:inline-flex; align-items:center; justify-content:center; min-width:44px; min-height:44px; border:1px solid #314145; border-radius:8px; text-decoration:none; }
+.language-switch a[aria-current="true"] { color:#0c2019; background:#95e7c9; font-weight:700; }
 article { padding-bottom:20px; }
 h1 { font-size:clamp(1.8rem,5vw,2.6rem); line-height:1.2; margin-bottom:10px; }
 h2 { font-size:1.25rem; line-height:1.4; margin:32px 0 12px; }

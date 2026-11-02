@@ -6,7 +6,7 @@ public interface IAccountMail
 {
     Task SendAsync(string email, string subject, string link, CancellationToken ct);
 }
-public sealed class AccountMail(IConfiguration config, IWebHostEnvironment environment) : IAccountMail
+public sealed class AccountMail(IConfiguration config, IWebHostEnvironment environment, IHttpContextAccessor context) : IAccountMail
 {
     public async Task SendAsync(string email, string subject, string link, CancellationToken ct)
     {
@@ -32,8 +32,17 @@ public sealed class AccountMail(IConfiguration config, IWebHostEnvironment envir
             client.EnableSsl = true;
             client.Credentials = new NetworkCredential(config["Mail:Username"], config["Mail:Password"]);
         }
-        using var message = new MailMessage(config["Mail:From"] ?? "aftertab@localhost.test", email, subject,
-            $"AfterTab\n\n{subject}\n\n{link}\n\nJeśli nie zlecałeś tej operacji, zignoruj tę wiadomość.");
+        var english = context.HttpContext?.Request.Headers.AcceptLanguage.ToString().StartsWith("en", StringComparison.OrdinalIgnoreCase) == true;
+        var localizedSubject = english ? subject switch
+        {
+            "Potwierdź adres e-mail" => "Confirm your email address",
+            "Ustaw nowe hasło" => "Set a new password",
+            _ => subject
+        } : subject;
+        var notice = english ? "If you did not request this action, ignore this email."
+            : "Jeśli nie zlecałeś tej operacji, zignoruj tę wiadomość.";
+        using var message = new MailMessage(config["Mail:From"] ?? "aftertab@localhost.test", email, localizedSubject,
+            $"AfterTab\n\n{localizedSubject}\n\n{link}\n\n{notice}");
         await client.SendMailAsync(message, ct);
     }
 }

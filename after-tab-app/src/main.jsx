@@ -1,3 +1,4 @@
+import { t } from './i18n.js'
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { registerSW } from 'virtual:pwa-register'
@@ -13,7 +14,7 @@ createRoot(document.getElementById('root')).render(
 const updateSW = registerSW({
   onNeedRefresh() {
     const confirmed = window.confirm(
-      'Dostępna jest nowa wersja AfterTab. Zaktualizować teraz?'
+      t("Dostępna jest nowa wersja AfterTab. Zaktualizować teraz?")
     )
 
     if (confirmed) {
@@ -21,6 +22,6 @@ const updateSW = registerSW({
     }
   },
   onOfflineReady() {
-    console.log('AfterTab jest gotowy do działania offline.')
+    console.log(t("AfterTab jest gotowy do działania offline."))
   },
 })

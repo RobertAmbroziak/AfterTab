@@ -29,7 +29,7 @@ export default defineConfig({
         id: '/',
         name: 'AfterTab',
         short_name: 'AfterTab',
-        description: 'Rozliczanie wspólnych wyjść',
+        description: 'Shared expenses / Rozliczanie wspólnych wyjść',
         lang: 'pl',
         start_url: '/',
         scope: '/',

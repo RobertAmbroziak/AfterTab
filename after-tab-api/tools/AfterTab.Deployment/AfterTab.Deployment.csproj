@@ -1,8 +1,10 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>Exe</OutputType>
+    <UserSecretsId>AfterTab.Deployment-8a86ec9e-126f-4949-ab53-8292271bb9dc</UserSecretsId>
   </PropertyGroup>
   <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.Configuration.UserSecrets" />
     <ProjectReference Include="../../src/AfterTab.DAL.EF/AfterTab.DAL.EF.csproj" />
   </ItemGroup>
 </Project>

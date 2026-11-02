@@ -39,13 +39,13 @@ public sealed class GuestBrowserController(IGuestBrowserService service, IConfig
         // The short-lived proof travels in a fragment (not request logs), then in a same-origin POST.
         // Never mint a remembered-device cookie based on a GET request handle alone.
         return Content("""
-            <!doctype html><html lang="pl"><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-            <title>AfterTab</title><p>Przywracanie gościa…</p><noscript>Włącz JavaScript i wróć do AfterTab.</noscript>
+            <!doctype html><html lang="LANG_VALUE"><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+            <title>AfterTab</title><p>STATUS_VALUE</p><noscript>NOSCRIPT_VALUE</noscript>
             <script nonce="NONCE_VALUE">
             const request = new URLSearchParams(location.search).get('request');
             const verifier = new URLSearchParams(location.hash.slice(1)).get('verifier');
             history.replaceState(null, '', location.pathname);
-            if (!request || !verifier) { document.querySelector('p').textContent = 'Wróć do AfterTab i spróbuj ponownie.'; }
+            if (!request || !verifier) { document.querySelector('p').textContent = 'RETURN_VALUE'; }
             else {
               const form = document.createElement('form'); form.method = 'POST'; form.action = '/api/auth/guest/authorize';
               for (const [name, value] of Object.entries({ request, verifier })) {
@@ -54,7 +54,11 @@ public sealed class GuestBrowserController(IGuestBrowserService service, IConfig
               document.body.append(form); form.submit();
             }
             </script></html>
-            """.Replace("NONCE_VALUE", nonce), "text/html; charset=utf-8");
+            """.Replace("NONCE_VALUE", nonce)
+            .Replace("LANG_VALUE", Request.Query["lang"] == "en" ? "en" : "pl")
+            .Replace("STATUS_VALUE", Request.Query["lang"] == "en" ? "Restoring guest…" : "Przywracanie gościa…")
+            .Replace("NOSCRIPT_VALUE", Request.Query["lang"] == "en" ? "Enable JavaScript and return to AfterTab." : "Włącz JavaScript i wróć do AfterTab.")
+            .Replace("RETURN_VALUE", Request.Query["lang"] == "en" ? "Return to AfterTab and try again." : "Wróć do AfterTab i spróbuj ponownie."), "text/html; charset=utf-8");
     }
 
     [HttpPost("authorize")]

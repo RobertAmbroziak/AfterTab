@@ -8,12 +8,13 @@
   <title>Polityka prywatności — AfterTab</title>
   <link rel="icon" type="image/png" href="/pwa-192x192.png">
   <link rel="stylesheet" href="/legal.css">
+  <script src="/legal.js" defer></script>
 </head>
 <body>
-  <a class="skip-link" href="#content">Przejdź do treści</a>
-  <header><a class="brand" href="/"><img src="/pwa-192x192.png" width="40" height="40" alt="">AfterTab</a><nav aria-label="Informacje o AfterTab"><a href="/">Aplikacja</a><a href="/privacy.html">Prywatność</a><a href="/data-deletion.html">Usuwanie danych</a><a href="/terms.html">Zasady korzystania</a></nav></header>
-  <main id="content"><article><h1>Polityka prywatności</h1>
-  <p class="updated">Wersja z 30 października 2026 r.</p>
+  <a class="skip-link" href="#content" data-pl="Przejdź do treści" data-en="Skip to content">Przejdź do treści</a>
+  <header><a class="brand" href="/"><img src="/pwa-192x192.png" width="40" height="40" alt="">AfterTab</a><nav aria-label="Informacje o AfterTab"><a href="/" data-pl="Aplikacja" data-en="App">Aplikacja</a><a href="/privacy.html" data-pl="Prywatność" data-en="Privacy">Prywatność</a><a href="/data-deletion.html" data-pl="Usuwanie danych" data-en="Data deletion">Usuwanie danych</a><a href="/terms.html" data-pl="Zasady korzystania" data-en="Terms of use">Zasady korzystania</a></nav><nav class="language-switch" aria-label="Language / Język"><a href="?lang=pl#content-pl" data-select-language="pl" lang="pl">PL</a><a href="?lang=en#content-en" data-select-language="en" lang="en">EN</a></nav></header>
+  <main id="content"><article lang="pl" data-language="pl" id="content-pl"><h1>Polityka prywatności</h1>
+  <p class="updated">Wersja z 2 listopada 2026 r.</p>
   
   <h2>1. Administrator i kontakt</h2>
   <p>Administratorem danych osobowych użytkowników AfterTab jest <strong>AmbroDev Robert Ambroziak</strong>.
@@ -73,12 +74,13 @@
   Trwałe ciasteczka konta i gościa mogą być ważne do roku. Sesja API jest ważna do 30 dni;
   krótkotrwałe cookies i operacje zabezpieczające logowanie mają krótsze terminy ważności.</p>
   <p>Aplikacja używa też localStorage do sesji i informacji o zapamiętaniu konta,
-  sessionStorage do trwającego logowania i zaproszenia oraz pamięci PWA do plików aplikacji.
+  localStorage do zapamiętania wyboru języka PL/EN, sessionStorage do trwającego logowania i zaproszenia oraz pamięci PWA do plików aplikacji.
   Na czas logowania Google lub Facebook zapisujemy również krótkotrwałe dane pomocnicze w localStorage,
   aby obsłużyć powrót do innego okna tej samej przeglądarki. Ich ważność wynosi do 5 minut;
   są usuwane po zakończeniu logowania, a wygasłe wpisy podczas kolejnej próby logowania.
   Wylogowanie, zapomnienie gościa i usunięcie danych przeglądarki mają różne skutki.
   <strong>Usunięcie pamięci przeglądarki nie usuwa konta ani danych na serwerze.</strong></p>
+  <p>Bez zapisanego wyboru języka aplikacja korzysta z głównego języka przeglądarki: polskiego dla ustawień polskich, angielskiego dla pozostałych, a przy braku informacji — polskiego.</p>
   <p>W aplikacji nie dodano reklam ani narzędzi analitycznych śledzących użytkownika.
   Po przejściu do usług Google i Facebook obowiązują również ich ustawienia prywatności.</p>
 
@@ -89,7 +91,7 @@
   <p>Po żądaniu usunięcia oceniamy zakres danych do usunięcia lub anonimizacji. Ewentualne pozostawienie
   części danych wymaga konkretnej podstawy, np. ochrony roszczeń lub obowiązku prawnego, i ograniczenia
   zakresu oraz czasu do niezbędnego minimum. O sposobie realizacji żądania informujemy użytkownika.
-  Szczegóły zgłoszenia znajdziesz na stronie <a href="/data-deletion.html">usuwania danych</a>.</p>
+  Szczegóły zgłoszenia znajdziesz na stronie <a href="/data-deletion.html?lang=pl">usuwania danych</a>.</p>
 
   <h2>7. Twoje prawa</h2>
   <p>Na zasadach określonych w RODO możesz żądać dostępu do danych, ich sprostowania, usunięcia,
@@ -104,7 +106,45 @@
   nie przekazuj hasła ani tokenu sesji administratorowi czy innym użytkownikom.
   Podejrzenie nieuprawnionego dostępu zgłoś na <a href="mailto:amb77ro@gmail.com">amb77ro@gmail.com</a>.</p>
 
-  </article></main>
-  <footer><p>AfterTab · AmbroDev Robert Ambroziak · <a href="mailto:amb77ro@gmail.com">amb77ro@gmail.com</a></p><nav aria-label="Informacje o AfterTab"><a href="/">Aplikacja</a><a href="/privacy.html">Prywatność</a><a href="/data-deletion.html">Usuwanie danych</a><a href="/terms.html">Zasady korzystania</a></nav></footer>
+  </article>
+<article lang="en" data-language="en" id="content-en"><h1>Privacy policy</h1>
+<p class="updated">Version: 2 November 2026</p>
+<h2>1. Controller and contact</h2>
+<p>The controller of AfterTab users’ personal data is <strong>AmbroDev Robert Ambroziak</strong>. For privacy, account access and data deletion enquiries, email <a href="mailto:amb77ro@gmail.com">amb77ro@gmail.com</a>.</p>
+<p>AfterTab records shared expenses and calculates settlements between event participants.</p>
+<h2>2. Data we process</h2>
+<ul>
+<li><strong>Account:</strong> user identifier, name you provide, sign-in method and, for email registration, your email address, its verification status and a secured password hash.</li>
+<li><strong>Google and Facebook:</strong> your provider account identifier, shared name and email address, if supplied by the provider. We do not receive your Google or Facebook password. Sign-in does not require your friends list, posts or access to your inbox.</li>
+<li><strong>Events and expenses:</strong> names, descriptions, participants, payers, amounts, splits, balances and marks indicating sent or received payments. Other participants may also enter this data.</li>
+<li><strong>Security:</strong> sessions, remembered guest identifiers, one-time account operations, their expiry dates, failed sign-in counters and timestamps of data operations.</li>
+<li><strong>Technical support and contact:</strong> information transmitted to servers when connecting (such as your IP address and browser information), any technical logs and correspondence with the controller.</li>
+</ul>
+<p>Do not enter sensitive information, passwords, card numbers or other data unnecessary for settling expenses in names or descriptions.</p>
+<p><strong>Participants without accounts:</strong> the event owner can record the name of someone who does not use the app and include them in expenses and settlements. This does not create an account or give access to the app. Their name and allocated costs are visible to event participants. If they later join, the owner can merge their entry without an account with the joined participant. We retain operation history and previous payment marks. Contact the controller about data relating to someone without an account.</p>
+<h2>3. Purposes and legal bases</h2>
+<p>We process data needed for accounts, events, settlements and account messages to provide the service at the user’s request (Article 6(1)(b) GDPR). We process data for security, abuse prevention, handling enquiries and protecting legal claims based on the controller’s legitimate interests (Article 6(1)(f) GDPR). Where a specific legal obligation to retain data arises, the basis is Article 6(1)(c) GDPR.</p>
+<p>Providing data is voluntary, but without a name and the details required by your chosen sign-in method, the corresponding functions cannot be used. Google and Facebook sign-in are optional; email accounts and guest access are also available.</p>
+<h2>4. Who can see the data</h2>
+<p>Participants see their event’s contents, participant names and settlement. Private “Sent” and “Received” marks are visible only to the parties to that transfer. Anyone with an active invitation link can preview the invitation and join the event. Share the link only with people you intend to invite.</p>
+<p>We use Microsoft Azure to host the app and database, and Gmail to send account confirmation and password reset emails. An email contains the recipient’s address and a one-time link. When you sign in through Google or Facebook, the selected provider also processes data under its own service terms. An authorised administrator may access data to operate and secure the app.</p>
+<p>Provider services may involve processing outside the European Economic Area. Information about their transfer mechanisms and data protection is available from <a href="https://privacy.microsoft.com/en-gb/privacystatement">Microsoft</a>, <a href="https://policies.google.com/privacy?hl=en">Google</a> and <a href="https://www.facebook.com/privacy/policy/">Meta</a>. Contact the controller for information about transfers relating to AfterTab.</p>
+<h2>5. Cookies and browser storage</h2>
+<p>We use cookies to remember accounts or guests and secure sign-in. Persistent account and guest cookies may remain valid for up to a year. An API session is valid for up to 30 days; short-lived cookies and sign-in security operations expire sooner.</p>
+<p>The app also uses localStorage for sessions, remembered-account indicators and your PL/EN language preference; sessionStorage for ongoing sign-in and invitations; and PWA storage for application files. Without a saved language preference, the app uses the browser’s primary language: Polish for Polish settings, English for other languages, with Polish as the fallback when no language is available.</p>
+<p>During Google or Facebook sign-in, we also save short-lived helper data in localStorage to handle a return in another window of the same browser. This data is valid for up to 5 minutes. It is removed after sign-in; expired entries are removed during the next sign-in attempt. Signing out, forgetting a guest and clearing browser data have different effects. <strong>Clearing browser storage does not delete your account or data on the server.</strong></p>
+<p>The app contains no added advertising or user-tracking analytics. After you navigate to Google or Facebook services, their privacy settings also apply.</p>
+<h2>6. Retention</h2>
+<p>We retain accounts and event contents for as long as needed to use the service and settle shared expenses. Closing an event, signing out or session expiry does not delete saved data. Token expiry prevents its use but does not automatically delete the technical record.</p>
+<p>After a deletion request, we assess which data to delete or anonymise. Retaining some data requires a specific basis, such as protecting legal claims or complying with a legal obligation, with scope and duration limited to what is necessary. We inform the user how the request is handled. See <a href="/data-deletion.html?lang=en">data deletion</a> for instructions.</p>
+<h2>7. Your rights</h2>
+<p>Subject to GDPR rules, you may request access, rectification, erasure, restriction and portability, and object to processing based on legitimate interests. Contact <a href="mailto:amb77ro@gmail.com">amb77ro@gmail.com</a>. You may also complain to the <a href="https://uodo.gov.pl/">President of the Polish Personal Data Protection Office</a>.</p>
+<p>AfterTab does not make decisions with legal effects based solely on automated processing. Settlement calculations are an arithmetic aid based on participants’ entries.</p>
+<h2>8. Changes and account security</h2>
+<p>The current version is available at this address. Protect your device and one-time links; do not share passwords or session tokens with the administrator or other users. Report suspected unauthorised access to <a href="mailto:amb77ro@gmail.com">amb77ro@gmail.com</a>.</p>
+</article>
+
+</main>
+  <footer><p>AfterTab · AmbroDev Robert Ambroziak · <a href="mailto:amb77ro@gmail.com">amb77ro@gmail.com</a></p><nav aria-label="Informacje o AfterTab"><a href="/" data-pl="Aplikacja" data-en="App">Aplikacja</a><a href="/privacy.html" data-pl="Prywatność" data-en="Privacy">Prywatność</a><a href="/data-deletion.html" data-pl="Usuwanie danych" data-en="Data deletion">Usuwanie danych</a><a href="/terms.html" data-pl="Zasady korzystania" data-en="Terms of use">Zasady korzystania</a></nav></footer>
 </body>
 </html>

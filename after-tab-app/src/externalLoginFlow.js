@@ -1,3 +1,4 @@
+import { t } from './i18n.js'
 const prefix = 'aftertab.externalFlow.'
 const sessionKey = 'aftertab.accountFlow'
 const lifetime = 5 * 60 * 1000
@@ -10,7 +11,7 @@ function parse(value) {
 // Android can return from the Facebook app into another Chrome/PWA window.
 // Only a previously initiated, exact-state flow may cross that window boundary.
 export function rememberExternalFlow(flow) {
-  if (!isSecret(flow.state) || !isSecret(flow.verifier)) throw new Error('Nieprawidłowa próba logowania.')
+  if (!isSecret(flow.state) || !isSecret(flow.verifier)) throw new Error(t("Nieprawidłowa próba logowania."))
   for (let i = localStorage.length - 1; i >= 0; i--) {
     const key = localStorage.key(i)
     if (!key?.startsWith(prefix)) continue

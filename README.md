@@ -1,9 +1,29 @@
 # AfterTab
 
+**Polski** | **[English](README.en.md)**
+
 AfterTab to aplikacja PWA do dzielenia wspólnych wydatków. Pozwala tworzyć wydarzenia,
 zapraszać uczestników, przypisywać koszty i wyliczać, kto komu powinien oddać pieniądze.
 
 **[Otwórz aplikację](https://orange-stone-063c89710.4.azurestaticapps.net)**
+
+## Język aplikacji
+
+AfterTab obsługuje polski i angielski. Przełącznik **PL / EN** znajduje się w nagłówku.
+Przy pierwszej wizycie główny język przeglądarki wybiera PL dla polskiego, a EN dla
+pozostałych języków; przy braku informacji używany jest PL. Ręczny wybór jest
+zapamiętywany na tym urządzeniu i ma pierwszeństwo przy kolejnych wizytach.
+Zmiana języka nie wylogowuje, nie usuwa zaproszenia i nie czyści formularzy.
+Kwoty pozostają w PLN; format liczb i dat dopasowuje się do języka.
+
+Strony prywatności, usuwania danych i zasad korzystania mają obie wersje pod
+dotychczasowymi adresami. Parametr `?lang=pl` lub `?lang=en` wskazuje wersję.
+Bez JavaScript obie wersje pozostają dostępne. Nie zmieniamy callbacków OAuth ani
+adresów stron zapisanych w panelach Google i Meta.
+
+Konfigurację narzędzia migracyjnego poza kodem opisuje
+[instrukcja wdrożeniowa](after-tab-api/tools/AfterTab.Deployment/README.md).
+Nie zapisuj connection stringa narzędzia ani tokenów w repozytorium.
 
 ## Uruchomienie lokalne
 

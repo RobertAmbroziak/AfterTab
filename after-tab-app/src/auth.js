@@ -1,3 +1,4 @@
+import { t, getLanguage } from './i18n.js'
 import { captureInvitation } from './navigation'
 import { redirectForAuthentication } from './authNavigation'
 import { fetchSessionResponse, SESSION_CHECK_MS } from './sessionCheck'
@@ -35,12 +36,12 @@ async function request(path, options = {}, check) {
       ...options,
       signal: AbortSignal.timeout(25000),
       cache: 'no-store',
-      headers: { ...options.headers, ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+      headers: { 'Accept-Language': getLanguage(), ...options.headers, ...(token ? { Authorization: `Bearer ${token}` } : {}) },
     })
   } catch (error) {
     if (check) throw error
-    if (error.name === 'TimeoutError' || error.name === 'AbortError') throw new Error('Serwer potrzebuje więcej czasu na uruchomienie. Ponów próbę — Twoje konto pozostaje zapamiętane.', { cause: error })
-    throw new Error('Nie można połączyć się z serwerem. Sprawdź połączenie i spróbuj ponownie.', { cause: error })
+    if (error.name === 'TimeoutError' || error.name === 'AbortError') throw new Error(t("Serwer potrzebuje więcej czasu na uruchomienie. Ponów próbę — Twoje konto pozostaje zapamiętane."), { cause: error })
+    throw new Error(t("Nie można połączyć się z serwerem. Sprawdź połączenie i spróbuj ponownie."), { cause: error })
   }
   if (response.status === 401) {
     clearToken()
@@ -49,8 +50,8 @@ async function request(path, options = {}, check) {
   if (!response.ok) {
     const problem = await response.json().catch(() => null)
     throw new Error(response.status === 429
-      ? 'Zbyt wiele prób. Poczekaj minutę i spróbuj ponownie.'
-      : problem?.title || 'Nie udało się obsłużyć sesji. Spróbuj ponownie.')
+      ? t("Zbyt wiele prób. Poczekaj minutę i spróbuj ponownie.")
+      : (problem?.title && !problem.title.startsWith('One or more validation errors') ? problem.title : null) || t("Nie udało się obsłużyć sesji. Spróbuj ponownie."))
   }
   return response.status === 204 ? null : response.json()
 }
@@ -60,7 +61,7 @@ function randomSecret() {
 }
 
 async function beginFlow(action, displayName) {
-  if (navigating) throw new Error('Trwa już próba logowania. Poczekaj na jej zakończenie.')
+  if (navigating) throw new Error(t("Trwa już próba logowania. Poczekaj na jej zakończenie."))
   navigating = true
   try {
     captureInvitation()
@@ -94,14 +95,14 @@ async function loadSession(check) {
   if (location.hash.startsWith('#account-error=')) {
     sessionStorage.removeItem(accountFlowKey)
     history.replaceState(null, '', location.pathname + location.search)
-    throw new Error('Logowanie u dostawcy zostało anulowane lub nie powiodło się. Możesz spróbować ponownie.')
+    throw new Error(t("Logowanie u dostawcy zostało anulowane lub nie powiodło się. Możesz spróbować ponownie."))
   }
   if (location.hash.startsWith('#account-ready=')) {
     const state = new URLSearchParams(location.hash.slice(1)).get('account-ready')
     const pending = accountPending(state)
     sessionStorage.removeItem(accountFlowKey)
     history.replaceState(null, '', location.pathname + location.search)
-    if (!pending || pending.state !== state) throw new Error('Nieprawidłowe potwierdzenie przeglądarki. Zaloguj się ponownie.')
+    if (!pending || pending.state !== state) throw new Error(t("Nieprawidłowe potwierdzenie przeglądarki. Zaloguj się ponownie."))
     forgetExternalFlow(state)
     return getToken() ? request('me', {}, { ...check, retry: true }) : null
   }
@@ -109,7 +110,7 @@ async function loadSession(check) {
     const callback = new URLSearchParams(location.hash.slice(1))
     const pending = accountPending(callback.get('state'))
     history.replaceState(null, '', location.pathname + location.search)
-    if (!pending || pending.state !== callback.get('state')) throw new Error('Logowanie wygasło lub pochodzi z innej karty. Spróbuj ponownie.')
+    if (!pending || pending.state !== callback.get('state')) throw new Error(t("Logowanie wygasło lub pochodzi z innej karty. Spróbuj ponownie."))
     const result = await request('account/exchange', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ code: callback.get('account-code'), verifier: pending.verifier }),
@@ -131,7 +132,7 @@ async function loadSession(check) {
     sessionStorage.removeItem(flowKey)
     history.replaceState(null, '', location.pathname + location.search)
     if (!pending || pending.state !== callback.get('state')) {
-      throw new Error('Próba logowania wygasła lub pochodzi z innej karty. Zaloguj się ponownie.')
+      throw new Error(t("Próba logowania wygasła lub pochodzi z innej karty. Zaloguj się ponownie."))
     }
     const result = await request('guest/exchange', {
       method: 'POST',
@@ -174,7 +175,7 @@ export function forgetGuest() {
 }
 
 async function beginAccountFlow(action, fields = {}, check) {
-  if (navigating) throw new Error('Trwa już próba logowania. Poczekaj na jej zakończenie.')
+  if (navigating) throw new Error(t("Trwa już próba logowania. Poczekaj na jej zakończenie."))
   navigating = true
   try {
     captureInvitation()
@@ -203,7 +204,9 @@ export function hasEmailAction() { return /^#account-(confirm|reset)=/.test(loca
 
 async function navigateForAuthentication(url, storageKey) {
   navigating = true
-  try { return await redirectForAuthentication(url) }
+  const destination = new URL(url)
+  destination.searchParams.set('lang', getLanguage())
+  try { return await redirectForAuthentication(destination.href) }
   finally {
     navigating = false
     // Clear only the interrupted attempt. Keep the account, session and invitation.
