@@ -23,6 +23,9 @@ export default defineConfig({
     VitePWA({
       registerType: 'prompt',
       workbox: {
+        // Routes use URL hashes; only the app shell may fall back to index.html.
+        // Downloads and other public files must retain their actual responses.
+        navigateFallbackAllowlist: [/^\/(?:index\.html)?(?:\?|$)/],
         additionalManifestEntries: ['pwa-192x192.png', 'pwa-512x512.png'].map(name => ({ url: iconUrl(name), revision: null })),
       },
       manifest: {
