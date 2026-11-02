@@ -1,5 +1,11 @@
 # AfterTab
 
+<div align="center">
+
+https://github.com/user-attachments/assets/25916c2a-3627-4527-a872-bbfaf4d66934
+
+</div>
+
 **[Polski](README.md)** | **English**
 
 AfterTab is a PWA for sharing expenses. Create events, invite friends, record who

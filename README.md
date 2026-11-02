@@ -1,5 +1,11 @@
 # AfterTab
 
+<div align="center">
+
+https://github.com/user-attachments/assets/25916c2a-3627-4527-a872-bbfaf4d66934
+
+</div>
+
 **Polski** | **[English](README.en.md)**
 
 AfterTab to aplikacja PWA do dzielenia wspólnych wydatków. Pozwala tworzyć wydarzenia,
