@@ -1,0 +1,12 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "pl.aftertab.app",
+      "sha256_cert_fingerprints": [
+        "E8:04:29:23:83:13:33:80:EF:EF:55:DF:10:D8:A5:A5:F2:EC:F9:AE:FE:8C:05:5E:2D:DB:4E:61:D5:C1:A4:4D"
+      ]
+    }
+  }
+]

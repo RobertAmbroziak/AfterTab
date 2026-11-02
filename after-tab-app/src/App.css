@@ -185,7 +185,9 @@ details[open] > summary .chevron { transform: rotate(180deg); }
 .account-form-panel { margin:16px 0; }
 .account-form-panel > .form-actions { margin:16px 0; }
 
-.app-footer { display:flex; flex-wrap:wrap; justify-content:center; gap:12px 24px; padding:24px 20px 96px; font-size:.85rem; }
+.app-footer { display:flex; flex-wrap:wrap; justify-content:center; align-items:center; gap:12px 24px; padding:24px 20px 96px; font-size:.85rem; }
+.app-footer .footer-icon-link { display:inline-flex; align-items:center; justify-content:center; gap:7px; min-height:44px; }
+.footer-icon-link svg { flex-shrink:0; }
 .app-footer a { color:#b4c4c8; text-underline-offset:3px; }
 .app-footer a:hover { color:#95e7c9; }
 

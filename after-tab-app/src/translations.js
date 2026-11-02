@@ -2,6 +2,9 @@ import { backendEnglish } from './backendMessages.js'
 // Polish source messages are stable keys. Never pass user-created content to t().
 export const english = {
   ...backendEnglish,
+  'Kod źródłowy na GitHub (otwiera nową kartę)': 'Source code on GitHub (opens a new tab)',
+  'Pobierz aplikację Android (APK)': 'Download the Android app (APK)',
+  'Pobierz APK': 'Download APK',
   'Anuluj': 'Cancel', 'Autor': 'Owner', 'Autor:': 'Owner:', 'Bez konta': 'No account',
   'Do oddania': 'You owe', 'Do otrzymania': 'You are owed', 'Dodaj': 'Add',
   'Dodaj pozycję': 'Add expense', '＋ Dodaj pozycję': '＋ Add expense', 'Dodał(a):': 'Added by:',

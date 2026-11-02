@@ -27,6 +27,19 @@ Nie zapisuj connection stringa narzędzia ani tokenów w repozytorium.
 
 ## Uruchomienie lokalne
 
+Linki stopki można ustawić przez `VITE_GITHUB_URL` i `VITE_ANDROID_APK_URL`.
+Puste wartości ukrywają odpowiedni link, dzięki czemu inne wdrożenia nie muszą
+wskazywać repozytorium ani plików autora. Ustawienia produkcyjne przechowuj poza
+Git, np. w `after-tab-app/.env.production.local`.
+
+APK można udostępnić w tym samym Azure Static Web App. Dla adresu
+`/downloads/App-1.0.0.apk` ustaw `AFTERTAB_ANDROID_APK_PATH` na lokalny plik APK
+(ścieżka względna względem `after-tab-app` albo bezwzględna). `npm run build`
+kopiuje tylko APK do `dist/downloads`, generuje sumę SHA-256 i sprawdza obecność
+pliku. Pliki binarne nie trafiają do Git ani do cache offline PWA. Używaj nowego
+adresu pliku dla każdej wersji: katalog pobierania ma nagłówki trwałego cache.
+Pełny ZIP z PWABuilder i klucze podpisywania pozostają prywatne.
+
 ### Wymagania
 
 - Windows i SQL Server Express LocalDB, np. z instalacji Visual Studio 2022.

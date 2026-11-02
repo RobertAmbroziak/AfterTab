@@ -24,6 +24,19 @@ remain the same. Account emails use the language selected when requesting them.
 
 ## Run locally
 
+Optional footer links use `VITE_GITHUB_URL` and `VITE_ANDROID_APK_URL`. Blank values
+hide the corresponding link, so another deployment does not have to point to the
+original author's repository or downloads. Keep production values outside Git,
+for example in `after-tab-app/.env.production.local`.
+
+The APK can be hosted in the same Azure Static Web App. For a URL such as
+`/downloads/App-1.0.0.apk`, set `AFTERTAB_ANDROID_APK_PATH` to the local APK file
+(absolute or relative to `after-tab-app`). `npm run build` copies only the APK to
+`dist/downloads`, generates a SHA-256 checksum, and verifies the file is present.
+The binary stays outside Git and the PWA offline cache. Use a new filename for
+each version because downloads have immutable cache headers. Keep the complete
+PWABuilder ZIP and signing credentials private.
+
 Requirements:
 
 - Windows and SQL Server Express LocalDB, for example from Visual Studio 2022.

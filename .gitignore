@@ -28,6 +28,14 @@
 *.p12
 *.pem
 *.key
+*.keystore
+*.jks
+**/signing-key-info.txt
+*.apk
+*.aab
+*.idsig
+**/.gradle/
+**/local.properties
 **/.azure/
 **/.aws/
 **/.codex/
