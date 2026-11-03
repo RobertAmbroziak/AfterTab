@@ -1,4 +1,5 @@
 using AfterTab.API.Security;
+using AfterTab.API.Hosting;
 using AfterTab.BL.Services;
 using AfterTab.Common.Security;
 using AfterTab.DAL.EF;
@@ -13,6 +14,7 @@ Log.Logger = new LoggerConfiguration()
 try
 {
     var builder = WebApplication.CreateBuilder(args);
+    builder.Services.AddDeploymentHosting(builder.Configuration);
     builder.Services.AddSerilog((services, logger) => logger
         .ReadFrom.Configuration(builder.Configuration)
         .ReadFrom.Services(services));
@@ -105,6 +107,7 @@ try
         if (origins.Length > 0) policy.WithOrigins(origins).AllowAnyHeader().AllowAnyMethod();
     }));
     var app = builder.Build();
+    app.UseDeploymentHosting();
     app.UseExceptionHandler();
     app.UseHttpsRedirection();
     // Public ownership-verification files must be available without an API session.

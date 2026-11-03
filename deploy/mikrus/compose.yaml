@@ -1,0 +1,119 @@
+name: aftertab
+
+x-logging: &default-logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "3"
+
+services:
+  postgres:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: aftertab
+      POSTGRES_USER: aftertab_owner
+      POSTGRES_PASSWORD: ${DB_OWNER_PASSWORD:?Set DB_OWNER_PASSWORD in .env}
+      DB_APP_PASSWORD: ${DB_APP_PASSWORD:?Set DB_APP_PASSWORD in .env}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./init-runtime-user.sql:/docker-entrypoint-initdb.d/10-runtime-user.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -h 127.0.0.1 -U aftertab_owner -d aftertab"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 15s
+    networks:
+      - backend
+    logging: *default-logging
+
+  migrate:
+    build:
+      context: ../..
+      dockerfile: deploy/mikrus/Dockerfile.api
+      target: migrate
+    restart: "no"
+    environment:
+      Database__Provider: PostgreSql
+      ConnectionStrings__AfterTab: Host=postgres;Database=aftertab;Username=aftertab_owner;Password=${DB_OWNER_PASSWORD:?Set DB_OWNER_PASSWORD in .env}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - backend
+    logging: *default-logging
+
+  api:
+    build:
+      context: ../..
+      dockerfile: deploy/mikrus/Dockerfile.api
+      target: api
+    restart: unless-stopped
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      ASPNETCORE_HTTP_PORTS: "8080"
+      Database__Provider: PostgreSql
+      ConnectionStrings__AfterTab: Host=postgres;Database=aftertab;Username=aftertab_app;Password=${DB_APP_PASSWORD:?Set DB_APP_PASSWORD in .env}
+      Authentication__FrontendOrigin: ${PUBLIC_ORIGIN:?Set PUBLIC_ORIGIN to the public HTTPS origin}
+      Cors__AllowedOrigins__0: ${PUBLIC_ORIGIN:?Set PUBLIC_ORIGIN to the public HTTPS origin}
+      ReverseProxy__Enabled: "true"
+      ReverseProxy__KnownProxies__0: ${FRONTEND_IP:-172.30.37.10}
+      DataProtection__KeysPath: /app/keys
+      Serilog__WriteTo__1__Args__path: /app/logs/api-.log
+      Mail__Host: ${MAIL_HOST:-}
+      Mail__Port: ${MAIL_PORT:-587}
+      Mail__From: ${MAIL_FROM:-}
+      Mail__Username: ${MAIL_USERNAME:-}
+      Mail__Password: ${MAIL_PASSWORD:-}
+      Authentication__Google__ClientId: ${GOOGLE_CLIENT_ID:-}
+      Authentication__Google__ClientSecret: ${GOOGLE_CLIENT_SECRET:-}
+      Authentication__Facebook__AppId: ${FACEBOOK_APP_ID:-}
+      Authentication__Facebook__AppSecret: ${FACEBOOK_APP_SECRET:-}
+    volumes:
+      - api-logs:/app/logs
+      - api-keys:/app/keys
+    healthcheck:
+      # Debian-based .NET runtime includes bash; no extra curl installation needed.
+      test: ["CMD", "bash", "-c", "exec 3<>/dev/tcp/127.0.0.1/8080"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+      start_period: 10s
+    depends_on:
+      postgres:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    networks:
+      - backend
+    logging: *default-logging
+
+  frontend:
+    build:
+      context: ../..
+      dockerfile: deploy/mikrus/Dockerfile.frontend
+    restart: unless-stopped
+    environment:
+      TRUSTED_PROXY_CIDR: ${TRUSTED_PROXY_CIDR:-172.30.37.1/32}
+    ports:
+      - "${HTTP_BIND:-127.0.0.1}:${HTTP_PORT:-8080}:8080"
+    depends_on:
+      api:
+        condition: service_healthy
+    networks:
+      backend:
+        ipv4_address: ${FRONTEND_IP:-172.30.37.10}
+    logging: *default-logging
+
+networks:
+  backend:
+    ipam:
+      config:
+        - subnet: ${DOCKER_SUBNET:-172.30.37.0/24}
+          gateway: ${DOCKER_GATEWAY:-172.30.37.1}
+
+volumes:
+  postgres-data:
+  api-logs:
+  api-keys:

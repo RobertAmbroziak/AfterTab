@@ -32,6 +32,9 @@ remain the same. Account emails use the language selected when requesting them.
 
 ## Run locally
 
+Optional frontend + API + PostgreSQL deployment on mikr.us/VPS:
+[Docker Compose](deploy/mikrus/README.en.md). This is separate from the existing Azure deployment.
+
 Optional footer links use `VITE_GITHUB_URL` and `VITE_ANDROID_APK_URL`. Blank values
 hide the corresponding link, so another deployment does not have to point to the
 original author's repository or downloads. Keep production values outside Git,

@@ -35,6 +35,9 @@ Nie zapisuj connection stringa narzędzia ani tokenów w repozytorium.
 
 ## Uruchomienie lokalne
 
+Opcjonalne wdrożenie frontend + API + PostgreSQL na mikr.us/VPS:
+[Docker Compose](deploy/mikrus/README.md). Jest oddzielne od obecnego wdrożenia Azure.
+
 Linki stopki można ustawić przez `VITE_GITHUB_URL` i `VITE_ANDROID_APK_URL`.
 Puste wartości ukrywają odpowiedni link, dzięki czemu inne wdrożenia nie muszą
 wskazywać repozytorium ani plików autora. Ustawienia produkcyjne przechowuj poza
