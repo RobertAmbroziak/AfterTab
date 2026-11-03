@@ -32,6 +32,12 @@ remain the same. Account emails use the language selected when requesting them.
 
 ## Run locally
 
+GitHub Actions runs **Develop CI** on every push to `develop`: it installs
+dependencies, builds the backend and frontend, and runs the .NET and Node.js
+unit tests. Results and logs appear in the repository's **Actions** tab.
+The workflow does not run for `main`, run integration tests, require a database,
+or deploy the application.
+
 Optional frontend + API + PostgreSQL deployment on mikr.us/VPS:
 [Docker Compose](deploy/mikrus/README.en.md). This is separate from the existing Azure deployment.
 

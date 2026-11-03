@@ -35,6 +35,12 @@ Nie zapisuj connection stringa narzędzia ani tokenów w repozytorium.
 
 ## Uruchomienie lokalne
 
+GitHub Actions uruchamia workflow **Develop CI** po każdym pushu na `develop`:
+instaluje zależności, buduje backend i frontend oraz wykonuje testy jednostkowe
+(.NET i Node.js). Wyniki i logi są w zakładce **Actions** repozytorium.
+Workflow nie uruchamia się dla `main`, nie wykonuje testów integracyjnych,
+nie potrzebuje bazy i nie publikuje aplikacji.
+
 Opcjonalne wdrożenie frontend + API + PostgreSQL na mikr.us/VPS:
 [Docker Compose](deploy/mikrus/README.md). Jest oddzielne od obecnego wdrożenia Azure.
 
