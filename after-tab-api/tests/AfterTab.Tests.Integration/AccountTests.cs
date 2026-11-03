@@ -17,7 +17,7 @@ namespace AfterTab.Tests.Integration;
 [TestClass]
 public sealed class AccountTests
 {
-    private sealed class Actor : ICurrentUser { public Guid? UserId => null; }
+    private sealed class Actor : ICurrentUser { public long? UserId => null; }
     private sealed class Clock : TimeProvider
     {
         public DateTimeOffset Now { get; set; } = new(2026, 10, 29, 12, 0, 0, TimeSpan.Zero);

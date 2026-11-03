@@ -7,6 +7,11 @@ nie uruchamia kontenerów, nie publikuje Azure Static Web Apps i nie zmienia
 istniejącej bazy SQL Server. Dotychczasowy build/publish Azure działa jak wcześniej;
 domyślny provider API nadal to `SqlServer`. PostgreSQL wybiera wyłącznie ten Compose.
 
+Ta wersja modelu wymaga **pustej bazy** na obu silnikach. Jeżeli uruchamiasz
+aktualizację starszej instalacji, najpierw wykonaj zaplanowany
+[reset schematu](../../after-tab-api/docs/database.md). Dotyczy to również Azure SQL
+przy późniejszym publikowaniu nowego API; sam push nie wykonuje resetu.
+
 ## Układ
 
 - `frontend`: zbudowane pliki PWA w Nginx; `/api/` i callbacki OAuth trafiają do API.

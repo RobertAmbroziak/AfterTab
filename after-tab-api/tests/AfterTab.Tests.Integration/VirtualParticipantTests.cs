@@ -19,7 +19,7 @@ namespace AfterTab.Tests.Integration;
 [TestClass]
 public sealed class VirtualParticipantTests
 {
-    private sealed class Actor : ICurrentUser { public Guid? UserId { get; set; } }
+    private sealed class Actor : ICurrentUser { public long? UserId { get; set; } }
     private sealed class Scope : IAsyncDisposable
     {
         public required SqliteConnection Connection { get; init; }
@@ -29,7 +29,7 @@ public sealed class VirtualParticipantTests
         public required User Member { get; init; }
         public required User Stranger { get; init; }
         public required CreatedEventDto Created { get; init; }
-        public Guid EventId => Created.Details.Event.Id;
+        public long EventId => Created.Details.Event.Id;
         public EventService Events => new(new EventRepository(Db), new UserRepository(Db), Actor, TimeProvider.System);
         public ExpenseService Expenses => new(new ExpenseRepository(Db), new UserRepository(Db), Actor, TimeProvider.System);
         public SettlementService Settlements => new(new SettlementRepository(Db), Actor, TimeProvider.System);

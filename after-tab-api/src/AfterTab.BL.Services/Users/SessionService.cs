@@ -37,7 +37,7 @@ public sealed class SessionService(
         var session = await sessions.FindByTokenHashAsync(Hash(token!), cancellationToken);
         if (session is null || session.RevokedAtUtc is not null || session.ExpiresAtUtc <= clock.GetUtcNow())
             return null;
-        if (session.GuestDeviceId is Guid deviceId)
+        if (session.GuestDeviceId is long deviceId)
         {
             var device = await devices.FindDeviceAsync(deviceId, cancellationToken);
             if (device is null || device.RevokedAtUtc is not null) return null;

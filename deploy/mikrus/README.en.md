@@ -7,6 +7,10 @@ to GitHub does not start containers, publish Azure Static Web Apps, or change th
 existing SQL Server database. The existing Azure build/publish commands still
 work; the API defaults to `SqlServer`. Only this Compose configuration selects PostgreSQL.
 
+This model version requires an **empty database** on either engine. Before updating
+an older installation, follow the planned [schema reset](../../after-tab-api/docs/database.en.md).
+This also applies when eventually publishing the new API to Azure SQL; pushing code does not reset it.
+
 ## Components
 
 - `frontend`: built PWA files served by Nginx; `/api/` and OAuth callbacks go to the API.

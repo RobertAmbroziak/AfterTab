@@ -6,24 +6,29 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace AfterTab.DAL.Migrations.PostgreSql.Migrations
 {
     /// <inheritdoc />
-    public partial class InitialPostgreSql : Migration
+    public partial class InitialNumericKeys : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
+            migrationBuilder.CreateSequence(
+                name: "EntityFrameworkHiLoSequence",
+                incrementBy: 10);
+
             migrationBuilder.CreateTable(
                 name: "Users",
                 columns: table => new
                 {
-                    Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    Id = table.Column<long>(type: "bigint", nullable: false),
                     DisplayName = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
                     DisplayNameConfirmed = table.Column<bool>(type: "boolean", nullable: false),
                     Status = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: false),
                     LastSeenAtUtc = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
                     CreatedAtUtc = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-                    CreatedByUserId = table.Column<Guid>(type: "uuid", nullable: true),
+                    CreatedByUserId = table.Column<long>(type: "bigint", nullable: true),
                     ModifiedAtUtc = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
-                    ModifiedByUserId = table.Column<Guid>(type: "uuid", nullable: true)
+                    ModifiedByUserId = table.Column<long>(type: "bigint", nullable: true),
+                    PublicId = table.Column<Guid>(type: "uuid", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -44,8 +49,8 @@ namespace AfterTab.DAL.Migrations.PostgreSql.Migrations
                 name: "AccountActions",
                 columns: table => new
                 {
-                    Id = table.Column<Guid>(type: "uuid", nullable: false),
-                    UserId = table.Column<Guid>(type: "uuid", nullable: true),
+                    Id = table.Column<long>(type: "bigint", nullable: false),
+                    UserId = table.Column<long>(type: "bigint", nullable: true),
                     TokenHash = table.Column<string>(type: "character varying(64)", maxLength: 64, nullable: false),
                     Purpose = table.Column<string>(type: "character varying(30)", maxLength: 30, nullable: false),
                     Challenge = table.Column<string>(type: "character varying(64)", maxLength: 64, nullable: true),
@@ -56,9 +61,9 @@ namespace AfterTab.DAL.Migrations.PostgreSql.Migrations
                     ConsumedAtUtc = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
                     Version = table.Column<Guid>(type: "uuid", nullable: false),
                     CreatedAtUtc = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-                    CreatedByUserId = table.Column<Guid>(type: "uuid", nullable: true),
+                    CreatedByUserId = table.Column<long>(type: "bigint", nullable: true),
                     ModifiedAtUtc = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
-                    ModifiedByUserId = table.Column<Guid>(type: "uuid", nullable: true)
+                    ModifiedByUserId = table.Column<long>(type: "bigint", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -84,18 +89,19 @@ namespace AfterTab.DAL.Migrations.PostgreSql.Migrations
                 name: "Events",
                 columns: table => new
                 {
-                    Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    Id = table.Column<long>(type: "bigint", nullable: false),
                     Name = table.Column<string>(type: "character varying(150)", maxLength: 150, nullable: false),
                     Description = table.Column<string>(type: "character varying(2000)", maxLength: 2000, nullable: true),
-                    OwnerUserId = table.Column<Guid>(type: "uuid", nullable: false),
+                    OwnerUserId = table.Column<long>(type: "bigint", nullable: false),
                     Currency = table.Column<string>(type: "character varying(3)", maxLength: 3, nullable: false),
                     Status = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: false),
                     ClosedAtUtc = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
                     SettlementVersion = table.Column<int>(type: "integer", nullable: false),
                     CreatedAtUtc = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-                    CreatedByUserId = table.Column<Guid>(type: "uuid", nullable: true),
+                    CreatedByUserId = table.Column<long>(type: "bigint", nullable: true),
                     ModifiedAtUtc = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
-                    ModifiedByUserId = table.Column<Guid>(type: "uuid", nullable: true)
+                    ModifiedByUserId = table.Column<long>(type: "bigint", nullable: true),
+                    PublicId = table.Column<Guid>(type: "uuid", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -121,15 +127,15 @@ namespace AfterTab.DAL.Migrations.PostgreSql.Migrations
                 name: "GuestDevices",
                 columns: table => new
                 {
-                    Id = table.Column<Guid>(type: "uuid", nullable: false),
-                    UserId = table.Column<Guid>(type: "uuid", nullable: false),
+                    Id = table.Column<long>(type: "bigint", nullable: false),
+                    UserId = table.Column<long>(type: "bigint", nullable: false),
                     TokenHash = table.Column<string>(type: "character varying(64)", maxLength: 64, nullable: false),
                     ExpiresAtUtc = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
                     RevokedAtUtc = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
                     CreatedAtUtc = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-                    CreatedByUserId = table.Column<Guid>(type: "uuid", nullable: true),
+                    CreatedByUserId = table.Column<long>(type: "bigint", nullable: true),
                     ModifiedAtUtc = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
-                    ModifiedByUserId = table.Column<Guid>(type: "uuid", nullable: true)
+                    ModifiedByUserId = table.Column<long>(type: "bigint", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -155,8 +161,8 @@ namespace AfterTab.DAL.Migrations.PostgreSql.Migrations
                 name: "UserIdentities",
                 columns: table => new
                 {
-                    Id = table.Column<Guid>(type: "uuid", nullable: false),
-                    UserId = table.Column<Guid>(type: "uuid", nullable: false),
+                    Id = table.Column<long>(type: "bigint", nullable: false),
+                    UserId = table.Column<long>(type: "bigint", nullable: false),
                     Provider = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: false),
                     ProviderSubject = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true),
                     Email = table.Column<string>(type: "character varying(320)", maxLength: 320, nullable: true),
@@ -166,9 +172,9 @@ namespace AfterTab.DAL.Migrations.PostgreSql.Migrations
                     FailedLoginCount = table.Column<int>(type: "integer", nullable: false),
                     LockedUntilUtc = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
                     CreatedAtUtc = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-                    CreatedByUserId = table.Column<Guid>(type: "uuid", nullable: true),
+                    CreatedByUserId = table.Column<long>(type: "bigint", nullable: true),
                     ModifiedAtUtc = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
-                    ModifiedByUserId = table.Column<Guid>(type: "uuid", nullable: true)
+                    ModifiedByUserId = table.Column<long>(type: "bigint", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -195,15 +201,15 @@ namespace AfterTab.DAL.Migrations.PostgreSql.Migrations
                 name: "EventInvites",
                 columns: table => new
                 {
-                    Id = table.Column<Guid>(type: "uuid", nullable: false),
-                    EventId = table.Column<Guid>(type: "uuid", nullable: false),
+                    Id = table.Column<long>(type: "bigint", nullable: false),
+                    EventId = table.Column<long>(type: "bigint", nullable: false),
                     TokenHash = table.Column<string>(type: "character varying(64)", maxLength: 64, nullable: false),
                     ExpiresAtUtc = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
                     RevokedAtUtc = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
                     CreatedAtUtc = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-                    CreatedByUserId = table.Column<Guid>(type: "uuid", nullable: true),
+                    CreatedByUserId = table.Column<long>(type: "bigint", nullable: true),
                     ModifiedAtUtc = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
-                    ModifiedByUserId = table.Column<Guid>(type: "uuid", nullable: true)
+                    ModifiedByUserId = table.Column<long>(type: "bigint", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -229,18 +235,19 @@ namespace AfterTab.DAL.Migrations.PostgreSql.Migrations
                 name: "EventParticipants",
                 columns: table => new
                 {
-                    Id = table.Column<Guid>(type: "uuid", nullable: false),
-                    EventId = table.Column<Guid>(type: "uuid", nullable: false),
-                    UserId = table.Column<Guid>(type: "uuid", nullable: true),
+                    Id = table.Column<long>(type: "bigint", nullable: false),
+                    EventId = table.Column<long>(type: "bigint", nullable: false),
+                    UserId = table.Column<long>(type: "bigint", nullable: true),
                     DisplayName = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
-                    MergedIntoParticipantId = table.Column<Guid>(type: "uuid", nullable: true),
+                    MergedIntoParticipantId = table.Column<long>(type: "bigint", nullable: true),
                     Status = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: false),
                     JoinedAtUtc = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
                     LeftAtUtc = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
                     CreatedAtUtc = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-                    CreatedByUserId = table.Column<Guid>(type: "uuid", nullable: true),
+                    CreatedByUserId = table.Column<long>(type: "bigint", nullable: true),
                     ModifiedAtUtc = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
-                    ModifiedByUserId = table.Column<Guid>(type: "uuid", nullable: true)
+                    ModifiedByUserId = table.Column<long>(type: "bigint", nullable: true),
+                    PublicId = table.Column<Guid>(type: "uuid", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -277,18 +284,19 @@ namespace AfterTab.DAL.Migrations.PostgreSql.Migrations
                 name: "Sessions",
                 columns: table => new
                 {
-                    Id = table.Column<Guid>(type: "uuid", nullable: false),
-                    UserId = table.Column<Guid>(type: "uuid", nullable: false),
-                    GuestDeviceId = table.Column<Guid>(type: "uuid", nullable: true),
+                    Id = table.Column<long>(type: "bigint", nullable: false),
+                    UserId = table.Column<long>(type: "bigint", nullable: false),
+                    GuestDeviceId = table.Column<long>(type: "bigint", nullable: true),
                     TokenHash = table.Column<string>(type: "character varying(64)", maxLength: 64, nullable: false),
                     LastUsedAtUtc = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
                     ExpiresAtUtc = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
                     RevokedAtUtc = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
                     DeviceLabel = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: true),
                     CreatedAtUtc = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-                    CreatedByUserId = table.Column<Guid>(type: "uuid", nullable: true),
+                    CreatedByUserId = table.Column<long>(type: "bigint", nullable: true),
                     ModifiedAtUtc = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
-                    ModifiedByUserId = table.Column<Guid>(type: "uuid", nullable: true)
+                    ModifiedByUserId = table.Column<long>(type: "bigint", nullable: true),
+                    PublicId = table.Column<Guid>(type: "uuid", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -319,24 +327,25 @@ namespace AfterTab.DAL.Migrations.PostgreSql.Migrations
                 name: "Expenses",
                 columns: table => new
                 {
-                    Id = table.Column<Guid>(type: "uuid", nullable: false),
-                    EventId = table.Column<Guid>(type: "uuid", nullable: false),
-                    AuthorUserId = table.Column<Guid>(type: "uuid", nullable: false),
+                    Id = table.Column<long>(type: "bigint", nullable: false),
+                    EventId = table.Column<long>(type: "bigint", nullable: false),
+                    AuthorUserId = table.Column<long>(type: "bigint", nullable: false),
                     Name = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false),
                     AmountMinor = table.Column<long>(type: "bigint", nullable: false),
                     OthersAmountMinor = table.Column<long>(type: "bigint", nullable: false),
                     Balanced = table.Column<bool>(type: "boolean", nullable: false),
-                    BalanceParticipantId = table.Column<Guid>(type: "uuid", nullable: true),
+                    BalanceParticipantId = table.Column<long>(type: "bigint", nullable: true),
                     BalanceAmountMinor = table.Column<long>(type: "bigint", nullable: false),
-                    PaidByParticipantId = table.Column<Guid>(type: "uuid", nullable: false),
+                    PaidByParticipantId = table.Column<long>(type: "bigint", nullable: false),
                     SplitMethod = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: false),
                     ExpenseDate = table.Column<DateOnly>(type: "date", nullable: false),
                     Note = table.Column<string>(type: "character varying(2000)", maxLength: 2000, nullable: true),
                     RowVersion = table.Column<byte[]>(type: "bytea", nullable: false),
                     CreatedAtUtc = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-                    CreatedByUserId = table.Column<Guid>(type: "uuid", nullable: true),
+                    CreatedByUserId = table.Column<long>(type: "bigint", nullable: true),
                     ModifiedAtUtc = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
-                    ModifiedByUserId = table.Column<Guid>(type: "uuid", nullable: true)
+                    ModifiedByUserId = table.Column<long>(type: "bigint", nullable: true),
+                    PublicId = table.Column<Guid>(type: "uuid", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -381,18 +390,18 @@ namespace AfterTab.DAL.Migrations.PostgreSql.Migrations
                 name: "TransferConfirmations",
                 columns: table => new
                 {
-                    Id = table.Column<Guid>(type: "uuid", nullable: false),
-                    EventId = table.Column<Guid>(type: "uuid", nullable: false),
+                    Id = table.Column<long>(type: "bigint", nullable: false),
+                    EventId = table.Column<long>(type: "bigint", nullable: false),
                     SettlementVersion = table.Column<int>(type: "integer", nullable: false),
-                    FromParticipantId = table.Column<Guid>(type: "uuid", nullable: false),
-                    ToParticipantId = table.Column<Guid>(type: "uuid", nullable: false),
+                    FromParticipantId = table.Column<long>(type: "bigint", nullable: false),
+                    ToParticipantId = table.Column<long>(type: "bigint", nullable: false),
                     AmountMinor = table.Column<long>(type: "bigint", nullable: false),
                     SentAtUtc = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
                     ReceivedAtUtc = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
                     CreatedAtUtc = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-                    CreatedByUserId = table.Column<Guid>(type: "uuid", nullable: true),
+                    CreatedByUserId = table.Column<long>(type: "bigint", nullable: true),
                     ModifiedAtUtc = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
-                    ModifiedByUserId = table.Column<Guid>(type: "uuid", nullable: true)
+                    ModifiedByUserId = table.Column<long>(type: "bigint", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -429,25 +438,25 @@ namespace AfterTab.DAL.Migrations.PostgreSql.Migrations
                 name: "GuestLoginRequests",
                 columns: table => new
                 {
-                    Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    Id = table.Column<long>(type: "bigint", nullable: false),
                     RequestHash = table.Column<string>(type: "character varying(64)", maxLength: 64, nullable: false),
                     Challenge = table.Column<string>(type: "character varying(64)", maxLength: 64, nullable: false),
                     State = table.Column<string>(type: "character varying(64)", maxLength: 64, nullable: false),
                     ReturnOrigin = table.Column<string>(type: "character varying(300)", maxLength: 300, nullable: false),
                     Action = table.Column<string>(type: "character varying(10)", maxLength: 10, nullable: false),
                     ProposedDisplayName = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: true),
-                    LegacyUserId = table.Column<Guid>(type: "uuid", nullable: true),
-                    LegacySessionId = table.Column<Guid>(type: "uuid", nullable: true),
-                    UserId = table.Column<Guid>(type: "uuid", nullable: true),
-                    GuestDeviceId = table.Column<Guid>(type: "uuid", nullable: true),
+                    LegacyUserId = table.Column<long>(type: "bigint", nullable: true),
+                    LegacySessionId = table.Column<long>(type: "bigint", nullable: true),
+                    UserId = table.Column<long>(type: "bigint", nullable: true),
+                    GuestDeviceId = table.Column<long>(type: "bigint", nullable: true),
                     CodeHash = table.Column<string>(type: "character varying(64)", maxLength: 64, nullable: true),
                     ExpiresAtUtc = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
                     ConsumedAtUtc = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
                     Version = table.Column<Guid>(type: "uuid", nullable: false),
                     CreatedAtUtc = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-                    CreatedByUserId = table.Column<Guid>(type: "uuid", nullable: true),
+                    CreatedByUserId = table.Column<long>(type: "bigint", nullable: true),
                     ModifiedAtUtc = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
-                    ModifiedByUserId = table.Column<Guid>(type: "uuid", nullable: true)
+                    ModifiedByUserId = table.Column<long>(type: "bigint", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -488,16 +497,16 @@ namespace AfterTab.DAL.Migrations.PostgreSql.Migrations
                 name: "ExpenseSplits",
                 columns: table => new
                 {
-                    Id = table.Column<Guid>(type: "uuid", nullable: false),
-                    ExpenseId = table.Column<Guid>(type: "uuid", nullable: false),
-                    EventId = table.Column<Guid>(type: "uuid", nullable: false),
-                    ParticipantId = table.Column<Guid>(type: "uuid", nullable: false),
+                    Id = table.Column<long>(type: "bigint", nullable: false),
+                    ExpenseId = table.Column<long>(type: "bigint", nullable: false),
+                    EventId = table.Column<long>(type: "bigint", nullable: false),
+                    ParticipantId = table.Column<long>(type: "bigint", nullable: false),
                     AmountMinor = table.Column<long>(type: "bigint", nullable: false),
                     PercentageBps = table.Column<int>(type: "integer", nullable: true),
                     CreatedAtUtc = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-                    CreatedByUserId = table.Column<Guid>(type: "uuid", nullable: true),
+                    CreatedByUserId = table.Column<long>(type: "bigint", nullable: true),
                     ModifiedAtUtc = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
-                    ModifiedByUserId = table.Column<Guid>(type: "uuid", nullable: true)
+                    ModifiedByUserId = table.Column<long>(type: "bigint", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -591,6 +600,12 @@ namespace AfterTab.DAL.Migrations.PostgreSql.Migrations
                 column: "ModifiedByUserId");
 
             migrationBuilder.CreateIndex(
+                name: "IX_EventParticipants_PublicId",
+                table: "EventParticipants",
+                column: "PublicId",
+                unique: true);
+
+            migrationBuilder.CreateIndex(
                 name: "IX_EventParticipants_UserId",
                 table: "EventParticipants",
                 column: "UserId");
@@ -614,6 +629,12 @@ namespace AfterTab.DAL.Migrations.PostgreSql.Migrations
                 name: "IX_Events_OwnerUserId",
                 table: "Events",
                 column: "OwnerUserId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Events_PublicId",
+                table: "Events",
+                column: "PublicId",
+                unique: true);
 
             migrationBuilder.CreateIndex(
                 name: "IX_Expenses_AuthorUserId",
@@ -644,6 +665,12 @@ namespace AfterTab.DAL.Migrations.PostgreSql.Migrations
                 name: "IX_Expenses_PaidByParticipantId_EventId",
                 table: "Expenses",
                 columns: new[] { "PaidByParticipantId", "EventId" });
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Expenses_PublicId",
+                table: "Expenses",
+                column: "PublicId",
+                unique: true);
 
             migrationBuilder.CreateIndex(
                 name: "IX_ExpenseSplits_CreatedByUserId",
@@ -756,6 +783,12 @@ namespace AfterTab.DAL.Migrations.PostgreSql.Migrations
                 column: "ModifiedByUserId");
 
             migrationBuilder.CreateIndex(
+                name: "IX_Sessions_PublicId",
+                table: "Sessions",
+                column: "PublicId",
+                unique: true);
+
+            migrationBuilder.CreateIndex(
                 name: "IX_Sessions_TokenHash",
                 table: "Sessions",
                 column: "TokenHash",
@@ -830,6 +863,12 @@ namespace AfterTab.DAL.Migrations.PostgreSql.Migrations
                 name: "IX_Users_ModifiedByUserId",
                 table: "Users",
                 column: "ModifiedByUserId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Users_PublicId",
+                table: "Users",
+                column: "PublicId",
+                unique: true);
         }
 
         /// <inheritdoc />
@@ -870,6 +909,9 @@ namespace AfterTab.DAL.Migrations.PostgreSql.Migrations
 
             migrationBuilder.DropTable(
                 name: "Users");
+
+            migrationBuilder.DropSequence(
+                name: "EntityFrameworkHiLoSequence");
         }
     }
 }

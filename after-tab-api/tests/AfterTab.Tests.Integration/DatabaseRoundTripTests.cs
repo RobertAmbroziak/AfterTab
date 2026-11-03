@@ -1,5 +1,6 @@
 using AfterTab.BL.DTO.Expenses;
 using AfterTab.BL.Services.Expenses;
+using AfterTab.BL.Services.Events;
 using AfterTab.BL.Services.Users;
 using AfterTab.Common.Errors;
 using AfterTab.Common.Security;
@@ -19,7 +20,7 @@ namespace AfterTab.Tests.Integration;
 [TestClass]
 public sealed class DatabaseRoundTripTests
 {
-    private sealed class Actor : ICurrentUser { public Guid? UserId { get; set; } }
+    private sealed class Actor : ICurrentUser { public long? UserId { get; set; } }
 
     [TestMethod]
     [TestCategory("DatabaseServer")]
@@ -45,9 +46,12 @@ public sealed class DatabaseRoundTripTests
         await using var db = new AppDbContext(options.Options, actor, TimeProvider.System);
         try
         {
-            await db.Database.MigrateAsync();
-            await db.Database.MigrateAsync(); // Reapplying must be a no-op.
+            await db.MigrateFreshSchemaAsync();
+            await db.MigrateFreshSchemaAsync(); // Reapplying must be a no-op.
             Assert.IsFalse((await db.Database.GetPendingMigrationsAsync()).Any());
+            if (provider == DatabaseProvider.SqlServer)
+                Assert.AreEqual(0, await db.Database.SqlQueryRaw<int>(
+                    "SELECT COUNT(*) AS [Value] FROM sys.indexes WHERE is_primary_key = 1 AND type <> 1").SingleAsync());
 
             var sessions = new SessionService(new SessionRepository(db), new UserRepository(db),
                 TimeProvider.System, new GuestBrowserRepository(db));
@@ -61,11 +65,12 @@ public sealed class DatabaseRoundTripTests
             db.Users.AddRange(owner, member);
             await db.SaveChangesAsync();
             actor.UserId = member.Id;
-            var ev = new Event { Name = "Dinner", OwnerUserId = owner.Id };
-            db.Events.Add(ev);
-            db.EventParticipants.AddRange(
-                new EventParticipant { Id = owner.Id, EventId = ev.Id, UserId = owner.Id },
-                new EventParticipant { Id = member.Id, EventId = ev.Id, UserId = member.Id });
+            var events = new EventService(new EventRepository(db), new UserRepository(db), actor, TimeProvider.System);
+            var eventResult = await events.CreateAsync(new("Dinner"), default);
+            var ev = await db.Events.SingleAsync(x => x.Id == eventResult.Details.Event.Id);
+            var memberParticipant = await db.EventParticipants.SingleAsync(x => x.EventId == ev.Id && x.UserId == member.Id);
+            var ownerParticipant = new EventParticipant { EventId = ev.Id, UserId = owner.Id };
+            db.EventParticipants.Add(ownerParticipant);
             await db.SaveChangesAsync();
             Assert.AreEqual(member.Id, ev.CreatedByUserId);
             Assert.AreEqual(TimeSpan.Zero, ev.CreatedAtUtc.Offset);
@@ -73,11 +78,11 @@ public sealed class DatabaseRoundTripTests
 
             var service = new ExpenseService(new ExpenseRepository(db), new UserRepository(db), actor, TimeProvider.System);
             var created = await service.CreateAsync(ev.Id,
-                new CreateExpenseDto("Pizza", 6250, "Amount", [new(owner.Id, 3000), new(member.Id, 3000)],
-                    Balance: true, BalanceParticipantId: owner.Id), default);
+                new CreateExpenseDto("Pizza", 6250, "Amount", [new(ownerParticipant.Id, 3000), new(memberParticipant.Id, 3000)],
+                    Balance: true, BalanceParticipantId: ownerParticipant.Id), default);
             Assert.IsFalse(string.IsNullOrWhiteSpace(created.RowVersion));
             Assert.IsTrue(created.Balanced);
-            var update = new UpdateExpenseSplitDto("Amount", [new(owner.Id, 3100), new(member.Id, 3150)], false, created.RowVersion!);
+            var update = new UpdateExpenseSplitDto("Amount", [new(ownerParticipant.Id, 3100), new(memberParticipant.Id, 3150)], false, created.RowVersion!);
             var changed = await service.UpdateSplitAsync(ev.Id, created.Id, update, default);
             Assert.AreNotEqual(created.RowVersion, changed.RowVersion);
             var stale = await Assert.ThrowsExactlyAsync<AppException>(() => service.UpdateSplitAsync(ev.Id, created.Id, update, default));
@@ -99,6 +104,28 @@ public sealed class DatabaseRoundTripTests
             var invalid = await db.Expenses.SingleAsync(x => x.Id == created.Id);
             invalid.AmountMinor = -1;
             await Assert.ThrowsExactlyAsync<DbUpdateException>(() => db.SaveChangesAsync());
+            db.ChangeTracker.Clear();
+
+            // New contexts/processes reserve different HiLo blocks, including after a restart.
+            await using (var another = new AppDbContext(options.Options, actor, TimeProvider.System))
+            {
+                var users = Enumerable.Range(0, 25).Select(i => new User { DisplayName = $"Additional {i}" }).ToArray();
+                another.Users.AddRange(users);
+                Assert.IsTrue(users.All(x => x.Id > 0));
+                Assert.AreEqual(users.Length, users.Select(x => x.Id).Distinct().Count());
+                Assert.IsFalse(users.Any(x => x.Id == owner.Id || x.Id == member.Id));
+                await another.SaveChangesAsync();
+            }
+            var original = await db.Users.AsNoTracking().SingleAsync(x => x.Id == owner.Id);
+            db.Users.Add(new User { DisplayName = "Duplicate public identifier", PublicId = original.PublicId });
+            await Assert.ThrowsExactlyAsync<DbUpdateException>(() => db.SaveChangesAsync());
+            db.ChangeTracker.Clear();
+
+            var countBefore = await db.Users.CountAsync();
+            await db.Database.ExecuteSqlRawAsync("INSERT INTO \"__EFMigrationsHistory\" (\"MigrationId\", \"ProductVersion\") VALUES ('legacy-guid-schema', '9.0.21')");
+            var incompatible = await Assert.ThrowsExactlyAsync<InvalidOperationException>(() => db.MigrateFreshSchemaAsync());
+            StringAssert.Contains(incompatible.Message, "new empty database");
+            Assert.AreEqual(countBefore, await db.Users.CountAsync());
             db.ChangeTracker.Clear();
 
             // Local identities may share a null ProviderSubject; normalized local email must be unique.

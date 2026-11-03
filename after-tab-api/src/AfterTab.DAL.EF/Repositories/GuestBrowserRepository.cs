@@ -16,9 +16,9 @@ public sealed class GuestBrowserRepository(AppDbContext db) : IGuestBrowserRepos
         => db.GuestLoginRequests.SingleOrDefaultAsync(x => x.CodeHash == hash, ct);
     public Task<GuestDevice?> FindDeviceAsync(string hash, CancellationToken ct)
         => db.GuestDevices.SingleOrDefaultAsync(x => x.TokenHash == hash, ct);
-    public Task<GuestDevice?> FindDeviceAsync(Guid id, CancellationToken ct)
+    public Task<GuestDevice?> FindDeviceAsync(long id, CancellationToken ct)
         => db.GuestDevices.SingleOrDefaultAsync(x => x.Id == id, ct);
-    public async Task RevokeDeviceSessionsAsync(Guid deviceId, DateTimeOffset now, CancellationToken ct)
+    public async Task RevokeDeviceSessionsAsync(long deviceId, DateTimeOffset now, CancellationToken ct)
     {
         var sessions = await db.Sessions.Where(x => x.GuestDeviceId == deviceId && x.RevokedAtUtc == null).ToListAsync(ct);
         foreach (var session in sessions) session.RevokedAtUtc = now;

@@ -31,5 +31,5 @@ public sealed class AppDbContextFactory : IDesignTimeDbContextFactory<AppDbConte
         options.UseAfterTabDatabase(connection, provider);
         return new AppDbContext(options.Options, new SystemActor(), TimeProvider.System);
     }
-    private sealed class SystemActor : ICurrentUser { public Guid? UserId => null; }
+    private sealed class SystemActor : ICurrentUser { public long? UserId => null; }
 }

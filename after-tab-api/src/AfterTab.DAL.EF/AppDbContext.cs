@@ -28,6 +28,12 @@ public sealed class AppDbContext(
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
+        // Allocate blocks on the client before saving graphs, using a database sequence.
+        // Gaps are expected; keys are unique across processes and deployments.
+        if (Database.IsSqlServer())
+            SqlServerModelBuilderExtensions.UseHiLo(modelBuilder);
+        else if (Database.IsNpgsql())
+            NpgsqlModelBuilderExtensions.UseHiLo(modelBuilder);
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(AppDbContext).Assembly);
         if (Database.IsNpgsql()) PostgreSqlModelConfiguration.Configure(modelBuilder);
     }

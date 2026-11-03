@@ -20,12 +20,18 @@ namespace AfterTab.DAL.EF.Migrations
                 .HasAnnotation("ProductVersion", "9.0.21")
                 .HasAnnotation("Relational:MaxIdentifierLength", 128);
 
-            SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
+            SqlServerModelBuilderExtensions.UseHiLo(modelBuilder, "EntityFrameworkHiLoSequence");
+
+            modelBuilder.HasSequence("EntityFrameworkHiLoSequence")
+                .IncrementsBy(10);
 
             modelBuilder.Entity("AfterTab.DAL.Entities.Events.Event", b =>
                 {
-                    b.Property<Guid>("Id")
-                        .HasColumnType("uniqueidentifier");
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    SqlServerPropertyBuilderExtensions.UseHiLo(b.Property<long>("Id"));
 
                     b.Property<DateTimeOffset?>("ClosedAtUtc")
                         .HasColumnType("datetimeoffset");
@@ -33,8 +39,8 @@ namespace AfterTab.DAL.EF.Migrations
                     b.Property<DateTimeOffset>("CreatedAtUtc")
                         .HasColumnType("datetimeoffset");
 
-                    b.Property<Guid?>("CreatedByUserId")
-                        .HasColumnType("uniqueidentifier");
+                    b.Property<long?>("CreatedByUserId")
+                        .HasColumnType("bigint");
 
                     b.Property<string>("Currency")
                         .IsRequired()
@@ -48,15 +54,18 @@ namespace AfterTab.DAL.EF.Migrations
                     b.Property<DateTimeOffset?>("ModifiedAtUtc")
                         .HasColumnType("datetimeoffset");
 
-                    b.Property<Guid?>("ModifiedByUserId")
-                        .HasColumnType("uniqueidentifier");
+                    b.Property<long?>("ModifiedByUserId")
+                        .HasColumnType("bigint");
 
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasMaxLength(150)
                         .HasColumnType("nvarchar(150)");
 
-                    b.Property<Guid>("OwnerUserId")
+                    b.Property<long>("OwnerUserId")
+                        .HasColumnType("bigint");
+
+                    b.Property<Guid>("PublicId")
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<int>("SettlementVersion")
@@ -75,6 +84,9 @@ namespace AfterTab.DAL.EF.Migrations
 
                     b.HasIndex("OwnerUserId");
 
+                    b.HasIndex("PublicId")
+                        .IsUnique();
+
                     b.HasIndex("CreatedAtUtc", "Id");
 
                     b.ToTable("Events", (string)null);
@@ -82,17 +94,20 @@ namespace AfterTab.DAL.EF.Migrations
 
             modelBuilder.Entity("AfterTab.DAL.Entities.Events.EventInvite", b =>
                 {
-                    b.Property<Guid>("Id")
-                        .HasColumnType("uniqueidentifier");
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    SqlServerPropertyBuilderExtensions.UseHiLo(b.Property<long>("Id"));
 
                     b.Property<DateTimeOffset>("CreatedAtUtc")
                         .HasColumnType("datetimeoffset");
 
-                    b.Property<Guid?>("CreatedByUserId")
-                        .HasColumnType("uniqueidentifier");
+                    b.Property<long?>("CreatedByUserId")
+                        .HasColumnType("bigint");
 
-                    b.Property<Guid>("EventId")
-                        .HasColumnType("uniqueidentifier");
+                    b.Property<long>("EventId")
+                        .HasColumnType("bigint");
 
                     b.Property<DateTimeOffset?>("ExpiresAtUtc")
                         .HasColumnType("datetimeoffset");
@@ -100,8 +115,8 @@ namespace AfterTab.DAL.EF.Migrations
                     b.Property<DateTimeOffset?>("ModifiedAtUtc")
                         .HasColumnType("datetimeoffset");
 
-                    b.Property<Guid?>("ModifiedByUserId")
-                        .HasColumnType("uniqueidentifier");
+                    b.Property<long?>("ModifiedByUserId")
+                        .HasColumnType("bigint");
 
                     b.Property<DateTimeOffset?>("RevokedAtUtc")
                         .HasColumnType("datetimeoffset");
@@ -127,22 +142,25 @@ namespace AfterTab.DAL.EF.Migrations
 
             modelBuilder.Entity("AfterTab.DAL.Entities.Events.EventParticipant", b =>
                 {
-                    b.Property<Guid>("Id")
-                        .HasColumnType("uniqueidentifier");
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    SqlServerPropertyBuilderExtensions.UseHiLo(b.Property<long>("Id"));
 
                     b.Property<DateTimeOffset>("CreatedAtUtc")
                         .HasColumnType("datetimeoffset");
 
-                    b.Property<Guid?>("CreatedByUserId")
-                        .HasColumnType("uniqueidentifier");
+                    b.Property<long?>("CreatedByUserId")
+                        .HasColumnType("bigint");
 
                     b.Property<string>("DisplayName")
                         .IsRequired()
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
 
-                    b.Property<Guid>("EventId")
-                        .HasColumnType("uniqueidentifier");
+                    b.Property<long>("EventId")
+                        .HasColumnType("bigint");
 
                     b.Property<DateTimeOffset>("JoinedAtUtc")
                         .HasColumnType("datetimeoffset");
@@ -150,13 +168,16 @@ namespace AfterTab.DAL.EF.Migrations
                     b.Property<DateTimeOffset?>("LeftAtUtc")
                         .HasColumnType("datetimeoffset");
 
-                    b.Property<Guid?>("MergedIntoParticipantId")
-                        .HasColumnType("uniqueidentifier");
+                    b.Property<long?>("MergedIntoParticipantId")
+                        .HasColumnType("bigint");
 
                     b.Property<DateTimeOffset?>("ModifiedAtUtc")
                         .HasColumnType("datetimeoffset");
 
-                    b.Property<Guid?>("ModifiedByUserId")
+                    b.Property<long?>("ModifiedByUserId")
+                        .HasColumnType("bigint");
+
+                    b.Property<Guid>("PublicId")
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<string>("Status")
@@ -164,14 +185,17 @@ namespace AfterTab.DAL.EF.Migrations
                         .HasMaxLength(20)
                         .HasColumnType("nvarchar(20)");
 
-                    b.Property<Guid?>("UserId")
-                        .HasColumnType("uniqueidentifier");
+                    b.Property<long?>("UserId")
+                        .HasColumnType("bigint");
 
                     b.HasKey("Id");
 
                     b.HasIndex("CreatedByUserId");
 
                     b.HasIndex("ModifiedByUserId");
+
+                    b.HasIndex("PublicId")
+                        .IsUnique();
 
                     b.HasIndex("UserId");
 
@@ -186,8 +210,11 @@ namespace AfterTab.DAL.EF.Migrations
 
             modelBuilder.Entity("AfterTab.DAL.Entities.Events.TransferConfirmation", b =>
                 {
-                    b.Property<Guid>("Id")
-                        .HasColumnType("uniqueidentifier");
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    SqlServerPropertyBuilderExtensions.UseHiLo(b.Property<long>("Id"));
 
                     b.Property<long>("AmountMinor")
                         .HasColumnType("bigint");
@@ -195,20 +222,20 @@ namespace AfterTab.DAL.EF.Migrations
                     b.Property<DateTimeOffset>("CreatedAtUtc")
                         .HasColumnType("datetimeoffset");
 
-                    b.Property<Guid?>("CreatedByUserId")
-                        .HasColumnType("uniqueidentifier");
+                    b.Property<long?>("CreatedByUserId")
+                        .HasColumnType("bigint");
 
-                    b.Property<Guid>("EventId")
-                        .HasColumnType("uniqueidentifier");
+                    b.Property<long>("EventId")
+                        .HasColumnType("bigint");
 
-                    b.Property<Guid>("FromParticipantId")
-                        .HasColumnType("uniqueidentifier");
+                    b.Property<long>("FromParticipantId")
+                        .HasColumnType("bigint");
 
                     b.Property<DateTimeOffset?>("ModifiedAtUtc")
                         .HasColumnType("datetimeoffset");
 
-                    b.Property<Guid?>("ModifiedByUserId")
-                        .HasColumnType("uniqueidentifier");
+                    b.Property<long?>("ModifiedByUserId")
+                        .HasColumnType("bigint");
 
                     b.Property<DateTimeOffset?>("ReceivedAtUtc")
                         .HasColumnType("datetimeoffset");
@@ -219,8 +246,8 @@ namespace AfterTab.DAL.EF.Migrations
                     b.Property<int>("SettlementVersion")
                         .HasColumnType("int");
 
-                    b.Property<Guid>("ToParticipantId")
-                        .HasColumnType("uniqueidentifier");
+                    b.Property<long>("ToParticipantId")
+                        .HasColumnType("bigint");
 
                     b.HasKey("Id");
 
@@ -243,20 +270,23 @@ namespace AfterTab.DAL.EF.Migrations
 
             modelBuilder.Entity("AfterTab.DAL.Entities.Expenses.Expense", b =>
                 {
-                    b.Property<Guid>("Id")
-                        .HasColumnType("uniqueidentifier");
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    SqlServerPropertyBuilderExtensions.UseHiLo(b.Property<long>("Id"));
 
                     b.Property<long>("AmountMinor")
                         .HasColumnType("bigint");
 
-                    b.Property<Guid>("AuthorUserId")
-                        .HasColumnType("uniqueidentifier");
+                    b.Property<long>("AuthorUserId")
+                        .HasColumnType("bigint");
 
                     b.Property<long>("BalanceAmountMinor")
                         .HasColumnType("bigint");
 
-                    b.Property<Guid?>("BalanceParticipantId")
-                        .HasColumnType("uniqueidentifier");
+                    b.Property<long?>("BalanceParticipantId")
+                        .HasColumnType("bigint");
 
                     b.Property<bool>("Balanced")
                         .HasColumnType("bit");
@@ -264,11 +294,11 @@ namespace AfterTab.DAL.EF.Migrations
                     b.Property<DateTimeOffset>("CreatedAtUtc")
                         .HasColumnType("datetimeoffset");
 
-                    b.Property<Guid?>("CreatedByUserId")
-                        .HasColumnType("uniqueidentifier");
+                    b.Property<long?>("CreatedByUserId")
+                        .HasColumnType("bigint");
 
-                    b.Property<Guid>("EventId")
-                        .HasColumnType("uniqueidentifier");
+                    b.Property<long>("EventId")
+                        .HasColumnType("bigint");
 
                     b.Property<DateOnly>("ExpenseDate")
                         .HasColumnType("date");
@@ -276,8 +306,8 @@ namespace AfterTab.DAL.EF.Migrations
                     b.Property<DateTimeOffset?>("ModifiedAtUtc")
                         .HasColumnType("datetimeoffset");
 
-                    b.Property<Guid?>("ModifiedByUserId")
-                        .HasColumnType("uniqueidentifier");
+                    b.Property<long?>("ModifiedByUserId")
+                        .HasColumnType("bigint");
 
                     b.Property<string>("Name")
                         .IsRequired()
@@ -291,7 +321,10 @@ namespace AfterTab.DAL.EF.Migrations
                     b.Property<long>("OthersAmountMinor")
                         .HasColumnType("bigint");
 
-                    b.Property<Guid>("PaidByParticipantId")
+                    b.Property<long>("PaidByParticipantId")
+                        .HasColumnType("bigint");
+
+                    b.Property<Guid>("PublicId")
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<byte[]>("RowVersion")
@@ -315,6 +348,9 @@ namespace AfterTab.DAL.EF.Migrations
 
                     b.HasIndex("ModifiedByUserId");
 
+                    b.HasIndex("PublicId")
+                        .IsUnique();
+
                     b.HasIndex("BalanceParticipantId", "EventId");
 
                     b.HasIndex("PaidByParticipantId", "EventId");
@@ -331,8 +367,11 @@ namespace AfterTab.DAL.EF.Migrations
 
             modelBuilder.Entity("AfterTab.DAL.Entities.Expenses.ExpenseSplit", b =>
                 {
-                    b.Property<Guid>("Id")
-                        .HasColumnType("uniqueidentifier");
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    SqlServerPropertyBuilderExtensions.UseHiLo(b.Property<long>("Id"));
 
                     b.Property<long>("AmountMinor")
                         .HasColumnType("bigint");
@@ -340,23 +379,23 @@ namespace AfterTab.DAL.EF.Migrations
                     b.Property<DateTimeOffset>("CreatedAtUtc")
                         .HasColumnType("datetimeoffset");
 
-                    b.Property<Guid?>("CreatedByUserId")
-                        .HasColumnType("uniqueidentifier");
+                    b.Property<long?>("CreatedByUserId")
+                        .HasColumnType("bigint");
 
-                    b.Property<Guid>("EventId")
-                        .HasColumnType("uniqueidentifier");
+                    b.Property<long>("EventId")
+                        .HasColumnType("bigint");
 
-                    b.Property<Guid>("ExpenseId")
-                        .HasColumnType("uniqueidentifier");
+                    b.Property<long>("ExpenseId")
+                        .HasColumnType("bigint");
 
                     b.Property<DateTimeOffset?>("ModifiedAtUtc")
                         .HasColumnType("datetimeoffset");
 
-                    b.Property<Guid?>("ModifiedByUserId")
-                        .HasColumnType("uniqueidentifier");
+                    b.Property<long?>("ModifiedByUserId")
+                        .HasColumnType("bigint");
 
-                    b.Property<Guid>("ParticipantId")
-                        .HasColumnType("uniqueidentifier");
+                    b.Property<long>("ParticipantId")
+                        .HasColumnType("bigint");
 
                     b.Property<int?>("PercentageBps")
                         .HasColumnType("int");
@@ -384,8 +423,11 @@ namespace AfterTab.DAL.EF.Migrations
 
             modelBuilder.Entity("AfterTab.DAL.Entities.Users.AccountAction", b =>
                 {
-                    b.Property<Guid>("Id")
-                        .HasColumnType("uniqueidentifier");
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    SqlServerPropertyBuilderExtensions.UseHiLo(b.Property<long>("Id"));
 
                     b.Property<string>("BrowserHash")
                         .HasMaxLength(64)
@@ -401,8 +443,8 @@ namespace AfterTab.DAL.EF.Migrations
                     b.Property<DateTimeOffset>("CreatedAtUtc")
                         .HasColumnType("datetimeoffset");
 
-                    b.Property<Guid?>("CreatedByUserId")
-                        .HasColumnType("uniqueidentifier");
+                    b.Property<long?>("CreatedByUserId")
+                        .HasColumnType("bigint");
 
                     b.Property<DateTimeOffset>("ExpiresAtUtc")
                         .HasColumnType("datetimeoffset");
@@ -410,8 +452,8 @@ namespace AfterTab.DAL.EF.Migrations
                     b.Property<DateTimeOffset?>("ModifiedAtUtc")
                         .HasColumnType("datetimeoffset");
 
-                    b.Property<Guid?>("ModifiedByUserId")
-                        .HasColumnType("uniqueidentifier");
+                    b.Property<long?>("ModifiedByUserId")
+                        .HasColumnType("bigint");
 
                     b.Property<string>("Purpose")
                         .IsRequired()
@@ -431,8 +473,8 @@ namespace AfterTab.DAL.EF.Migrations
                         .HasMaxLength(64)
                         .HasColumnType("nvarchar(64)");
 
-                    b.Property<Guid?>("UserId")
-                        .HasColumnType("uniqueidentifier");
+                    b.Property<long?>("UserId")
+                        .HasColumnType("bigint");
 
                     b.Property<Guid>("Version")
                         .IsConcurrencyToken()
@@ -454,14 +496,17 @@ namespace AfterTab.DAL.EF.Migrations
 
             modelBuilder.Entity("AfterTab.DAL.Entities.Users.GuestDevice", b =>
                 {
-                    b.Property<Guid>("Id")
-                        .HasColumnType("uniqueidentifier");
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    SqlServerPropertyBuilderExtensions.UseHiLo(b.Property<long>("Id"));
 
                     b.Property<DateTimeOffset>("CreatedAtUtc")
                         .HasColumnType("datetimeoffset");
 
-                    b.Property<Guid?>("CreatedByUserId")
-                        .HasColumnType("uniqueidentifier");
+                    b.Property<long?>("CreatedByUserId")
+                        .HasColumnType("bigint");
 
                     b.Property<DateTimeOffset>("ExpiresAtUtc")
                         .HasColumnType("datetimeoffset");
@@ -469,8 +514,8 @@ namespace AfterTab.DAL.EF.Migrations
                     b.Property<DateTimeOffset?>("ModifiedAtUtc")
                         .HasColumnType("datetimeoffset");
 
-                    b.Property<Guid?>("ModifiedByUserId")
-                        .HasColumnType("uniqueidentifier");
+                    b.Property<long?>("ModifiedByUserId")
+                        .HasColumnType("bigint");
 
                     b.Property<DateTimeOffset?>("RevokedAtUtc")
                         .HasColumnType("datetimeoffset");
@@ -480,8 +525,8 @@ namespace AfterTab.DAL.EF.Migrations
                         .HasMaxLength(64)
                         .HasColumnType("nvarchar(64)");
 
-                    b.Property<Guid>("UserId")
-                        .HasColumnType("uniqueidentifier");
+                    b.Property<long>("UserId")
+                        .HasColumnType("bigint");
 
                     b.HasKey("Id");
 
@@ -499,8 +544,11 @@ namespace AfterTab.DAL.EF.Migrations
 
             modelBuilder.Entity("AfterTab.DAL.Entities.Users.GuestLoginRequest", b =>
                 {
-                    b.Property<Guid>("Id")
-                        .HasColumnType("uniqueidentifier");
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    SqlServerPropertyBuilderExtensions.UseHiLo(b.Property<long>("Id"));
 
                     b.Property<string>("Action")
                         .IsRequired()
@@ -522,26 +570,26 @@ namespace AfterTab.DAL.EF.Migrations
                     b.Property<DateTimeOffset>("CreatedAtUtc")
                         .HasColumnType("datetimeoffset");
 
-                    b.Property<Guid?>("CreatedByUserId")
-                        .HasColumnType("uniqueidentifier");
+                    b.Property<long?>("CreatedByUserId")
+                        .HasColumnType("bigint");
 
                     b.Property<DateTimeOffset>("ExpiresAtUtc")
                         .HasColumnType("datetimeoffset");
 
-                    b.Property<Guid?>("GuestDeviceId")
-                        .HasColumnType("uniqueidentifier");
+                    b.Property<long?>("GuestDeviceId")
+                        .HasColumnType("bigint");
 
-                    b.Property<Guid?>("LegacySessionId")
-                        .HasColumnType("uniqueidentifier");
+                    b.Property<long?>("LegacySessionId")
+                        .HasColumnType("bigint");
 
-                    b.Property<Guid?>("LegacyUserId")
-                        .HasColumnType("uniqueidentifier");
+                    b.Property<long?>("LegacyUserId")
+                        .HasColumnType("bigint");
 
                     b.Property<DateTimeOffset?>("ModifiedAtUtc")
                         .HasColumnType("datetimeoffset");
 
-                    b.Property<Guid?>("ModifiedByUserId")
-                        .HasColumnType("uniqueidentifier");
+                    b.Property<long?>("ModifiedByUserId")
+                        .HasColumnType("bigint");
 
                     b.Property<string>("ProposedDisplayName")
                         .HasMaxLength(100)
@@ -562,8 +610,8 @@ namespace AfterTab.DAL.EF.Migrations
                         .HasMaxLength(64)
                         .HasColumnType("nvarchar(64)");
 
-                    b.Property<Guid?>("UserId")
-                        .HasColumnType("uniqueidentifier");
+                    b.Property<long?>("UserId")
+                        .HasColumnType("bigint");
 
                     b.Property<Guid>("Version")
                         .IsConcurrencyToken()
@@ -597,14 +645,17 @@ namespace AfterTab.DAL.EF.Migrations
 
             modelBuilder.Entity("AfterTab.DAL.Entities.Users.Session", b =>
                 {
-                    b.Property<Guid>("Id")
-                        .HasColumnType("uniqueidentifier");
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    SqlServerPropertyBuilderExtensions.UseHiLo(b.Property<long>("Id"));
 
                     b.Property<DateTimeOffset>("CreatedAtUtc")
                         .HasColumnType("datetimeoffset");
 
-                    b.Property<Guid?>("CreatedByUserId")
-                        .HasColumnType("uniqueidentifier");
+                    b.Property<long?>("CreatedByUserId")
+                        .HasColumnType("bigint");
 
                     b.Property<string>("DeviceLabel")
                         .HasMaxLength(200)
@@ -613,8 +664,8 @@ namespace AfterTab.DAL.EF.Migrations
                     b.Property<DateTimeOffset>("ExpiresAtUtc")
                         .HasColumnType("datetimeoffset");
 
-                    b.Property<Guid?>("GuestDeviceId")
-                        .HasColumnType("uniqueidentifier");
+                    b.Property<long?>("GuestDeviceId")
+                        .HasColumnType("bigint");
 
                     b.Property<DateTimeOffset>("LastUsedAtUtc")
                         .HasColumnType("datetimeoffset");
@@ -622,7 +673,10 @@ namespace AfterTab.DAL.EF.Migrations
                     b.Property<DateTimeOffset?>("ModifiedAtUtc")
                         .HasColumnType("datetimeoffset");
 
-                    b.Property<Guid?>("ModifiedByUserId")
+                    b.Property<long?>("ModifiedByUserId")
+                        .HasColumnType("bigint");
+
+                    b.Property<Guid>("PublicId")
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<DateTimeOffset?>("RevokedAtUtc")
@@ -633,8 +687,8 @@ namespace AfterTab.DAL.EF.Migrations
                         .HasMaxLength(64)
                         .HasColumnType("nvarchar(64)");
 
-                    b.Property<Guid>("UserId")
-                        .HasColumnType("uniqueidentifier");
+                    b.Property<long>("UserId")
+                        .HasColumnType("bigint");
 
                     b.HasKey("Id");
 
@@ -643,6 +697,9 @@ namespace AfterTab.DAL.EF.Migrations
                     b.HasIndex("GuestDeviceId");
 
                     b.HasIndex("ModifiedByUserId");
+
+                    b.HasIndex("PublicId")
+                        .IsUnique();
 
                     b.HasIndex("TokenHash")
                         .IsUnique();
@@ -654,14 +711,17 @@ namespace AfterTab.DAL.EF.Migrations
 
             modelBuilder.Entity("AfterTab.DAL.Entities.Users.User", b =>
                 {
-                    b.Property<Guid>("Id")
-                        .HasColumnType("uniqueidentifier");
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    SqlServerPropertyBuilderExtensions.UseHiLo(b.Property<long>("Id"));
 
                     b.Property<DateTimeOffset>("CreatedAtUtc")
                         .HasColumnType("datetimeoffset");
 
-                    b.Property<Guid?>("CreatedByUserId")
-                        .HasColumnType("uniqueidentifier");
+                    b.Property<long?>("CreatedByUserId")
+                        .HasColumnType("bigint");
 
                     b.Property<string>("DisplayName")
                         .IsRequired()
@@ -677,7 +737,10 @@ namespace AfterTab.DAL.EF.Migrations
                     b.Property<DateTimeOffset?>("ModifiedAtUtc")
                         .HasColumnType("datetimeoffset");
 
-                    b.Property<Guid?>("ModifiedByUserId")
+                    b.Property<long?>("ModifiedByUserId")
+                        .HasColumnType("bigint");
+
+                    b.Property<Guid>("PublicId")
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<string>("Status")
@@ -691,19 +754,25 @@ namespace AfterTab.DAL.EF.Migrations
 
                     b.HasIndex("ModifiedByUserId");
 
+                    b.HasIndex("PublicId")
+                        .IsUnique();
+
                     b.ToTable("Users", (string)null);
                 });
 
             modelBuilder.Entity("AfterTab.DAL.Entities.Users.UserIdentity", b =>
                 {
-                    b.Property<Guid>("Id")
-                        .HasColumnType("uniqueidentifier");
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    SqlServerPropertyBuilderExtensions.UseHiLo(b.Property<long>("Id"));
 
                     b.Property<DateTimeOffset>("CreatedAtUtc")
                         .HasColumnType("datetimeoffset");
 
-                    b.Property<Guid?>("CreatedByUserId")
-                        .HasColumnType("uniqueidentifier");
+                    b.Property<long?>("CreatedByUserId")
+                        .HasColumnType("bigint");
 
                     b.Property<string>("Email")
                         .HasMaxLength(320)
@@ -721,8 +790,8 @@ namespace AfterTab.DAL.EF.Migrations
                     b.Property<DateTimeOffset?>("ModifiedAtUtc")
                         .HasColumnType("datetimeoffset");
 
-                    b.Property<Guid?>("ModifiedByUserId")
-                        .HasColumnType("uniqueidentifier");
+                    b.Property<long?>("ModifiedByUserId")
+                        .HasColumnType("bigint");
 
                     b.Property<string>("NormalizedEmail")
                         .HasMaxLength(320)
@@ -741,8 +810,8 @@ namespace AfterTab.DAL.EF.Migrations
                         .HasMaxLength(255)
                         .HasColumnType("nvarchar(255)");
 
-                    b.Property<Guid>("UserId")
-                        .HasColumnType("uniqueidentifier");
+                    b.Property<long>("UserId")
+                        .HasColumnType("bigint");
 
                     b.HasKey("Id");
 

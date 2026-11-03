@@ -1,6 +1,7 @@
 using AfterTab.Common.Security;
 using AfterTab.DAL.EF;
 using AfterTab.DAL.Entities.Expenses;
+using AfterTab.DAL.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
@@ -13,7 +14,7 @@ namespace AfterTab.Tests.Integration;
 [TestClass]
 public sealed class DatabaseProviderTests
 {
-    private sealed class Actor : ICurrentUser { public Guid? UserId => null; }
+    private sealed class Actor : ICurrentUser { public long? UserId => null; }
 
     [TestMethod]
     [DataRow(null, DatabaseProvider.SqlServer)]
@@ -50,6 +51,24 @@ public sealed class DatabaseProviderTests
         Assert.IsTrue(runtime.Database.GetMigrations().Any());
 
         var model = runtime.GetService<IDesignTimeModel>().Model;
+        foreach (var entity in model.GetEntityTypes())
+        {
+            var key = entity.FindPrimaryKey()!;
+            Assert.AreEqual(1, key.Properties.Count);
+            Assert.AreEqual(typeof(long), key.Properties.Single().ClrType);
+            Assert.AreEqual("bigint", key.Properties.Single().GetColumnType());
+            foreach (var foreignKey in entity.GetForeignKeys())
+                Assert.IsTrue(foreignKey.Properties.All(x => x.ClrType == typeof(long) || x.ClrType == typeof(long?)));
+            if (typeof(PublicEntity).IsAssignableFrom(entity.ClrType))
+            {
+                Assert.AreEqual(typeof(Guid), entity.FindProperty("PublicId")!.ClrType);
+                Assert.IsTrue(entity.GetIndexes().Any(x => x.IsUnique && x.Properties.Count == 1 && x.Properties[0].Name == "PublicId"));
+            }
+            // SQL Server creates clustered primary keys unless NONCLUSTERED is requested.
+            if (provider == "SqlServer") Assert.AreNotEqual(false, key.IsClustered());
+        }
+        Assert.AreEqual(1, model.GetSequences().Count());
+        Assert.IsTrue(model.GetSequences().Single().IncrementBy > 1);
         var version = model.FindEntityType(typeof(Expense))!.FindProperty(nameof(Expense.RowVersion))!;
         Assert.IsTrue(version.IsConcurrencyToken);
         var script = runtime.GetService<IMigrator>().GenerateScript();

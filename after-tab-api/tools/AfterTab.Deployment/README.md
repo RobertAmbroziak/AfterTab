@@ -3,6 +3,12 @@
 Polecenia poniżej uruchamiaj z głównego katalogu repozytorium AfterTab.
 Narzędzie jest oddzielne od działającego API i jego ustawień w Azure App Service.
 
+Wersja z kluczami liczbowymi wymaga **nowej, pustej bazy** i migracji
+`InitialNumericKeys`. Przed wdrożeniem istniejącej instalacji przeczytaj
+[instrukcję resetu](../../docs/database.md) ([English](../../docs/database.en.md)).
+`--migrate` i `--bootstrap` odmawiają pracy przy starej/obcej historii migracji;
+nie usuwają tabel ani danych. Dotychczasowe konta, sesje i wydarzenia nie są przenoszone.
+
 ## Wdrożenie SQL Server albo PostgreSQL
 
 Nowy tryb korzysta z tych samych ustawień co API: `Database__Provider`

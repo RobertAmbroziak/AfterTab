@@ -20,12 +20,18 @@ namespace AfterTab.DAL.Migrations.PostgreSql.Migrations
                 .HasAnnotation("ProductVersion", "9.0.21")
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
-            NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
+            NpgsqlModelBuilderExtensions.UseHiLo(modelBuilder, "EntityFrameworkHiLoSequence");
+
+            modelBuilder.HasSequence("EntityFrameworkHiLoSequence")
+                .IncrementsBy(10);
 
             modelBuilder.Entity("AfterTab.DAL.Entities.Events.Event", b =>
                 {
-                    b.Property<Guid>("Id")
-                        .HasColumnType("uuid");
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    NpgsqlPropertyBuilderExtensions.UseHiLo(b.Property<long>("Id"));
 
                     b.Property<DateTimeOffset?>("ClosedAtUtc")
                         .HasColumnType("timestamp with time zone");
@@ -33,8 +39,8 @@ namespace AfterTab.DAL.Migrations.PostgreSql.Migrations
                     b.Property<DateTimeOffset>("CreatedAtUtc")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<Guid?>("CreatedByUserId")
-                        .HasColumnType("uuid");
+                    b.Property<long?>("CreatedByUserId")
+                        .HasColumnType("bigint");
 
                     b.Property<string>("Currency")
                         .IsRequired()
@@ -48,15 +54,18 @@ namespace AfterTab.DAL.Migrations.PostgreSql.Migrations
                     b.Property<DateTimeOffset?>("ModifiedAtUtc")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<Guid?>("ModifiedByUserId")
-                        .HasColumnType("uuid");
+                    b.Property<long?>("ModifiedByUserId")
+                        .HasColumnType("bigint");
 
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasMaxLength(150)
                         .HasColumnType("character varying(150)");
 
-                    b.Property<Guid>("OwnerUserId")
+                    b.Property<long>("OwnerUserId")
+                        .HasColumnType("bigint");
+
+                    b.Property<Guid>("PublicId")
                         .HasColumnType("uuid");
 
                     b.Property<int>("SettlementVersion")
@@ -75,6 +84,9 @@ namespace AfterTab.DAL.Migrations.PostgreSql.Migrations
 
                     b.HasIndex("OwnerUserId");
 
+                    b.HasIndex("PublicId")
+                        .IsUnique();
+
                     b.HasIndex("CreatedAtUtc", "Id");
 
                     b.ToTable("Events", (string)null);
@@ -82,17 +94,20 @@ namespace AfterTab.DAL.Migrations.PostgreSql.Migrations
 
             modelBuilder.Entity("AfterTab.DAL.Entities.Events.EventInvite", b =>
                 {
-                    b.Property<Guid>("Id")
-                        .HasColumnType("uuid");
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    NpgsqlPropertyBuilderExtensions.UseHiLo(b.Property<long>("Id"));
 
                     b.Property<DateTimeOffset>("CreatedAtUtc")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<Guid?>("CreatedByUserId")
-                        .HasColumnType("uuid");
+                    b.Property<long?>("CreatedByUserId")
+                        .HasColumnType("bigint");
 
-                    b.Property<Guid>("EventId")
-                        .HasColumnType("uuid");
+                    b.Property<long>("EventId")
+                        .HasColumnType("bigint");
 
                     b.Property<DateTimeOffset?>("ExpiresAtUtc")
                         .HasColumnType("timestamp with time zone");
@@ -100,8 +115,8 @@ namespace AfterTab.DAL.Migrations.PostgreSql.Migrations
                     b.Property<DateTimeOffset?>("ModifiedAtUtc")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<Guid?>("ModifiedByUserId")
-                        .HasColumnType("uuid");
+                    b.Property<long?>("ModifiedByUserId")
+                        .HasColumnType("bigint");
 
                     b.Property<DateTimeOffset?>("RevokedAtUtc")
                         .HasColumnType("timestamp with time zone");
@@ -127,22 +142,25 @@ namespace AfterTab.DAL.Migrations.PostgreSql.Migrations
 
             modelBuilder.Entity("AfterTab.DAL.Entities.Events.EventParticipant", b =>
                 {
-                    b.Property<Guid>("Id")
-                        .HasColumnType("uuid");
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    NpgsqlPropertyBuilderExtensions.UseHiLo(b.Property<long>("Id"));
 
                     b.Property<DateTimeOffset>("CreatedAtUtc")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<Guid?>("CreatedByUserId")
-                        .HasColumnType("uuid");
+                    b.Property<long?>("CreatedByUserId")
+                        .HasColumnType("bigint");
 
                     b.Property<string>("DisplayName")
                         .IsRequired()
                         .HasMaxLength(100)
                         .HasColumnType("character varying(100)");
 
-                    b.Property<Guid>("EventId")
-                        .HasColumnType("uuid");
+                    b.Property<long>("EventId")
+                        .HasColumnType("bigint");
 
                     b.Property<DateTimeOffset>("JoinedAtUtc")
                         .HasColumnType("timestamp with time zone");
@@ -150,13 +168,16 @@ namespace AfterTab.DAL.Migrations.PostgreSql.Migrations
                     b.Property<DateTimeOffset?>("LeftAtUtc")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<Guid?>("MergedIntoParticipantId")
-                        .HasColumnType("uuid");
+                    b.Property<long?>("MergedIntoParticipantId")
+                        .HasColumnType("bigint");
 
                     b.Property<DateTimeOffset?>("ModifiedAtUtc")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<Guid?>("ModifiedByUserId")
+                    b.Property<long?>("ModifiedByUserId")
+                        .HasColumnType("bigint");
+
+                    b.Property<Guid>("PublicId")
                         .HasColumnType("uuid");
 
                     b.Property<string>("Status")
@@ -164,14 +185,17 @@ namespace AfterTab.DAL.Migrations.PostgreSql.Migrations
                         .HasMaxLength(20)
                         .HasColumnType("character varying(20)");
 
-                    b.Property<Guid?>("UserId")
-                        .HasColumnType("uuid");
+                    b.Property<long?>("UserId")
+                        .HasColumnType("bigint");
 
                     b.HasKey("Id");
 
                     b.HasIndex("CreatedByUserId");
 
                     b.HasIndex("ModifiedByUserId");
+
+                    b.HasIndex("PublicId")
+                        .IsUnique();
 
                     b.HasIndex("UserId");
 
@@ -186,8 +210,11 @@ namespace AfterTab.DAL.Migrations.PostgreSql.Migrations
 
             modelBuilder.Entity("AfterTab.DAL.Entities.Events.TransferConfirmation", b =>
                 {
-                    b.Property<Guid>("Id")
-                        .HasColumnType("uuid");
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    NpgsqlPropertyBuilderExtensions.UseHiLo(b.Property<long>("Id"));
 
                     b.Property<long>("AmountMinor")
                         .HasColumnType("bigint");
@@ -195,20 +222,20 @@ namespace AfterTab.DAL.Migrations.PostgreSql.Migrations
                     b.Property<DateTimeOffset>("CreatedAtUtc")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<Guid?>("CreatedByUserId")
-                        .HasColumnType("uuid");
+                    b.Property<long?>("CreatedByUserId")
+                        .HasColumnType("bigint");
 
-                    b.Property<Guid>("EventId")
-                        .HasColumnType("uuid");
+                    b.Property<long>("EventId")
+                        .HasColumnType("bigint");
 
-                    b.Property<Guid>("FromParticipantId")
-                        .HasColumnType("uuid");
+                    b.Property<long>("FromParticipantId")
+                        .HasColumnType("bigint");
 
                     b.Property<DateTimeOffset?>("ModifiedAtUtc")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<Guid?>("ModifiedByUserId")
-                        .HasColumnType("uuid");
+                    b.Property<long?>("ModifiedByUserId")
+                        .HasColumnType("bigint");
 
                     b.Property<DateTimeOffset?>("ReceivedAtUtc")
                         .HasColumnType("timestamp with time zone");
@@ -219,8 +246,8 @@ namespace AfterTab.DAL.Migrations.PostgreSql.Migrations
                     b.Property<int>("SettlementVersion")
                         .HasColumnType("integer");
 
-                    b.Property<Guid>("ToParticipantId")
-                        .HasColumnType("uuid");
+                    b.Property<long>("ToParticipantId")
+                        .HasColumnType("bigint");
 
                     b.HasKey("Id");
 
@@ -243,20 +270,23 @@ namespace AfterTab.DAL.Migrations.PostgreSql.Migrations
 
             modelBuilder.Entity("AfterTab.DAL.Entities.Expenses.Expense", b =>
                 {
-                    b.Property<Guid>("Id")
-                        .HasColumnType("uuid");
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    NpgsqlPropertyBuilderExtensions.UseHiLo(b.Property<long>("Id"));
 
                     b.Property<long>("AmountMinor")
                         .HasColumnType("bigint");
 
-                    b.Property<Guid>("AuthorUserId")
-                        .HasColumnType("uuid");
+                    b.Property<long>("AuthorUserId")
+                        .HasColumnType("bigint");
 
                     b.Property<long>("BalanceAmountMinor")
                         .HasColumnType("bigint");
 
-                    b.Property<Guid?>("BalanceParticipantId")
-                        .HasColumnType("uuid");
+                    b.Property<long?>("BalanceParticipantId")
+                        .HasColumnType("bigint");
 
                     b.Property<bool>("Balanced")
                         .HasColumnType("boolean");
@@ -264,11 +294,11 @@ namespace AfterTab.DAL.Migrations.PostgreSql.Migrations
                     b.Property<DateTimeOffset>("CreatedAtUtc")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<Guid?>("CreatedByUserId")
-                        .HasColumnType("uuid");
+                    b.Property<long?>("CreatedByUserId")
+                        .HasColumnType("bigint");
 
-                    b.Property<Guid>("EventId")
-                        .HasColumnType("uuid");
+                    b.Property<long>("EventId")
+                        .HasColumnType("bigint");
 
                     b.Property<DateOnly>("ExpenseDate")
                         .HasColumnType("date");
@@ -276,8 +306,8 @@ namespace AfterTab.DAL.Migrations.PostgreSql.Migrations
                     b.Property<DateTimeOffset?>("ModifiedAtUtc")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<Guid?>("ModifiedByUserId")
-                        .HasColumnType("uuid");
+                    b.Property<long?>("ModifiedByUserId")
+                        .HasColumnType("bigint");
 
                     b.Property<string>("Name")
                         .IsRequired()
@@ -291,7 +321,10 @@ namespace AfterTab.DAL.Migrations.PostgreSql.Migrations
                     b.Property<long>("OthersAmountMinor")
                         .HasColumnType("bigint");
 
-                    b.Property<Guid>("PaidByParticipantId")
+                    b.Property<long>("PaidByParticipantId")
+                        .HasColumnType("bigint");
+
+                    b.Property<Guid>("PublicId")
                         .HasColumnType("uuid");
 
                     b.Property<byte[]>("RowVersion")
@@ -314,6 +347,9 @@ namespace AfterTab.DAL.Migrations.PostgreSql.Migrations
 
                     b.HasIndex("ModifiedByUserId");
 
+                    b.HasIndex("PublicId")
+                        .IsUnique();
+
                     b.HasIndex("BalanceParticipantId", "EventId");
 
                     b.HasIndex("PaidByParticipantId", "EventId");
@@ -330,8 +366,11 @@ namespace AfterTab.DAL.Migrations.PostgreSql.Migrations
 
             modelBuilder.Entity("AfterTab.DAL.Entities.Expenses.ExpenseSplit", b =>
                 {
-                    b.Property<Guid>("Id")
-                        .HasColumnType("uuid");
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    NpgsqlPropertyBuilderExtensions.UseHiLo(b.Property<long>("Id"));
 
                     b.Property<long>("AmountMinor")
                         .HasColumnType("bigint");
@@ -339,23 +378,23 @@ namespace AfterTab.DAL.Migrations.PostgreSql.Migrations
                     b.Property<DateTimeOffset>("CreatedAtUtc")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<Guid?>("CreatedByUserId")
-                        .HasColumnType("uuid");
+                    b.Property<long?>("CreatedByUserId")
+                        .HasColumnType("bigint");
 
-                    b.Property<Guid>("EventId")
-                        .HasColumnType("uuid");
+                    b.Property<long>("EventId")
+                        .HasColumnType("bigint");
 
-                    b.Property<Guid>("ExpenseId")
-                        .HasColumnType("uuid");
+                    b.Property<long>("ExpenseId")
+                        .HasColumnType("bigint");
 
                     b.Property<DateTimeOffset?>("ModifiedAtUtc")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<Guid?>("ModifiedByUserId")
-                        .HasColumnType("uuid");
+                    b.Property<long?>("ModifiedByUserId")
+                        .HasColumnType("bigint");
 
-                    b.Property<Guid>("ParticipantId")
-                        .HasColumnType("uuid");
+                    b.Property<long>("ParticipantId")
+                        .HasColumnType("bigint");
 
                     b.Property<int?>("PercentageBps")
                         .HasColumnType("integer");
@@ -383,8 +422,11 @@ namespace AfterTab.DAL.Migrations.PostgreSql.Migrations
 
             modelBuilder.Entity("AfterTab.DAL.Entities.Users.AccountAction", b =>
                 {
-                    b.Property<Guid>("Id")
-                        .HasColumnType("uuid");
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    NpgsqlPropertyBuilderExtensions.UseHiLo(b.Property<long>("Id"));
 
                     b.Property<string>("BrowserHash")
                         .HasMaxLength(64)
@@ -400,8 +442,8 @@ namespace AfterTab.DAL.Migrations.PostgreSql.Migrations
                     b.Property<DateTimeOffset>("CreatedAtUtc")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<Guid?>("CreatedByUserId")
-                        .HasColumnType("uuid");
+                    b.Property<long?>("CreatedByUserId")
+                        .HasColumnType("bigint");
 
                     b.Property<DateTimeOffset>("ExpiresAtUtc")
                         .HasColumnType("timestamp with time zone");
@@ -409,8 +451,8 @@ namespace AfterTab.DAL.Migrations.PostgreSql.Migrations
                     b.Property<DateTimeOffset?>("ModifiedAtUtc")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<Guid?>("ModifiedByUserId")
-                        .HasColumnType("uuid");
+                    b.Property<long?>("ModifiedByUserId")
+                        .HasColumnType("bigint");
 
                     b.Property<string>("Purpose")
                         .IsRequired()
@@ -430,8 +472,8 @@ namespace AfterTab.DAL.Migrations.PostgreSql.Migrations
                         .HasMaxLength(64)
                         .HasColumnType("character varying(64)");
 
-                    b.Property<Guid?>("UserId")
-                        .HasColumnType("uuid");
+                    b.Property<long?>("UserId")
+                        .HasColumnType("bigint");
 
                     b.Property<Guid>("Version")
                         .IsConcurrencyToken()
@@ -453,14 +495,17 @@ namespace AfterTab.DAL.Migrations.PostgreSql.Migrations
 
             modelBuilder.Entity("AfterTab.DAL.Entities.Users.GuestDevice", b =>
                 {
-                    b.Property<Guid>("Id")
-                        .HasColumnType("uuid");
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    NpgsqlPropertyBuilderExtensions.UseHiLo(b.Property<long>("Id"));
 
                     b.Property<DateTimeOffset>("CreatedAtUtc")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<Guid?>("CreatedByUserId")
-                        .HasColumnType("uuid");
+                    b.Property<long?>("CreatedByUserId")
+                        .HasColumnType("bigint");
 
                     b.Property<DateTimeOffset>("ExpiresAtUtc")
                         .HasColumnType("timestamp with time zone");
@@ -468,8 +513,8 @@ namespace AfterTab.DAL.Migrations.PostgreSql.Migrations
                     b.Property<DateTimeOffset?>("ModifiedAtUtc")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<Guid?>("ModifiedByUserId")
-                        .HasColumnType("uuid");
+                    b.Property<long?>("ModifiedByUserId")
+                        .HasColumnType("bigint");
 
                     b.Property<DateTimeOffset?>("RevokedAtUtc")
                         .HasColumnType("timestamp with time zone");
@@ -479,8 +524,8 @@ namespace AfterTab.DAL.Migrations.PostgreSql.Migrations
                         .HasMaxLength(64)
                         .HasColumnType("character varying(64)");
 
-                    b.Property<Guid>("UserId")
-                        .HasColumnType("uuid");
+                    b.Property<long>("UserId")
+                        .HasColumnType("bigint");
 
                     b.HasKey("Id");
 
@@ -498,8 +543,11 @@ namespace AfterTab.DAL.Migrations.PostgreSql.Migrations
 
             modelBuilder.Entity("AfterTab.DAL.Entities.Users.GuestLoginRequest", b =>
                 {
-                    b.Property<Guid>("Id")
-                        .HasColumnType("uuid");
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    NpgsqlPropertyBuilderExtensions.UseHiLo(b.Property<long>("Id"));
 
                     b.Property<string>("Action")
                         .IsRequired()
@@ -521,26 +569,26 @@ namespace AfterTab.DAL.Migrations.PostgreSql.Migrations
                     b.Property<DateTimeOffset>("CreatedAtUtc")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<Guid?>("CreatedByUserId")
-                        .HasColumnType("uuid");
+                    b.Property<long?>("CreatedByUserId")
+                        .HasColumnType("bigint");
 
                     b.Property<DateTimeOffset>("ExpiresAtUtc")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<Guid?>("GuestDeviceId")
-                        .HasColumnType("uuid");
+                    b.Property<long?>("GuestDeviceId")
+                        .HasColumnType("bigint");
 
-                    b.Property<Guid?>("LegacySessionId")
-                        .HasColumnType("uuid");
+                    b.Property<long?>("LegacySessionId")
+                        .HasColumnType("bigint");
 
-                    b.Property<Guid?>("LegacyUserId")
-                        .HasColumnType("uuid");
+                    b.Property<long?>("LegacyUserId")
+                        .HasColumnType("bigint");
 
                     b.Property<DateTimeOffset?>("ModifiedAtUtc")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<Guid?>("ModifiedByUserId")
-                        .HasColumnType("uuid");
+                    b.Property<long?>("ModifiedByUserId")
+                        .HasColumnType("bigint");
 
                     b.Property<string>("ProposedDisplayName")
                         .HasMaxLength(100)
@@ -561,8 +609,8 @@ namespace AfterTab.DAL.Migrations.PostgreSql.Migrations
                         .HasMaxLength(64)
                         .HasColumnType("character varying(64)");
 
-                    b.Property<Guid?>("UserId")
-                        .HasColumnType("uuid");
+                    b.Property<long?>("UserId")
+                        .HasColumnType("bigint");
 
                     b.Property<Guid>("Version")
                         .IsConcurrencyToken()
@@ -596,14 +644,17 @@ namespace AfterTab.DAL.Migrations.PostgreSql.Migrations
 
             modelBuilder.Entity("AfterTab.DAL.Entities.Users.Session", b =>
                 {
-                    b.Property<Guid>("Id")
-                        .HasColumnType("uuid");
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    NpgsqlPropertyBuilderExtensions.UseHiLo(b.Property<long>("Id"));
 
                     b.Property<DateTimeOffset>("CreatedAtUtc")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<Guid?>("CreatedByUserId")
-                        .HasColumnType("uuid");
+                    b.Property<long?>("CreatedByUserId")
+                        .HasColumnType("bigint");
 
                     b.Property<string>("DeviceLabel")
                         .HasMaxLength(200)
@@ -612,8 +663,8 @@ namespace AfterTab.DAL.Migrations.PostgreSql.Migrations
                     b.Property<DateTimeOffset>("ExpiresAtUtc")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<Guid?>("GuestDeviceId")
-                        .HasColumnType("uuid");
+                    b.Property<long?>("GuestDeviceId")
+                        .HasColumnType("bigint");
 
                     b.Property<DateTimeOffset>("LastUsedAtUtc")
                         .HasColumnType("timestamp with time zone");
@@ -621,7 +672,10 @@ namespace AfterTab.DAL.Migrations.PostgreSql.Migrations
                     b.Property<DateTimeOffset?>("ModifiedAtUtc")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<Guid?>("ModifiedByUserId")
+                    b.Property<long?>("ModifiedByUserId")
+                        .HasColumnType("bigint");
+
+                    b.Property<Guid>("PublicId")
                         .HasColumnType("uuid");
 
                     b.Property<DateTimeOffset?>("RevokedAtUtc")
@@ -632,8 +686,8 @@ namespace AfterTab.DAL.Migrations.PostgreSql.Migrations
                         .HasMaxLength(64)
                         .HasColumnType("character varying(64)");
 
-                    b.Property<Guid>("UserId")
-                        .HasColumnType("uuid");
+                    b.Property<long>("UserId")
+                        .HasColumnType("bigint");
 
                     b.HasKey("Id");
 
@@ -642,6 +696,9 @@ namespace AfterTab.DAL.Migrations.PostgreSql.Migrations
                     b.HasIndex("GuestDeviceId");
 
                     b.HasIndex("ModifiedByUserId");
+
+                    b.HasIndex("PublicId")
+                        .IsUnique();
 
                     b.HasIndex("TokenHash")
                         .IsUnique();
@@ -653,14 +710,17 @@ namespace AfterTab.DAL.Migrations.PostgreSql.Migrations
 
             modelBuilder.Entity("AfterTab.DAL.Entities.Users.User", b =>
                 {
-                    b.Property<Guid>("Id")
-                        .HasColumnType("uuid");
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    NpgsqlPropertyBuilderExtensions.UseHiLo(b.Property<long>("Id"));
 
                     b.Property<DateTimeOffset>("CreatedAtUtc")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<Guid?>("CreatedByUserId")
-                        .HasColumnType("uuid");
+                    b.Property<long?>("CreatedByUserId")
+                        .HasColumnType("bigint");
 
                     b.Property<string>("DisplayName")
                         .IsRequired()
@@ -676,7 +736,10 @@ namespace AfterTab.DAL.Migrations.PostgreSql.Migrations
                     b.Property<DateTimeOffset?>("ModifiedAtUtc")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<Guid?>("ModifiedByUserId")
+                    b.Property<long?>("ModifiedByUserId")
+                        .HasColumnType("bigint");
+
+                    b.Property<Guid>("PublicId")
                         .HasColumnType("uuid");
 
                     b.Property<string>("Status")
@@ -690,19 +753,25 @@ namespace AfterTab.DAL.Migrations.PostgreSql.Migrations
 
                     b.HasIndex("ModifiedByUserId");
 
+                    b.HasIndex("PublicId")
+                        .IsUnique();
+
                     b.ToTable("Users", (string)null);
                 });
 
             modelBuilder.Entity("AfterTab.DAL.Entities.Users.UserIdentity", b =>
                 {
-                    b.Property<Guid>("Id")
-                        .HasColumnType("uuid");
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    NpgsqlPropertyBuilderExtensions.UseHiLo(b.Property<long>("Id"));
 
                     b.Property<DateTimeOffset>("CreatedAtUtc")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<Guid?>("CreatedByUserId")
-                        .HasColumnType("uuid");
+                    b.Property<long?>("CreatedByUserId")
+                        .HasColumnType("bigint");
 
                     b.Property<string>("Email")
                         .HasMaxLength(320)
@@ -720,8 +789,8 @@ namespace AfterTab.DAL.Migrations.PostgreSql.Migrations
                     b.Property<DateTimeOffset?>("ModifiedAtUtc")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<Guid?>("ModifiedByUserId")
-                        .HasColumnType("uuid");
+                    b.Property<long?>("ModifiedByUserId")
+                        .HasColumnType("bigint");
 
                     b.Property<string>("NormalizedEmail")
                         .HasMaxLength(320)
@@ -740,8 +809,8 @@ namespace AfterTab.DAL.Migrations.PostgreSql.Migrations
                         .HasMaxLength(255)
                         .HasColumnType("character varying(255)");
 
-                    b.Property<Guid>("UserId")
-                        .HasColumnType("uuid");
+                    b.Property<long>("UserId")
+                        .HasColumnType("bigint");
 
                     b.HasKey("Id");
 

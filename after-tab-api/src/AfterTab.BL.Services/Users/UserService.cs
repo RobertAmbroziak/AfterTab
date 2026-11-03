@@ -10,7 +10,7 @@ public sealed class UserService(IUserRepository repository, ICurrentUser current
 {
     public async Task<UserDto?> GetCurrentAsync(CancellationToken cancellationToken = default)
     {
-        if (currentUser.UserId is not Guid id) return null;
+        if (currentUser.UserId is not long id) return null;
         var user = await repository.GetByIdAsync(id, cancellationToken);
         if (user is null || user.Status != UserStatus.Active) return null;
         var hasIdentity = await repository.HasIdentityAsync(id, cancellationToken);

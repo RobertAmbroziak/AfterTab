@@ -2,9 +2,9 @@ using AfterTab.BL.DTO.Expenses;
 namespace AfterTab.BL.Interfaces.Expenses;
 public interface IExpenseService
 {
-    Task<IReadOnlyList<ExpenseDto>> ListAsync(Guid eventId, CancellationToken ct);
-    Task<ExpenseDto> CreateAsync(Guid eventId, CreateExpenseDto input, CancellationToken ct);
-    Task<ExpenseDto> UpdateSplitAsync(Guid eventId, Guid expenseId, UpdateExpenseSplitDto input, CancellationToken ct);
-    Task<ExpenseDto> UpdateBalanceAsync(Guid eventId, Guid expenseId, UpdateExpenseBalanceDto input, CancellationToken ct);
-    Task<ExpenseDto> UpdatePayerAsync(Guid eventId, Guid expenseId, UpdateExpensePayerDto input, CancellationToken ct);
+    Task<IReadOnlyList<ExpenseDto>> ListAsync(long eventId, CancellationToken ct);
+    Task<ExpenseDto> CreateAsync(long eventId, CreateExpenseDto input, CancellationToken ct);
+    Task<ExpenseDto> UpdateSplitAsync(long eventId, long expenseId, UpdateExpenseSplitDto input, CancellationToken ct);
+    Task<ExpenseDto> UpdateBalanceAsync(long eventId, long expenseId, UpdateExpenseBalanceDto input, CancellationToken ct);
+    Task<ExpenseDto> UpdatePayerAsync(long eventId, long expenseId, UpdateExpensePayerDto input, CancellationToken ct);
 }

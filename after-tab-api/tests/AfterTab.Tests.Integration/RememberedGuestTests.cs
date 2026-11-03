@@ -18,7 +18,7 @@ public sealed class RememberedGuestTests
 {
     private const string Verifier = "1234567890ABCDEF1234567890ABCDEF1234567890ABCDEF1234567890ABCDEF";
     private static string Challenge => Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(Verifier)));
-    private sealed class Actor : ICurrentUser { public Guid? UserId => null; }
+    private sealed class Actor : ICurrentUser { public long? UserId => null; }
     private sealed class Clock : TimeProvider
     {
         public DateTimeOffset Now { get; set; } = new(2026, 10, 25, 12, 0, 0, TimeSpan.Zero);
@@ -36,7 +36,7 @@ public sealed class RememberedGuestTests
             var connection = new SqliteConnection("Data Source=:memory:");
             await connection.OpenAsync();
             var clock = new Clock();
-            var db = new AppDbContext(new DbContextOptionsBuilder<AppDbContext>().UseSqlite(connection).Options, new Actor(), clock);
+            var db = new AppDbContext(new DbContextOptionsBuilder<AppDbContext>().UseSqlite(connection).ReplaceService<Microsoft.EntityFrameworkCore.Infrastructure.IModelCustomizer, NumericKeyModelCustomizer>().Options, new Actor(), clock);
             await db.Database.EnsureCreatedAsync();
             var users = new UserRepository(db);
             var repository = new GuestBrowserRepository(db);

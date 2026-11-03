@@ -64,6 +64,9 @@ after-tab-app/    React, Vite and PWA frontend
 
 ### Backend and local database
 
+This release requires an **empty database**. Existing installations must follow the
+[database reset instructions](after-tab-api/docs/database.en.md) before updating.
+
 Open PowerShell in the repository root:
 
 ```powershell
@@ -91,8 +94,10 @@ Keep the backend terminal open.
 ### Select SQL Server or PostgreSQL at deployment
 
 The same API build supports both engines. `Database:Provider` defaults to
-`SqlServer` in `appsettings.json`, so existing SQL Server/Azure SQL deployments
-keep working. Configure these environment variables on the server or in the
+`SqlServer` in `appsettings.json`. Provider selection stays the same, but this
+release requires a fresh empty schema, including on Azure SQL. Read the
+[numeric keys and database reset instructions](after-tab-api/docs/database.en.md)
+before updating an existing installation. Configure these environment variables on the server or in the
 deployment pipeline, outside Git:
 
 | Environment setting | SQL Server / Azure SQL | PostgreSQL |
@@ -119,9 +124,10 @@ or a secret store. Configure production TLS according to your database provider
 and run migrations with a schema-authorized account. The running API account
 does not need permission to create tables.
 
-Existing SQL Server migrations and their history stay in
-`src/AfterTab.DAL.EF/Migrations`. PostgreSQL has its own migration project,
-`src/AfterTab.DAL.Migrations.PostgreSql`. Every model change needs a migration
+SQL Server migrations are in `src/AfterTab.DAL.EF/Migrations`. PostgreSQL has its own
+migration project, `src/AfterTab.DAL.Migrations.PostgreSql`. Both engines now start
+with `InitialNumericKeys`, replacing the previous migration history. It requires
+an empty database and does not convert existing GUID-based data. Every subsequent model change needs a migration
 for each engine, for example:
 
 ```powershell
@@ -136,8 +142,11 @@ deployment tool also supports both engines through `--migrate`; see the
 
 Concurrency protection keeps the API's Base64 version format. SQL Server uses
 native `rowversion`; PostgreSQL uses a token refreshed by EF on writes. Direct
-PostgreSQL expense updates outside EF must refresh that token as well. Moving
-existing data between engines remains a separate operation.
+PostgreSQL expense updates outside EF must refresh that token as well. Primary and
+foreign keys are `bigint` (`long` in C#), generated using a HiLo sequence. Public
+user, session, event, participant and expense identifiers remain GUIDs with unique
+indexes; relationships use numeric IDs. See [database setup](after-tab-api/docs/database.en.md)
+for reset steps and sequence permissions.
 
 Run configuration and generated-SQL tests with `dotnet test AfterTabApi.sln`.
 Real-server tests require `AFTERTAB_TEST_SQLSERVER` and `AFTERTAB_TEST_POSTGRESQL`
@@ -263,8 +272,9 @@ to two minutes. Use **Retry connection** after a timeout.
 
 ### Local migration and test emails
 
-Apply local migrations using the startup instructions. `PermanentAccountsAndEventPaging`
-adds one-time account operations, sign-in lockout fields and an event-list index.
+Apply local migrations using the startup instructions. `InitialNumericKeys`
+includes one-time account operations, sign-in lockout fields and an event-list index.
+It replaces the old migration history and requires a reset for existing installations.
 To test confirmation and reset emails without SMTP, in the backend terminal:
 
 ```powershell
@@ -401,11 +411,11 @@ Linked participants show the current user name. Merging preserves the identifier
 of the participant without an account and makes the retired row an alias through
 `MergedIntoParticipantId`, preserving private payment history. No fake Users are created.
 
-`VirtualEventParticipants` makes participant UserId optional, fills existing names
-and maps historical transfer confirmations from account IDs to event participant
-IDs. Events, amounts and payment marks are preserved. Downgrade refuses to run if
-participants without accounts or merged aliases exist. Back up a real database
-before applying migrations. API and frontend must use compatible versions:
+`InitialNumericKeys` creates optional participant UserId and links transfer
+confirmations to participants in the same event. Database keys are numeric;
+HTTP identifiers use a separate GUID PublicId. There is no data-preserving upgrade
+from the previous schema: the reset also removes payment history.
+API and frontend must use compatible versions:
 `participantId`, `paidByParticipantId`, `fromParticipantId` and `toParticipantId`
 refer to participants; `authorUserId` still refers to the author account.
 
@@ -421,10 +431,9 @@ POST   /api/events/{eventId}/participants/{participantId}/link
 
 The merge target must be an active participant with an account in the same event.
 
-`ExplicitParticipantBalance` adds optional `BalanceParticipantId` and
-`BalanceAmountMinor` without recalculating existing amounts. Older balanced expenses
-retain their amounts and Balanced flag, with a null participant and zero recorded
-remainder. Their author must edit the base split before a new explicit assignment.
+`InitialNumericKeys` includes optional `BalanceParticipantId` and
+`BalanceAmountMinor`, allowing the payer or event owner to move a saved remainder
+without guessing the original shares.
 Create/edit requests use `balanceParticipantId`; `balance=true` without a selected
 person is rejected. To move or undo a saved remainder:
 

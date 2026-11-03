@@ -18,7 +18,9 @@ try
     builder.Services.AddSerilog((services, logger) => logger
         .ReadFrom.Configuration(builder.Configuration)
         .ReadFrom.Services(services));
-    builder.Services.AddControllers();
+    builder.Services.AddScoped<AfterTab.API.Contracts.PublicIds>();
+    builder.Services.AddScoped<AfterTab.API.Contracts.PublicIdResultFilter>();
+    builder.Services.AddControllers(options => options.Filters.AddService<AfterTab.API.Contracts.PublicIdResultFilter>());
     builder.Services.AddProblemDetails();
     builder.Services.AddExceptionHandler<AfterTab.API.Errors.AppExceptionHandler>();
     builder.Services.AddHttpContextAccessor();

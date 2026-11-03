@@ -2,7 +2,7 @@ using AfterTab.DAL.Entities.Users;
 namespace AfterTab.DAL.Interfaces.Users;
 public interface IUserRepository
 {
-    Task<User?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default);
-    Task<bool> HasIdentityAsync(Guid id, CancellationToken cancellationToken = default);
-    Task UpdateDisplayNameAsync(Guid id, string name, CancellationToken cancellationToken = default);
+    Task<User?> GetByIdAsync(long id, CancellationToken cancellationToken = default);
+    Task<bool> HasIdentityAsync(long id, CancellationToken cancellationToken = default);
+    Task UpdateDisplayNameAsync(long id, string name, CancellationToken cancellationToken = default);
 }

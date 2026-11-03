@@ -6,7 +6,7 @@ namespace AfterTab.Tests.Integration;
 
 // SQLite does not support sorting DateTimeOffset; production SQL Server does.
 // UTC ticks preserve SQL ordering semantics in relational integration tests.
-public sealed class SqliteUtcModelCustomizer(ModelCustomizerDependencies dependencies) : RelationalModelCustomizer(dependencies)
+public class SqliteUtcModelCustomizer(ModelCustomizerDependencies dependencies) : NumericKeyModelCustomizer(dependencies)
 {
     public override void Customize(ModelBuilder modelBuilder, DbContext context)
     {

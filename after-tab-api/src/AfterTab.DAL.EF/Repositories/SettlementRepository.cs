@@ -8,7 +8,7 @@ using Microsoft.EntityFrameworkCore;
 namespace AfterTab.DAL.EF.Repositories;
 public sealed class SettlementRepository(AppDbContext db) : ISettlementRepository
 {
-    private async Task<SettlementReadModel> Read(Guid eventId, Guid userId, CancellationToken ct)
+    private async Task<SettlementReadModel> Read(long eventId, long userId, CancellationToken ct)
     {
         var expenses = new ExpenseRepository(db);
         var data = await expenses.GetEventAsync(eventId, ct);
@@ -22,9 +22,9 @@ public sealed class SettlementRepository(AppDbContext db) : ISettlementRepositor
         var names = await db.EventParticipants.AsNoTracking().Where(x => x.EventId == eventId).ToDictionaryAsync(x => x.Id, x => x.DisplayName, ct);
         return new(data, await expenses.ListAsync(eventId, ct), confirmations, names);
     }
-    public Task<SettlementReadModel> ReadAsync(Guid eventId, Guid userId, CancellationToken ct)
+    public Task<SettlementReadModel> ReadAsync(long eventId, long userId, CancellationToken ct)
         => InTransaction(() => Read(eventId, userId, ct), ct);
-    public Task<SettlementReadModel> SetClosedAsync(Guid eventId, Guid userId, bool closed, DateTimeOffset now, CancellationToken ct)
+    public Task<SettlementReadModel> SetClosedAsync(long eventId, long userId, bool closed, DateTimeOffset now, CancellationToken ct)
         => InTransaction(async () =>
         {
             var data = await Read(eventId, userId, ct);
@@ -45,7 +45,7 @@ public sealed class SettlementRepository(AppDbContext db) : ISettlementRepositor
             }
             return data with { Event = new ExpenseEvent(ev, data.Event.Participants) };
         }, ct);
-    public Task MarkAsync(Guid eventId, Guid userId, int version, Guid fromParticipantId, Guid toParticipantId, long amountMinor, string side, bool value, DateTimeOffset now, CancellationToken ct)
+    public Task MarkAsync(long eventId, long userId, int version, long fromParticipantId, long toParticipantId, long amountMinor, string side, bool value, DateTimeOffset now, CancellationToken ct)
         => InTransaction(async () =>
         {
             var data = await Read(eventId, userId, ct);

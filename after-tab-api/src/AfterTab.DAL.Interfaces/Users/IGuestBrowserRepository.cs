@@ -11,7 +11,7 @@ public interface IGuestBrowserRepository
     Task<GuestLoginRequest?> FindRequestAsync(string hash, CancellationToken ct);
     Task<GuestLoginRequest?> FindCodeAsync(string hash, CancellationToken ct);
     Task<GuestDevice?> FindDeviceAsync(string hash, CancellationToken ct);
-    Task<GuestDevice?> FindDeviceAsync(Guid id, CancellationToken ct);
-    Task RevokeDeviceSessionsAsync(Guid deviceId, DateTimeOffset now, CancellationToken ct);
+    Task<GuestDevice?> FindDeviceAsync(long id, CancellationToken ct);
+    Task RevokeDeviceSessionsAsync(long deviceId, DateTimeOffset now, CancellationToken ct);
     Task<bool> SaveAsync(CancellationToken ct);
 }

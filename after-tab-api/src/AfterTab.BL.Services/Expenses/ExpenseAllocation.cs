@@ -11,7 +11,7 @@ public static class ExpenseAllocation
         if (input.AmountMinor <= 0 || input.AmountMinor > MaximumAmountMinor)
             throw Invalid("Podaj dodatnią kwotę do 1 000 000 000 zł.");
         if (input.SplitMethod is not ("Amount" or "Percentage")) throw Invalid("Wybierz podział kwotowy lub procentowy.");
-        if (input.Shares is null || input.Shares.Count > 1000 || input.Shares.Any(x => x is null || x.ParticipantId == Guid.Empty)
+        if (input.Shares is null || input.Shares.Count > 1000 || input.Shares.Any(x => x is null || x.ParticipantId <= 0)
             || input.Shares.Select(x => x.ParticipantId).Distinct().Count() != input.Shares.Count)
             throw Invalid("Nieprawidłowa lub powtórzona osoba w podziale.");
         var percentage = input.SplitMethod == "Percentage";
@@ -27,7 +27,7 @@ public static class ExpenseAllocation
         if (remaining < 0) throw Invalid("Suma podziału przekracza kwotę pozycji.");
         if (input.Balance && input.BalanceParticipantId is null)
             throw Invalid("Wybierz osobę, na którą chcesz wyrównać. Wyrównanie nie jest przydzielane automatycznie.");
-        if (input.BalanceParticipantId is Guid target && !rows.Any(x => x.ParticipantId == target))
+        if (input.BalanceParticipantId is long target && !rows.Any(x => x.ParticipantId == target))
             throw Invalid("Wyrównanie można przypisać tylko osobie wybranej do podziału.");
         var balanceAmount = input.BalanceParticipantId.HasValue ? remaining : 0;
         if (balanceAmount > 0)

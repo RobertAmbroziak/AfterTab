@@ -6,10 +6,11 @@ namespace AfterTab.Tests.Unit;
 [TestClass]
 public sealed class SettlementCalculatorTests
 {
-    private static readonly Guid Tomek = Guid.Parse("00000000-0000-0000-0000-000000000001");
-    private static readonly Guid Jarek = Guid.Parse("00000000-0000-0000-0000-000000000002");
-    private static readonly Guid Adam = Guid.Parse("00000000-0000-0000-0000-000000000003");
-    private static ExpenseDto Expense(Guid payer, Guid debtor, long amount, long others = 0) => new(Guid.NewGuid(), "Pizza", amount,
+    private static readonly long Tomek = 1L;
+    private static readonly long Jarek = 2L;
+    private static readonly long Adam = 3L;
+    private static long nextExpenseId;
+    private static ExpenseDto Expense(long payer, long debtor, long amount, long others = 0) => new(Interlocked.Increment(ref nextExpenseId), "Pizza", amount,
         payer.ToString(), payer, "Amount", false, others, [new(debtor, debtor.ToString(), amount - others, null)]);
     private static SettlementDto Calculate(params ExpenseDto[] expenses) => SettlementCalculator.Calculate("Active", 0, null, [], expenses);
     [TestMethod]
@@ -47,7 +48,7 @@ public sealed class SettlementCalculatorTests
     public void Many_Splits_Produce_Exact_Deterministic_Balances_Without_Reciprocal_Transfers()
     {
         var random = new Random(42);
-        var people = Enumerable.Range(1, 30).Select(i => new Guid(i, 0, 0, new byte[8])).ToArray();
+        var people = Enumerable.Range(1, 30).Select(i => (long)i).ToArray();
         var expenses = Enumerable.Range(0, 500).Select(_ => Expense(people[random.Next(people.Length)], people[random.Next(people.Length)], random.Next(1, 100000))).ToArray();
         var result = Calculate(expenses);
         var reversed = Calculate(expenses.Reverse().ToArray());

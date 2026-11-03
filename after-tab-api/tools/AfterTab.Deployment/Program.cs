@@ -18,7 +18,7 @@ if (standardConnection is not null || provider == DatabaseProvider.PostgreSql ||
     await using var configuredDb = new AppDbContext(configuredOptions.Options, new DeploymentActor(), TimeProvider.System);
     if (args.Contains("--migrate"))
     {
-        await configuredDb.Database.MigrateAsync();
+        await configuredDb.MigrateFreshSchemaAsync();
         Console.WriteLine($"Applied {provider} migrations.");
     }
     await Report(configuredDb);
@@ -63,7 +63,7 @@ if (args.Contains("--bootstrap"))
 {
     var principalId = Guid.Parse(Environment.GetEnvironmentVariable("AFTERTAB_API_PRINCIPAL_ID")
         ?? throw new InvalidOperationException("Missing API managed identity principal ID."));
-    await db.Database.MigrateAsync();
+    await db.MigrateFreshSchemaAsync();
     Console.WriteLine("Applied EF migrations to AfterTabDb.");
     await using var command = connection.CreateCommand();
     command.CommandText = $"""
@@ -89,5 +89,5 @@ static async Task Report(AppDbContext context)
 
 internal sealed class DeploymentActor : ICurrentUser
 {
-    public Guid? UserId => null;
+    public long? UserId => null;
 }

@@ -13,14 +13,14 @@ namespace AfterTab.BL.Services.Events;
 
 public sealed class EventService(IEventRepository events, IUserRepository users, ICurrentUser actor, TimeProvider clock) : IEventService
 {
-    private async Task<Guid> ActorAsync(bool requireName, CancellationToken ct)
+    private async Task<long> ActorAsync(bool requireName, CancellationToken ct)
     {
-        var user = actor.UserId is Guid id ? await users.GetByIdAsync(id, ct) : null;
+        var user = actor.UserId is long id ? await users.GetByIdAsync(id, ct) : null;
         if (user?.Status != UserStatus.Active) throw new AppException(ErrorKind.Forbidden, "Zaloguj się ponownie.");
         if (requireName && !user.DisplayNameConfirmed) throw new AppException(ErrorKind.Conflict, "Najpierw podaj swoje imię.");
         return user.Id;
     }
-    private static EventSummaryDto Summary(EventReadModel data, Guid? userId)
+    private static EventSummaryDto Summary(EventReadModel data, long? userId)
         => new(data.Event.Id, data.Event.Name, data.Event.Description, data.Event.Currency, data.OwnerName,
             data.Event.OwnerUserId == userId, data.Event.Status.ToString(), data.ParticipantCount);
 
@@ -31,7 +31,7 @@ public sealed class EventService(IEventRepository events, IUserRepository users,
         var result = await events.ListAsync(id, page, ct);
         return new(result.Items.Select(x => Summary(x, id)).ToList(), page, 10, result.TotalCount);
     }
-    public async Task<EventDetailsDto> GetAsync(Guid id, CancellationToken ct)
+    public async Task<EventDetailsDto> GetAsync(long id, CancellationToken ct)
     {
         var userId = await ActorAsync(false, ct);
         var data = await events.GetAsync(id, ct);
@@ -55,14 +55,14 @@ public sealed class EventService(IEventRepository events, IUserRepository users,
             new EventInvite { EventId = ev.Id, TokenHash = Hash(token) }, ct);
         return new(await GetAsync(ev.Id, ct), token);
     }
-    public async Task<InviteTokenDto> RotateInviteAsync(Guid id, CancellationToken ct)
+    public async Task<InviteTokenDto> RotateInviteAsync(long id, CancellationToken ct)
     {
         var userId = await ActorAsync(true, ct);
         var token = Secret();
         await events.RotateInviteAsync(id, userId, new EventInvite { EventId = id, TokenHash = Hash(token) }, clock.GetUtcNow(), ct);
         return new(token);
     }
-    public async Task RevokeInviteAsync(Guid id, CancellationToken ct)
+    public async Task RevokeInviteAsync(long id, CancellationToken ct)
         => await events.RotateInviteAsync(id, await ActorAsync(false, ct), null, clock.GetUtcNow(), ct);
     public async Task<InvitePreviewDto> PreviewAsync(string token, CancellationToken ct)
     {
@@ -72,7 +72,7 @@ public sealed class EventService(IEventRepository events, IUserRepository users,
         var data = await events.GetAsync(invite.EventId, ct);
         if (data is null || data.Event.Status != EventStatus.Active)
             throw new AppException(ErrorKind.NotFound, "To zaproszenie nie jest już aktywne.");
-        var member = actor.UserId is Guid id && (data.Event.OwnerUserId == id || await events.IsMemberAsync(data.Event.Id, id, ct));
+        var member = actor.UserId is long id && (data.Event.OwnerUserId == id || await events.IsMemberAsync(data.Event.Id, id, ct));
         return new(data.Event.Id, data.Event.Name, data.OwnerName, data.Event.Currency, member);
     }
     public async Task<EventDetailsDto> JoinAsync(string token, CancellationToken ct)
@@ -80,22 +80,22 @@ public sealed class EventService(IEventRepository events, IUserRepository users,
         var id = await events.JoinAsync(ValidateToken(token), await ActorAsync(true, ct), clock.GetUtcNow(), ct);
         return await GetAsync(id, ct);
     }
-    public async Task<EventDetailsDto> AddVirtualAsync(Guid id, VirtualParticipantDto input, CancellationToken ct)
+    public async Task<EventDetailsDto> AddVirtualAsync(long id, VirtualParticipantDto input, CancellationToken ct)
     {
         await events.AddVirtualAsync(id, await ActorAsync(true, ct), AfterTab.Common.Validation.DisplayNames.Normalize(input.DisplayName), clock.GetUtcNow(), ct);
         return await GetAsync(id, ct);
     }
-    public async Task<EventDetailsDto> RenameVirtualAsync(Guid id, Guid participantId, VirtualParticipantDto input, CancellationToken ct)
+    public async Task<EventDetailsDto> RenameVirtualAsync(long id, long participantId, VirtualParticipantDto input, CancellationToken ct)
     {
         await events.RenameVirtualAsync(id, await ActorAsync(true, ct), participantId, AfterTab.Common.Validation.DisplayNames.Normalize(input.DisplayName), ct);
         return await GetAsync(id, ct);
     }
-    public async Task<EventDetailsDto> RemoveVirtualAsync(Guid id, Guid participantId, CancellationToken ct)
+    public async Task<EventDetailsDto> RemoveVirtualAsync(long id, long participantId, CancellationToken ct)
     {
         await events.RemoveVirtualAsync(id, await ActorAsync(true, ct), participantId, ct);
         return await GetAsync(id, ct);
     }
-    public async Task<EventDetailsDto> LinkVirtualAsync(Guid id, Guid participantId, LinkParticipantDto input, CancellationToken ct)
+    public async Task<EventDetailsDto> LinkVirtualAsync(long id, long participantId, LinkParticipantDto input, CancellationToken ct)
     {
         await events.LinkVirtualAsync(id, await ActorAsync(true, ct), participantId, input.TargetParticipantId, ct);
         return await GetAsync(id, ct);

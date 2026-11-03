@@ -3,7 +3,7 @@ namespace AfterTab.DAL.Entities.Users;
 // Only hashes of one-use secrets are stored. Version prevents concurrent replay.
 public sealed class AccountAction : BaseEntity
 {
-    public Guid? UserId { get; set; }
+    public long? UserId { get; set; }
     public string TokenHash { get; set; } = "";
     public string Purpose { get; set; } = "";
     public string? Challenge { get; set; }

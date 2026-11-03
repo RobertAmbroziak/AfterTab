@@ -1,9 +1,9 @@
 namespace AfterTab.DAL.Entities;
 public abstract class BaseEntity
 {
-    public Guid Id { get; set; } = Guid.NewGuid();
+    public long Id { get; set; }
     public DateTimeOffset CreatedAtUtc { get; set; }
-    public Guid? CreatedByUserId { get; set; }
+    public long? CreatedByUserId { get; set; }
     public DateTimeOffset? ModifiedAtUtc { get; set; }
-    public Guid? ModifiedByUserId { get; set; }
+    public long? ModifiedByUserId { get; set; }
 }

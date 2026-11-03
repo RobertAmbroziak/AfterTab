@@ -9,7 +9,7 @@ namespace AfterTab.Tests.Integration;
 [TestClass]
 public sealed class PersistenceTests
 {
-    private sealed class Actor : ICurrentUser { public Guid? UserId { get; set; } }
+    private sealed class Actor : ICurrentUser { public long? UserId { get; set; } }
     private sealed class Clock : TimeProvider
     {
         public DateTimeOffset Now { get; set; } = new(2026, 1, 1, 12, 0, 0, TimeSpan.Zero);
@@ -23,7 +23,7 @@ public sealed class PersistenceTests
         await connection.OpenAsync();
         var actor = new Actor();
         var clock = new Clock();
-        var options = new DbContextOptionsBuilder<AppDbContext>().UseSqlite(connection).Options;
+        var options = new DbContextOptionsBuilder<AppDbContext>().UseSqlite(connection).ReplaceService<Microsoft.EntityFrameworkCore.Infrastructure.IModelCustomizer, NumericKeyModelCustomizer>().Options;
         await using var db = new AppDbContext(options, actor, clock);
         await db.Database.EnsureCreatedAsync();
         var user = new User { DisplayName = "Jarek" };
@@ -57,7 +57,7 @@ public sealed class PersistenceTests
     {
         await using var connection = new SqliteConnection("Data Source=:memory:");
         await connection.OpenAsync();
-        var options = new DbContextOptionsBuilder<AppDbContext>().UseSqlite(connection).Options;
+        var options = new DbContextOptionsBuilder<AppDbContext>().UseSqlite(connection).ReplaceService<Microsoft.EntityFrameworkCore.Infrastructure.IModelCustomizer, NumericKeyModelCustomizer>().Options;
         await using var db = new AppDbContext(options, new Actor(), new Clock());
         await db.Database.EnsureCreatedAsync();
         var user = new User { DisplayName = "Jarek" };

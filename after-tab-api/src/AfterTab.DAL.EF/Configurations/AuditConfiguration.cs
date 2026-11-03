@@ -10,7 +10,9 @@ internal static class AuditConfiguration
     {
         builder.ToTable(table);
         builder.HasKey(x => x.Id);
-        builder.Property(x => x.Id).ValueGeneratedNever();
+        builder.Property(x => x.Id).ValueGeneratedOnAdd();
+        if (typeof(PublicEntity).IsAssignableFrom(typeof(T)))
+            builder.HasIndex(nameof(PublicEntity.PublicId)).IsUnique();
         builder.Property(x => x.CreatedAtUtc).IsRequired();
         builder.HasOne<User>().WithMany().HasForeignKey(x => x.CreatedByUserId)
             .OnDelete(DeleteBehavior.NoAction);

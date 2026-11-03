@@ -8,7 +8,7 @@ using AfterTab.Common.Errors;
 namespace AfterTab.DAL.EF.Repositories;
 public sealed class ExpenseRepository(AppDbContext db) : IExpenseRepository
 {
-    public async Task<ExpenseEvent?> GetEventAsync(Guid eventId, CancellationToken ct)
+    public async Task<ExpenseEvent?> GetEventAsync(long eventId, CancellationToken ct)
     {
         var ev = await db.Events.AsNoTracking().SingleOrDefaultAsync(x => x.Id == eventId, ct);
         if (ev is null) return null;
@@ -19,7 +19,7 @@ public sealed class ExpenseRepository(AppDbContext db) : IExpenseRepository
             select new ExpenseParticipant(p, u == null ? p.DisplayName : u.DisplayName)).ToListAsync(ct);
         return new(ev, participants);
     }
-    public async Task<IReadOnlyList<ExpenseReadModel>> ListAsync(Guid eventId, CancellationToken ct)
+    public async Task<IReadOnlyList<ExpenseReadModel>> ListAsync(long eventId, CancellationToken ct)
     {
         var expenses = await (from e in db.Expenses.AsNoTracking()
             join p in db.EventParticipants on e.PaidByParticipantId equals p.Id
@@ -38,7 +38,7 @@ public sealed class ExpenseRepository(AppDbContext db) : IExpenseRepository
         return expenses.Select(x => new ExpenseReadModel(x.Expense, x.AuthorName, x.AuthorUserId,
             splits.Where(s => s.ExpenseId == x.Expense.Id).Select(s => s.Row).OrderBy(s => s.DisplayName).ThenBy(s => s.ParticipantId).ToList(), x.PaidByParticipantId, x.PayerName)).ToList();
     }
-    private async Task ValidateWrite(Expense expense, Guid userId, CancellationToken ct)
+    private async Task ValidateWrite(Expense expense, long userId, CancellationToken ct)
     {
         var ev = await db.Events.SingleOrDefaultAsync(x => x.Id == expense.EventId, ct);
         if (ev is null) throw new AppException(ErrorKind.NotFound, "Nie znaleziono wydarzenia.");
@@ -65,7 +65,7 @@ public sealed class ExpenseRepository(AppDbContext db) : IExpenseRepository
             db.Expenses.Add(expense);
             await db.SaveChangesAsync(ct);
         }, ct);
-    public Task UpdateSplitAsync(Expense replacement, Guid userId, byte[] expectedVersion, CancellationToken ct, bool balanceOnly = false)
+    public Task UpdateSplitAsync(Expense replacement, long userId, byte[] expectedVersion, CancellationToken ct, bool balanceOnly = false)
         => InTransaction(async () =>
         {
             // Read the event before touching expenses, just like close/create, to serialize lifecycle changes.
@@ -95,7 +95,7 @@ public sealed class ExpenseRepository(AppDbContext db) : IExpenseRepository
             db.Entry(current).Property(x => x.Balanced).IsModified = true;
             await db.SaveChangesAsync(ct);
         }, ct);
-    public Task UpdatePayerAsync(Guid eventId, Guid expenseId, Guid userId, Guid payerId, byte[] expectedVersion, CancellationToken ct)
+    public Task UpdatePayerAsync(long eventId, long expenseId, long userId, long payerId, byte[] expectedVersion, CancellationToken ct)
         => InTransaction(async () =>
         {
             var ev = await db.Events.SingleOrDefaultAsync(x => x.Id == eventId, ct)

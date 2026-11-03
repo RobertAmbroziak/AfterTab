@@ -66,7 +66,7 @@ public sealed class AccountController(AccountService accounts, AppDbContext db, 
         if (!AllowedOrigin(input.ReturnOrigin) || Request.Headers.Origin.ToString() != input.ReturnOrigin
             || !AccountService.IsSecret(input.Challenge) || !AccountService.IsSecret(input.State)
             || input.Action is not ("login" or "Google" or "Facebook" or "restore" or "logout")) return BadRequest();
-        Guid? id = null;
+        long? id = null;
         if (input.Action == "login") id = await accounts.LoginAsync(input.Email ?? "", input.Password ?? "", ct);
         else if (input.Action is "Google" or "Facebook")
         {
@@ -142,7 +142,7 @@ public sealed class AccountController(AccountService accounts, AppDbContext db, 
             properties.Items["flow"] = callback; properties.Items["provider"] = action;
             return Challenge(properties, action);
         }
-        Guid? userId = flow.UserId;
+        long? userId = flow.UserId;
         if (action is "restore" or "logout")
         {
             var cookie = Request.Cookies[CookieName];
@@ -178,7 +178,7 @@ public sealed class AccountController(AccountService accounts, AppDbContext db, 
         accounts.Consume(flow);
         return await FinishAsync(flow, userId, true, ct);
     }
-    private async Task<IActionResult> FinishAsync(AccountAction flow, Guid? userId, bool remember, CancellationToken ct)
+    private async Task<IActionResult> FinishAsync(AccountAction flow, long? userId, bool remember, CancellationToken ct)
     {
         var code = accounts.AddAction(userId, remember ? "exchange-remember" : "exchange", TimeSpan.FromMinutes(1), flow.Challenge, flow.State, flow.ReturnOrigin);
         db.AccountActions.Local.Single(x => x.TokenHash == AccountService.Hash(code)).BrowserHash = flow.BrowserHash;
@@ -211,7 +211,7 @@ public sealed class AccountController(AccountService accounts, AppDbContext db, 
         if (Request.Headers.Origin.ToString() != $"{Request.Scheme}://{Request.Host}") return BadRequest();
         var flow = await accounts.FindAsync(request, "remember", ct);
         var browser = Request.Cookies[BrowserCookie];
-        if (flow?.UserId is not Guid userId || !AccountService.Matches(flow.Challenge, verifier)
+        if (flow?.UserId is not long userId || !AccountService.Matches(flow.Challenge, verifier)
             || !AccountService.Matches(flow.BrowserHash, browser)) return BadRequest("Logowanie pochodzi z innej przeglądarki lub wygasło. Wróć do AfterTab.");
         accounts.Consume(flow);
         var session = await accounts.IssueSessionAsync(userId, ct, persistentCookie: true);

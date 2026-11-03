@@ -18,7 +18,7 @@ namespace AfterTab.Tests.Integration;
 [TestClass]
 public sealed class ParticipantBalanceTests
 {
-    private sealed class Actor : ICurrentUser { public Guid? UserId { get; set; } }
+    private sealed class Actor : ICurrentUser { public long? UserId { get; set; } }
     private sealed class Scope : IAsyncDisposable
     {
         public required SqliteConnection Connection { get; init; }
@@ -29,7 +29,7 @@ public sealed class ParticipantBalanceTests
         public required User Payer { get; init; }
         public required User Other { get; init; }
         public required Event Event { get; init; }
-        public required Dictionary<Guid, Guid> Participants { get; init; }
+        public required Dictionary<long, long> Participants { get; init; }
         public required ExpenseDto Item { get; set; }
         public ExpenseService Service => new(new ExpenseRepository(Db), new UserRepository(Db), Actor, TimeProvider.System);
         public static async Task<Scope> Create()
@@ -56,7 +56,7 @@ public sealed class ParticipantBalanceTests
             item = await service.UpdatePayerAsync(ev.Id, item.Id, new(ids[payer.Id], item.RowVersion!), default);
             return new() { Connection = connection, Db = db, Actor = actor, Owner = owner, Author = author, Payer = payer, Other = other, Event = ev, Participants = ids, Item = item };
         }
-        public async Task<ExpenseDto> Balance(Guid? participant)
+        public async Task<ExpenseDto> Balance(long? participant)
         {
             Item = await Service.UpdateBalanceAsync(Event.Id, Item.Id, new(participant, Item.RowVersion!), default);
             return Item;
@@ -113,7 +113,7 @@ public sealed class ParticipantBalanceTests
     {
         await using var s = await Scope.Create();
         await Assert.ThrowsExactlyAsync<AppException>(() => s.Balance(s.Participants[s.Other.Id]));
-        await Assert.ThrowsExactlyAsync<AppException>(() => s.Balance(Guid.NewGuid()));
+        await Assert.ThrowsExactlyAsync<AppException>(() => s.Balance(long.MaxValue));
         await Assert.ThrowsExactlyAsync<AppException>(() => s.Service.UpdateBalanceAsync(s.Event.Id, s.Item.Id,
             new(s.Participants[s.Owner.Id], "Ag=="), default));
         await s.Balance(s.Participants[s.Owner.Id]);
