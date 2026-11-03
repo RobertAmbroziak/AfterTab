@@ -47,7 +47,7 @@ PWABuilder ZIP and signing credentials private.
 
 Requirements:
 
-- Windows and SQL Server Express LocalDB, for example from Visual Studio 2022.
+- SQL Server or PostgreSQL. The default example below uses SQL Server Express LocalDB on Windows; PostgreSQL also allows running the backend on Linux.
 - .NET SDK 9.0.3xx, as specified in `after-tab-api/global.json`.
 - Node.js 22.12 or later and npm.
 - Visual Studio users: VS 2022 17.14 with ASP.NET tools.
@@ -65,6 +65,7 @@ Open PowerShell in the repository root:
 
 ```powershell
 cd after-tab-api
+$env:Database__Provider = 'SqlServer'
 $env:ConnectionStrings__AfterTab = 'Server=(localdb)\MSSQLLocalDB;Database=AfterTab;Trusted_Connection=True;TrustServerCertificate=True'
 $env:Cors__AllowedOrigins__0 = 'http://localhost:5173'
 dotnet restore
@@ -83,6 +84,63 @@ to any other database.
 - Process health: `https://localhost:7180/api/health`; this does not check the database.
 
 Keep the backend terminal open.
+
+### Select SQL Server or PostgreSQL at deployment
+
+The same API build supports both engines. `Database:Provider` defaults to
+`SqlServer` in `appsettings.json`, so existing SQL Server/Azure SQL deployments
+keep working. Configure these environment variables on the server or in the
+deployment pipeline, outside Git:
+
+| Environment setting | SQL Server / Azure SQL | PostgreSQL |
+| --- | --- | --- |
+| `Database__Provider` | `SqlServer` | `PostgreSql` |
+| `ConnectionStrings__AfterTab` | SQL Server connection string | PostgreSQL connection string |
+
+Restart the API after changing these settings. An unknown provider prevents
+startup instead of silently selecting a different engine. Each process uses one
+engine; switching the setting does not transfer data between databases.
+
+For PostgreSQL, first provision a server, database and user. Then, from
+`after-tab-api` after `dotnet restore` and `dotnet tool restore`:
+
+```powershell
+$env:Database__Provider = 'PostgreSql'
+$env:ConnectionStrings__AfterTab = 'Host=localhost;Port=5432;Database=AfterTab;Username=aftertab;Password=<password>'
+dotnet ef database update --project src/AfterTab.DAL.Migrations.PostgreSql --startup-project src/AfterTab.API
+dotnet run --project src/AfterTab.API --launch-profile https
+```
+
+`<password>` is a placeholder. Keep real credentials in environment configuration
+or a secret store. Configure production TLS according to your database provider
+and run migrations with a schema-authorized account. The running API account
+does not need permission to create tables.
+
+Existing SQL Server migrations and their history stay in
+`src/AfterTab.DAL.EF/Migrations`. PostgreSQL has its own migration project,
+`src/AfterTab.DAL.Migrations.PostgreSql`. Every model change needs a migration
+for each engine, for example:
+
+```powershell
+dotnet ef migrations add ChangeName --project src/AfterTab.DAL.EF --startup-project src/AfterTab.API -- --Database:Provider SqlServer
+dotnet ef migrations add ChangeName --project src/AfterTab.DAL.Migrations.PostgreSql --startup-project src/AfterTab.API -- --Database:Provider PostgreSql
+```
+
+Set the matching engine's connection string for each command. Never apply SQL
+Server migrations to PostgreSQL. The API does not migrate on startup. The
+deployment tool also supports both engines through `--migrate`; see the
+[deployment instructions](after-tab-api/tools/AfterTab.Deployment/README.md).
+
+Concurrency protection keeps the API's Base64 version format. SQL Server uses
+native `rowversion`; PostgreSQL uses a token refreshed by EF on writes. Direct
+PostgreSQL expense updates outside EF must refresh that token as well. Moving
+existing data between engines remains a separate operation.
+
+Run configuration and generated-SQL tests with `dotnet test AfterTabApi.sln`.
+Real-server tests require `AFTERTAB_TEST_SQLSERVER` and `AFTERTAB_TEST_POSTGRESQL`
+connection strings to local test servers with create/drop database permissions.
+They create and delete their own randomly named `aftertab_test_*` databases;
+without those variables, the two real-server cases are skipped.
 
 ### Frontend
 

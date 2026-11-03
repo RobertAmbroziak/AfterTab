@@ -91,7 +91,7 @@ public sealed class ExpenseRepository(AppDbContext db) : IExpenseRepository
                 else { old.AmountMinor = next.AmountMinor; old.PercentageBps = next.PercentageBps; }
             }
             foreach (var next in replacement.Splits.Where(x => !current.Splits.Any(s => s.ParticipantId == x.ParticipantId))) current.Splits.Add(next);
-            // Mark the aggregate modified even when only its children changed, updating SQL Server rowversion.
+            // Mark the aggregate modified even when only its children changed, updating its concurrency token.
             db.Entry(current).Property(x => x.Balanced).IsModified = true;
             await db.SaveChangesAsync(ct);
         }, ct);

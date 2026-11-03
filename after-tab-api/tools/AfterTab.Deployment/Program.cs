@@ -4,8 +4,28 @@ using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 
-// Deliberately scoped to the AfterTab Azure database. Never uses BudgetWalletDb.
-var configuration = new ConfigurationBuilder().AddUserSecrets<DeploymentActor>().Build();
+var configuration = new ConfigurationBuilder().AddUserSecrets<DeploymentActor>()
+    .AddEnvironmentVariables().Build();
+var provider = DatabaseConfiguration.ParseProvider(configuration["Database:Provider"]);
+var standardConnection = configuration.GetConnectionString("AfterTab");
+if (standardConnection is not null || provider == DatabaseProvider.PostgreSql || args.Contains("--migrate"))
+{
+    if (args.Contains("--bootstrap"))
+        throw new InvalidOperationException("--bootstrap is only for the separate Azure SQL / Entra deployment mode. Use --migrate for provider-configured deployments.");
+    var configuredOptions = new DbContextOptionsBuilder<AppDbContext>();
+    configuredOptions.UseAfterTabDatabase(standardConnection
+        ?? throw new InvalidOperationException("Missing ConnectionStrings:AfterTab."), provider);
+    await using var configuredDb = new AppDbContext(configuredOptions.Options, new DeploymentActor(), TimeProvider.System);
+    if (args.Contains("--migrate"))
+    {
+        await configuredDb.Database.MigrateAsync();
+        Console.WriteLine($"Applied {provider} migrations.");
+    }
+    await Report(configuredDb);
+    return;
+}
+
+// Legacy Azure / Entra mode remains restricted to AfterTabDb and token authentication.
 var connectionString = Environment.GetEnvironmentVariable("AFTERTAB_SQL_CONNECTION_STRING")
     ?? configuration["Deployment:SqlConnectionString"];
 if (string.IsNullOrWhiteSpace(connectionString))
@@ -56,11 +76,16 @@ if (args.Contains("--bootstrap"))
     Console.WriteLine("Granted API managed identity data access in AfterTabDb (no schema migration permissions).");
 }
 
-var applied = await db.Database.GetAppliedMigrationsAsync();
-Console.WriteLine("Applied migrations: " + string.Join(", ", applied));
-Console.WriteLine($"Users: {await db.Users.CountAsync()}, Sessions: {await db.Sessions.CountAsync()}");
-Console.WriteLine($"Revoked sessions: {await db.Sessions.CountAsync(x => x.RevokedAtUtc != null)}");
-Console.WriteLine($"Events: {await db.Events.CountAsync()}, Expenses: {await db.Expenses.CountAsync()}");
+await Report(db);
+
+static async Task Report(AppDbContext context)
+{
+    var applied = await context.Database.GetAppliedMigrationsAsync();
+    Console.WriteLine("Applied migrations: " + string.Join(", ", applied));
+    Console.WriteLine($"Users: {await context.Users.CountAsync()}, Sessions: {await context.Sessions.CountAsync()}");
+    Console.WriteLine($"Revoked sessions: {await context.Sessions.CountAsync(x => x.RevokedAtUtc != null)}");
+    Console.WriteLine($"Events: {await context.Events.CountAsync()}, Expenses: {await context.Expenses.CountAsync()}");
+}
 
 internal sealed class DeploymentActor : ICurrentUser
 {

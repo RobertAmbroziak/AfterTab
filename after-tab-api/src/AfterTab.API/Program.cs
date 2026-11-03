@@ -97,7 +97,8 @@ try
     builder.Services.AddScoped<ICurrentUser, HttpCurrentUser>();
     builder.Services.AddAfterTabBusiness();
     builder.Services.AddAfterTabData(builder.Configuration.GetConnectionString("AfterTab")
-        ?? throw new InvalidOperationException("Missing ConnectionStrings:AfterTab"));
+        ?? throw new InvalidOperationException("Missing ConnectionStrings:AfterTab"),
+        builder.Configuration["Database:Provider"]);
     var origins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() ?? [];
     builder.Services.AddCors(options => options.AddPolicy("Frontend", policy =>
     {

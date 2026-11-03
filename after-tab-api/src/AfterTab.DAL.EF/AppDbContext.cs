@@ -6,6 +6,7 @@ using AfterTab.DAL.Entities.Expenses;
 using AfterTab.DAL.EF.Configurations;
 using AfterTab.DAL.Interfaces;
 using Microsoft.EntityFrameworkCore;
+using System.Security.Cryptography;
 namespace AfterTab.DAL.EF;
 public sealed class AppDbContext(
     DbContextOptions<AppDbContext> options,
@@ -26,11 +27,21 @@ public sealed class AppDbContext(
     public DbSet<TransferConfirmation> TransferConfirmations => Set<TransferConfirmation>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
-        => modelBuilder.ApplyConfigurationsFromAssembly(typeof(AppDbContext).Assembly);
+    {
+        modelBuilder.ApplyConfigurationsFromAssembly(typeof(AppDbContext).Assembly);
+        if (Database.IsNpgsql()) PostgreSqlModelConfiguration.Configure(modelBuilder);
+    }
 
     private void ApplyAudit()
     {
         ChangeTracker.DetectChanges();
+        if (Database.IsNpgsql())
+        {
+            // Keep the API's opaque byte[] version while SQL Server retains native rowversion.
+            foreach (var entry in ChangeTracker.Entries<Expense>())
+                if (entry.State is EntityState.Added or EntityState.Modified)
+                    entry.Entity.RowVersion = RandomNumberGenerator.GetBytes(16);
+        }
         var now = timeProvider.GetUtcNow();
         var actor = currentUser.UserId;
         foreach (var entry in ChangeTracker.Entries<BaseEntity>())

@@ -7,11 +7,11 @@ using Microsoft.Extensions.DependencyInjection.Extensions;
 namespace AfterTab.DAL.EF;
 public static class DependencyInjection
 {
-    public static IServiceCollection AddAfterTabData(this IServiceCollection services, string connectionString)
+    public static IServiceCollection AddAfterTabData(this IServiceCollection services, string connectionString, string? provider = null)
     {
+        var databaseProvider = DatabaseConfiguration.ParseProvider(provider);
         services.TryAddSingleton<TimeProvider>(TimeProvider.System);
-        services.AddDbContext<AppDbContext>(options => options.UseSqlServer(connectionString,
-            sql => sql.EnableRetryOnFailure()));
+        services.AddDbContext<AppDbContext>(options => options.UseAfterTabDatabase(connectionString, databaseProvider));
         services.AddScoped<IUnitOfWork>(sp => sp.GetRequiredService<AppDbContext>());
         services.AddScoped<IUserRepository, UserRepository>();
         services.AddScoped<ISessionRepository, SessionRepository>();

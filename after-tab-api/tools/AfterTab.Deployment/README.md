@@ -3,6 +3,39 @@
 Polecenia poniżej uruchamiaj z głównego katalogu repozytorium AfterTab.
 Narzędzie jest oddzielne od działającego API i jego ustawień w Azure App Service.
 
+## Wdrożenie SQL Server albo PostgreSQL
+
+Nowy tryb korzysta z tych samych ustawień co API: `Database__Provider`
+(`SqlServer` lub `PostgreSql`, domyślnie `SqlServer`) i
+`ConnectionStrings__AfterTab`. Można też zapisać odpowiedniki
+`Database:Provider` i `ConnectionStrings:AfterTab` w User Secrets narzędzia.
+Zmienne środowiskowe mają pierwszeństwo. Narzędzie nie wczytuje plików `.env`
+ani konfiguracji API.
+
+Przykład z placeholderami, z głównego katalogu repozytorium:
+
+```powershell
+$env:Database__Provider = 'PostgreSql'
+$env:ConnectionStrings__AfterTab = 'Host=<host>;Database=<database>;Username=<user>;Password=<password>'
+dotnet run --project after-tab-api/tools/AfterTab.Deployment -- --migrate
+```
+
+`--migrate` stosuje wyłącznie migracje wybranego silnika. Baza/użytkownik powinny
+być wcześniej przygotowane, a konto migracyjne musi mieć uprawnienia do schematu.
+Bez argumentu narzędzie tylko odczytuje historię migracji i liczniki danych
+w już zmigrowanej bazie. API nie stosuje migracji automatycznie.
+
+Tryb ogólny wybierany jest przy ustawieniu `ConnectionStrings:AfterTab`, wybraniu
+PostgreSQL lub podaniu `--migrate`. Pozostaje oddzielony od poniższego trybu
+Azure/Entra; nie obsługuje `--bootstrap` ani nie nadaje uprawnień managed identity.
+
+## Dotychczasowy tryb Azure SQL / Microsoft Entra
+
+Poniższe instrukcje dotyczą wyłącznie Azure SQL. Nie ustawiaj w tym procesie
+`ConnectionStrings__AfterTab` ani providera PostgreSQL; te ustawienia wybierają
+tryb ogólny opisany powyżej. Dotychczasowe zmienne `AFTERTAB_SQL_*`, ograniczenie
+do `AfterTabDb` i tokenowe uwierzytelnianie pozostają obsługiwane.
+
 ## Jednorazowa konfiguracja komputera
 
 Connection string przechowuj w lokalnym magazynie .NET User Secrets. Nie trafia on

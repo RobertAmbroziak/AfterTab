@@ -50,7 +50,7 @@ Pełny ZIP z PWABuilder i klucze podpisywania pozostają prywatne.
 
 ### Wymagania
 
-- Windows i SQL Server Express LocalDB, np. z instalacji Visual Studio 2022.
+- SQL Server albo PostgreSQL. Poniższy domyślny przykład używa SQL Server Express LocalDB na Windows; PostgreSQL pozwala uruchomić backend również na Linuxie.
 - .NET SDK 9.0.3xx, zgodnie z `after-tab-api/global.json`.
 - Node.js 22.12 lub nowszy oraz npm.
 - Przy pracy w Visual Studio: wersja 2022 17.14 z narzędziami ASP.NET.
@@ -69,6 +69,7 @@ Otwórz PowerShell w głównym katalogu repozytorium:
 ```powershell
 cd after-tab-api
 
+$env:Database__Provider = 'SqlServer'
 $env:ConnectionStrings__AfterTab = 'Server=(localdb)\MSSQLLocalDB;Database=AfterTab;Trusted_Connection=True;TrustServerCertificate=True'
 $env:Cors__AllowedOrigins__0 = 'http://localhost:5173'
 
@@ -91,6 +92,62 @@ nie uruchamiaj go przeciwko innej bazie bez sprawdzenia connection stringa.
 Pozostaw terminal backendu uruchomiony.
 
 Logowanie błędów, rotacja plików i ustawienia hostingu: [instrukcja logowania backendu](after-tab-api/docs/logging.md).
+
+### Wybór bazy przy wdrożeniu: SQL Server lub PostgreSQL
+
+Ten sam build API obsługuje oba silniki. W `appsettings.json` domyślne
+`Database:Provider` to `SqlServer`, więc istniejące wdrożenie SQL Server/Azure SQL
+nie wymaga zmiany. Na serwerze lub w pipeline ustaw poza Git:
+
+| Ustawienie środowiska | SQL Server / Azure SQL | PostgreSQL |
+| --- | --- | --- |
+| `Database__Provider` | `SqlServer` | `PostgreSql` |
+| `ConnectionStrings__AfterTab` | Connection string SQL Server | Connection string PostgreSQL |
+
+Zmiana wymaga ponownego uruchomienia API. Nieznana nazwa dostawcy przerywa start;
+aplikacja nie przełącza się automatycznie na inny silnik. Wybór dotyczy jednego
+silnika na uruchomiony proces i nie kopiuje danych pomiędzy bazami.
+
+Dla PostgreSQL uruchom wcześniej własny serwer i utwórz użytkownika oraz bazę.
+Następnie w katalogu `after-tab-api` (po `dotnet restore` i `dotnet tool restore`):
+
+```powershell
+$env:Database__Provider = 'PostgreSql'
+$env:ConnectionStrings__AfterTab = 'Host=localhost;Port=5432;Database=AfterTab;Username=aftertab;Password=<haslo>'
+dotnet ef database update --project src/AfterTab.DAL.Migrations.PostgreSql --startup-project src/AfterTab.API
+dotnet run --project src/AfterTab.API --launch-profile https
+```
+
+`<haslo>` to placeholder. Prawdziwe dane dostępowe przechowuj w konfiguracji
+środowiska lub magazynie sekretów. W produkcji skonfiguruj TLS zgodnie z
+wymaganiami dostawcy bazy i stosuj migracje kontem z uprawnieniami do schematu.
+Konto działającego API nie musi mieć uprawnień do tworzenia tabel.
+
+Migracje SQL Server pozostają w `src/AfterTab.DAL.EF/Migrations` wraz z dotychczasową
+historią. Migracje PostgreSQL są w osobnym projekcie
+`src/AfterTab.DAL.Migrations.PostgreSql`. Każda zmiana modelu wymaga migracji
+dla obu silników, np.:
+
+```powershell
+dotnet ef migrations add NazwaZmiany --project src/AfterTab.DAL.EF --startup-project src/AfterTab.API -- --Database:Provider SqlServer
+dotnet ef migrations add NazwaZmiany --project src/AfterTab.DAL.Migrations.PostgreSql --startup-project src/AfterTab.API -- --Database:Provider PostgreSql
+```
+
+Dla każdego polecenia ustaw connection string odpowiedniego silnika. Nie stosuj
+migracji SQL Server do PostgreSQL. API nie wykonuje migracji podczas startu.
+Do wdrożenia obu silników można też użyć narzędzia z `--migrate`, opisanego
+w [instrukcji wdrożeniowej](after-tab-api/tools/AfterTab.Deployment/README.md).
+
+Ochrona równoczesnej edycji zachowuje format Base64 w API: SQL Server używa
+natywnego `rowversion`, PostgreSQL tokenu aktualizowanego przez EF przy zapisie.
+Ręczne modyfikacje wydatków w PostgreSQL z pominięciem EF muszą również zmieniać
+ten token. Migracja danych pomiędzy silnikami jest osobną operacją.
+
+Testy konfiguracji i SQL uruchamiają się przez `dotnet test AfterTabApi.sln`.
+Testy rzeczywistych serwerów wymagają zmiennych `AFTERTAB_TEST_SQLSERVER` oraz
+`AFTERTAB_TEST_POSTGRESQL` z connection stringami do lokalnych serwerów testowych
+i uprawnieniami do tworzenia/usuwania baz. Tworzą i usuwają własne bazy o losowych
+nazwach `aftertab_test_*`; bez zmiennych te dwa przypadki są pomijane.
 
 ### 2. Frontend
 
@@ -505,7 +562,7 @@ Migracja w dół odmawia wykonania, jeżeli istnieją osoby bez konta lub aliasy
 aby nie usuwać ich danych finansowych. Przed aktualizacją rzeczywistej bazy wykonaj kopię.
 
 Po pobraniu tej wersji uruchom lokalne `dotnet ef database update` z instrukcji powyżej.
-Do testów używaj lokalnej LocalDB i frontendu z `VITE_API_BASE_URL=https://localhost:7180`.
+Do testów używaj lokalnej LocalDB lub PostgreSQL i frontendu z `VITE_API_BASE_URL=https://localhost:7180`.
 Frontend oraz API muszą pochodzić z tej samej wersji: pola rozliczeń odnoszą się teraz
 do uczestników (`participantId`, `paidByParticipantId`, `fromParticipantId`, `toParticipantId`),
 a nie kont. `authorUserId` nadal oznacza konto autora wpisu. Aktualizacja frontend/API

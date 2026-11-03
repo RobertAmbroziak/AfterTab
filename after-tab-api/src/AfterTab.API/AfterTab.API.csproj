@@ -9,6 +9,7 @@
     <ProjectReference Include="..\AfterTab.BL.Interfaces\AfterTab.BL.Interfaces.csproj" />
     <ProjectReference Include="..\AfterTab.BL.Services\AfterTab.BL.Services.csproj" />
     <ProjectReference Include="..\AfterTab.DAL.EF\AfterTab.DAL.EF.csproj" />
+    <ProjectReference Include="..\AfterTab.DAL.Migrations.PostgreSql\AfterTab.DAL.Migrations.PostgreSql.csproj" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.EntityFrameworkCore.Design" PrivateAssets="all" />
