@@ -8,6 +8,8 @@ https://github.com/user-attachments/assets/25916c2a-3627-4527-a872-bbfaf4d66934
 
 **[Polski](README.md)** | **English**
 
+Package your own deployment for Android: [Android guide](after-tab-android/README.en.md).
+
 AfterTab is a PWA for sharing expenses. Create events, invite friends, record who
 paid and how costs are split, then see who needs to pay whom.
 

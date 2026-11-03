@@ -1,82 +1,82 @@
 # AfterTab na Androida
 
-Projekt Androida jest opakowaniem istniejącej PWA (Trusted Web Activity).
-Nie zawiera osobnego interfejsu ani backendu.
+**Polski** | **[English](README.en.md)**
 
-| Ustawienie | Wartość |
-| --- | --- |
-| Nazwa | AfterTab |
-| Package ID | `pl.aftertab.app` |
-| Adres | `https://aftertab.pl/` |
-| Pierwsza wersja | `1.0.0.0`, versionCode `1` |
-| Minimalny Android | Android 7.0 / API 24 |
-| Target / compile SDK | API 36 |
-| Tryb | Standalone / TWA, fallback Custom Tabs |
-| Powiadomienia i lokalizacja | Wyłączone |
+Istniejącą PWA można opakować jako aplikację Android za pomocą Trusted Web Activity
+(TWA), np. przez [PWABuilder](https://www.pwabuilder.com/). Nie wymaga to osobnego
+interfejsu ani backendu. Każde wdrożenie używa własnej domeny, identyfikatora
+pakietu i certyfikatu, konfigurowanych poza Gitem.
 
-## Pakiet i test na telefonie
+## Przygotowanie paczki
 
-Oryginalna paczka PWABuilder oraz wyodrębnione pliki znajdują się lokalnie w
-`artifacts/pwabuilder-1.0.0.0/`, ignorowanym przez Git.
+1. Wdróż własną PWA pod publicznym adresem HTTPS i sprawdź manifest oraz ikony.
+2. W PWABuilder wybierz pakiet Android. Ustaw własną domenę, nazwę i unikalny
+   Package ID. `com.example.expenses` to tylko przykład — zastąp go własnym.
+3. Zapisz APK, AAB i dane podpisywania w bezpiecznym miejscu. APK służy do
+   instalacji ręcznej, a AAB do przesłania do Google Play Console.
+4. Przy aktualizacjach zachowaj ten sam Package ID i klucz podpisujący,
+   zwiększając `versionCode`. Nie generuj nowego klucza przy każdej aktualizacji.
 
-- `AfterTab.apk` — instalacja ręczna na Androidzie do testów.
-- `AfterTab.aab` — pakiet do przesłania do Google Play Console; nie instaluje się go bezpośrednio.
-- `original-package.zip` — pełna paczka ze źródłami i informacjami o podpisywaniu.
-- `signing.keystore` oraz `signing-key-info.txt` — klucz i dane podpisywania.
+Cały ZIP generatora może zawierać klucz prywatny i hasła — nie publikuj go.
+Magazyny kluczy, dane podpisywania, APK/AAB i katalogi `artifacts/` są ignorowane
+przez Git. Ignorowanie nie szyfruje danych ani nie zastępuje bezpiecznej kopii.
 
-Zachowaj osobną bezpieczną kopię oryginalnego ZIP-a i danych podpisywania. Samo
-ignorowanie przez Git nie szyfruje plików. Nie publikuj klucza, haseł ani całej paczki.
+## Powiązanie własnej domeny
 
-Na telefonie pobierz/przenieś APK, otwórz go i w razie potrzeby zezwól wybranej
-aplikacji na instalację z tego źródła. Po instalacji sprawdź: logowanie gościa,
-Google i Facebook, powrót po logowaniu, zaproszenie do wydarzenia, wydatki,
-przełącznik PL/EN oraz działanie przycisku Wstecz. Testy wykonuj na testowych danych.
+W ignorowanym pliku `after-tab-app/.env.production.local` lub w środowisku
+budowania ustaw:
 
-## Powiązanie domeny
-
-Publiczny plik `after-tab-app/public/.well-known/assetlinks.json` wiąże domenę
-z pakietem Androida i odciskiem certyfikatu podpisującego. Sam odcisk jest publiczny.
-Po wdrożeniu plik musi być dostępny pod:
-
-```text
-https://aftertab.pl/.well-known/assetlinks.json
+```dotenv
+AFTERTAB_ANDROID_PACKAGE_ID=com.example.expenses
+AFTERTAB_ANDROID_CERT_SHA256=<SHA-256 certyfikatu podpisującego Twoją aplikację>
 ```
 
-Oczekiwana odpowiedź: HTTP 200 i JSON, bez uwierzytelniania ani przekierowania.
-Brak prawidłowego powiązania może spowodować wyświetlanie paska przeglądarki.
+Zastąp obie wartości własnymi. Odcisk zawiera 32 pary cyfr szesnastkowych
+rozdzielone dwukropkami. Wiele odcisków oddziel przecinkami. Podaj odcisk
+**certyfikatu**, nigdy klucz prywatny ani hasło.
 
-Zweryfikowany SHA-256 certyfikatu pierwszej paczki APK/AAB:
+`npm run build` w `after-tab-app` generuje `dist/.well-known/assetlinks.json`.
+Bez obu ustawień plik nie powstaje; ustawienie tylko jednego powoduje błąd.
+Konfiguracja konkretnej instancji nie jest przechowywana w śledzonym pliku
+publicznym. Wynikowy JSON jest celowo publiczny i musi być dostępny pod adresem:
 
 ```text
-E8:04:29:23:83:13:33:80:EF:EF:55:DF:10:D8:A5:A5:F2:EC:F9:AE:FE:8C:05:5E:2D:DB:4E:61:D5:C1:A4:4D
+https://example.com/.well-known/assetlinks.json
 ```
 
-## Google Play i kolejne wersje
+Użyj własnej domeny. Sprawdź HTTP 200, typ `application/json` i brak przekierowania
+lub logowania. Prawidłowe powiązanie pozwala uruchomić TWA bez paska przeglądarki.
+Odcisk certyfikatu jest publicznym identyfikatorem, nie sekretem.
 
-### Pobieranie APK z witryny
+## Opcjonalne pobieranie APK z witryny
 
-Frontend obsługuje opcjonalny link `VITE_ANDROID_APK_URL`, np.
-`/downloads/AfterTab-1.0.0.0.apk`. `AFTERTAB_ANDROID_APK_PATH` wskazuje prywatny,
-lokalny plik źródłowy. Polecenie `npm run build` w `after-tab-app` kopiuje APK do
-paczki `dist` i dodaje plik `.sha256`. Azure serwuje APK jako pobierany plik z
-właściwym MIME. Nie potrzeba osobnego kontenera Storage ani publikowania APK w Git.
-Nigdy nie kopiuj do publicznego katalogu ZIP-a, magazynu kluczy ani haseł.
+W tej samej konfiguracji budowania możesz ustawić:
 
-### Publikacja w sklepie
+```dotenv
+VITE_ANDROID_APK_URL=/downloads/App-1.0.0.apk
+AFTERTAB_ANDROID_APK_PATH=<lokalna ścieżka do własnego APK>
+```
 
-1. Dokończ rejestrację i weryfikację konta dewelopera firmy.
-2. Utwórz aplikację i przygotuj test wewnętrzny z AAB.
-3. Po skonfigurowaniu Play App Signing odczytaj z Play Console SHA-256
-   **App signing key certificate**. To certyfikat pakietu dostarczanego użytkownikom.
-4. Jeśli jest inny, dopisz jego odcisk do `sha256_cert_fingerprints` i ponownie
-   opublikuj plik assetlinks, zachowując odcisk do testów ręcznego APK.
-5. Sprawdź instalację z Google Play, nie tylko ręczną instalację APK.
-6. Uzupełnij opis, grafiki, deklaracje danych, dostęp do aplikacji dla recenzenta
-   i wymagane informacje o usuwaniu konta.
+Ścieżka źródłowa może być względna wobec `after-tab-app` lub bezwzględna.
+Budowanie kopiuje wyłącznie APK do `dist/downloads/` i dodaje sumę `.sha256`.
+Nazwa powinna zawierać wersję. Brak URL ukrywa link w stopce. Nie potrzeba osobnej
+usługi przechowywania, jeśli hosting obsługuje APK. Nigdy nie umieszczaj ZIP-a,
+magazynu kluczy ani haseł w katalogach publicznych.
 
-Przy ponownym generowaniu paczki w PWABuilder wybierz **Use mine**, użyj tego
-samego klucza oraz `pl.aftertab.app`, a `versionCode` zwiększ. Nie generuj za każdym
-razem nowego klucza. Zmiany samej PWA publikuje się przez dotychczasowy frontend;
-zmiana opakowania Androida wymaga kolejnego APK/AAB.
+## Testy i Google Play
 
-Dokumentacja: [PWABuilder Android](https://github.com/pwa-builder/PWABuilder/blob/main/docs/builder/android.md).
+Po instalacji sprawdź logowanie, powrót z Google/Facebooka, zaproszenia, wydatki,
+przełączanie języka i przycisk Wstecz. Używaj danych testowych. Przed publikacją
+przygotuj opis, grafiki, polityki, deklaracje danych i dostęp dla recenzenta.
+
+Przy Play App Signing odczytaj w Play Console SHA-256 **App signing key
+certificate**. Może różnić się od certyfikatu lokalnego APK lub klucza do
+przesyłania paczek. Dodaj właściwy odcisk do konfiguracji, zachowując lokalny,
+jeśli nadal udostępniasz APK podpisany lokalnie. Zbuduj i wdróż witrynę ponownie,
+a następnie sprawdź instalację z Google Play.
+
+Zmiany PWA wdraża się przez frontend. Zmiany opakowania Androida wymagają nowej
+paczki APK/AAB.
+
+Dokumentacja: [PWABuilder Android](https://github.com/pwa-builder/PWABuilder/blob/main/docs/builder/android.md),
+[Trusted Web Activities](https://developer.android.com/develop/ui/views/layout/webapps/guide-trusted-web-activities-version2).

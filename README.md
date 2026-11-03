@@ -8,6 +8,8 @@ https://github.com/user-attachments/assets/25916c2a-3627-4527-a872-bbfaf4d66934
 
 **Polski** | **[English](README.en.md)**
 
+Instrukcja pakowania własnego wdrożenia na Androida: [Android](after-tab-android/README.md).
+
 AfterTab to aplikacja PWA do dzielenia wspólnych wydatków. Pozwala tworzyć wydarzenia,
 zapraszać uczestników, przypisywać koszty i wyliczać, kto komu powinien oddać pieniądze.
 

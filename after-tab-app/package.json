@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build && node scripts/copy-android-download.mjs",
+    "build": "vite build && node scripts/copy-android-download.mjs && node scripts/generate-assetlinks.mjs",
     "lint": "eslint .",
     "preview": "vite preview",
     "test": "node --test"
