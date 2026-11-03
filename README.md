@@ -90,6 +90,8 @@ nie uruchamiaj go przeciwko innej bazie bez sprawdzenia connection stringa.
 
 Pozostaw terminal backendu uruchomiony.
 
+Logowanie błędów, rotacja plików i ustawienia hostingu: [instrukcja logowania backendu](after-tab-api/docs/logging.md).
+
 ### 2. Frontend
 
 Otwórz drugi PowerShell w głównym katalogu repozytorium:

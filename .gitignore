@@ -45,6 +45,7 @@
 *.user
 *.suo
 *.log
+**/logs/
 *.zip
 *.7z
 *.nupkg
