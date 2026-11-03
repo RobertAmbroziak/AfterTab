@@ -14,6 +14,7 @@
 .account-control { position: relative; }
 .account-button > span:nth-child(2) { max-width: 170px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .account-avatar, .person-avatar { display: inline-flex; flex: 0 0 34px; width: 34px; height: 34px; align-items: center; justify-content: center; border-radius: 50%; color: white; font-weight: 700; background: #087f8d; }
+.account-avatar { background: var(--mint); color: #0d2721; }
 .account-menu { position: absolute; right: 0; top: calc(100% + 14px); width: min(300px, calc(100vw - 32px)); padding: 20px; display: grid; gap: 12px; border: 1px solid var(--line); background: #1b282c; border-radius: 16px; box-shadow: 0 15px 50px #0008; z-index: 30; overflow-wrap: anywhere; }
 .account-menu button { text-align: left; }
 .account-menu p { margin: 0; }
@@ -145,7 +146,6 @@ details[open] > summary .chevron { transform: rotate(180deg); }
   .account-control { margin-left: 0; }
   .account-button { gap: 3px; }
   .account-button > span:nth-child(2) { display: none; }
-  .account-button > span:last-child { display: none; }
   .page-content { padding: 18px 14px calc(100px + env(safe-area-inset-bottom)); border: 0; }
   .workspace, .event-hero, .event-expenses, .settlement { padding: 18px 14px; border-radius: 14px; }
   h2 { font-size: 25px; } h3 { font-size: 20px; }

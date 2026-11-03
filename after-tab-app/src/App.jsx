@@ -20,8 +20,7 @@ export default function App() {
   const [checking, setChecking] = useState(true)
   const [error, setError] = useState('')
   const [remembered, setRemembered] = useState(hasRememberedGuest)
-  const [guestForm, setGuestForm] = useState(false)
-  const [accountForm, setAccountForm] = useState(hasEmailAction)
+  const [authForm, setAuthForm] = useState(() => hasEmailAction() ? 'account' : null)
   const [editingName, setEditingName] = useState(false)
   const [menu, setMenu] = useState(false)
   const [route, setRoute] = useState(readRoute)
@@ -30,7 +29,7 @@ export default function App() {
   useEffect(() => {
     let active = true
     captureInvitation()
-    function syncRoute() { captureInvitation(); setRoute(readRoute()); if (hasEmailAction()) setAccountForm(true) }
+    function syncRoute() { captureInvitation(); setRoute(readRoute()); if (hasEmailAction()) setAuthForm('account') }
     function expired() { setSession(null); setError(t("Sesja wygasła. Zaloguj się ponownie.")) }
     window.addEventListener('hashchange', syncRoute)
     window.addEventListener('aftertab:session-expired', expired)
@@ -41,11 +40,12 @@ export default function App() {
   async function handleSession(action) {
     if (inFlight.current) return
     inFlight.current = true; setBusy(true); setChecking(false); setError('')
-    try { setSession(await action() ?? null); setRemembered(hasRememberedGuest()); setGuestForm(false) }
+    try { setSession(await action() ?? null); setRemembered(hasRememberedGuest()); setAuthForm(null) }
     catch (reason) { setError(reason.message) }
     finally { inFlight.current = false; setBusy(false) }
   }
-  function startLogin() { setMenu(false); if (busy) return; if (remembered) handleSession(() => loginAsGuest()); else setGuestForm(true) }
+  function startLogin() { setMenu(false); if (busy) return; if (remembered) { setAuthForm(null); handleSession(() => loginAsGuest()) } else setAuthForm('guest') }
+  function startAccountLogin() { setAuthForm('account'); setMenu(false) }
   function saveName(displayName) {
     handleSession(async () => { const user = await api('profile/display-name', { method: 'PUT', body: { displayName } }); setEditingName(false); return { ...session, user } })
   }
@@ -62,10 +62,10 @@ export default function App() {
         <button type="button" lang="pl" aria-label="Polski" aria-pressed={language === 'pl'} onClick={() => setLanguage('pl')}>PL</button>
         <button type="button" lang="en" aria-label="English" aria-pressed={language === 'en'} onClick={() => setLanguage('en')}>EN</button>
       </div>
-      <div className="account-control"><button className="account-button" aria-expanded={menu} aria-controls="account-menu" onClick={() => setMenu(value => !value)}><span className="account-avatar">{session ? [...session.user.displayName][0]?.toLocaleUpperCase(getLocale()) : '☰'}</span><span>{session?.user.displayName || t("Konto")}</span><span aria-hidden="true">⌄</span></button>
+      <div className="account-control"><button className="account-button" aria-label={session?.user.displayName || t("Konto")} aria-expanded={menu} aria-controls="account-menu" onClick={() => setMenu(value => !value)}><span className="account-avatar" aria-hidden="true">{session ? [...session.user.displayName][0]?.toLocaleUpperCase(getLocale()) : <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M5 6h14M5 12h14M5 18h14" /></svg>}</span><span>{session?.user.displayName || t("Konto")}</span></button>
         {menu && <section className="account-menu" id="account-menu" aria-label={t("Konto użytkownika")}>
-          {session ? <><strong>{session.user.displayName}</strong><p className="helper-text">{session.user.isGuest ? t("Gość zapamiętany w tej przeglądarce") : t("Konto trwałe")}</p>{session.user.isGuest && <button className="text-button" onClick={() => { setAccountForm(true); setMenu(false) }}>{t("Zachowaj konto / Zaloguj")}</button>}<button className="text-button" onClick={() => { setEditingName(true); setMenu(false) }}>{t("Zmień imię")}</button><button className="text-button" disabled={busy} onClick={() => { setMenu(false); handleSession(logout) }}>{t("Wyloguj")}</button></>
-            : <><button className="primary-button" disabled={busy} onClick={startLogin}>{remembered ? t("WRÓĆ JAKO GOŚĆ") : t("ZALOGUJ JAKO GOŚĆ")}</button><button className="text-button" disabled={busy} onClick={() => { setAccountForm(true); setMenu(false) }}>{t("Zaloguj / Utwórz konto")}</button></>}
+          {session ? <><strong>{session.user.displayName}</strong><p className="helper-text">{session.user.isGuest ? t("Gość zapamiętany w tej przeglądarce") : t("Konto trwałe")}</p>{session.user.isGuest && <button className="text-button" onClick={startAccountLogin}>{t("Zachowaj konto / Zaloguj")}</button>}<button className="text-button" onClick={() => { setEditingName(true); setMenu(false) }}>{t("Zmień imię")}</button><button className="text-button" disabled={busy} onClick={() => { setMenu(false); handleSession(logout) }}>{t("Wyloguj")}</button></>
+            : <><button className="primary-button" disabled={busy} onClick={startLogin}>{remembered ? t("WRÓĆ JAKO GOŚĆ") : t("ZALOGUJ JAKO GOŚĆ")}</button><button className="text-button" disabled={busy} onClick={startAccountLogin}>{t("Zaloguj / Utwórz konto")}</button></>}
           {remembered && <button className="text-button danger" disabled={busy} onClick={handleForget}>{t("Zapomnij gościa")}</button>}
         </section>}
       </div>
@@ -73,9 +73,9 @@ export default function App() {
     <div className="page-content">
       {busy && (checking ? <SessionStatus key={attempt} /> : <div className="connection-status" role="status"><span className="spinner" />{t("Łączenie z kontem…")}</div>)}
       {error && <div className="connection-status auth-error" role="alert"><span>{t(error)}</span><button className="secondary-button" disabled={busy} onClick={() => { setError(''); setChecking(true); setBusy(true); setAttempt(value => value + 1) }}>{t("Ponów połączenie")}</button></div>}
-      {!session && !busy && route.kind !== 'invite' && <section className="login-card"><img src="/pwa-192x192.png" width="64" height="64" alt="" /><h1>{t("Wspólne wyjścia.")}<br />{t("Proste rozliczenia.")}</h1><p>{t("Zaproś znajomych, dodaj wydatki i zobacz, kto komu oddaje.")}</p><div className="form-actions"><button className="primary-button" disabled={busy} onClick={startLogin}>{remembered ? t("WRÓĆ JAKO GOŚĆ") : t("ZALOGUJ JAKO GOŚĆ")}</button><button className="secondary-button" disabled={busy} onClick={() => { setAccountForm(true); setGuestForm(false) }}>{t("ZALOGUJ / UTWÓRZ KONTO")}</button></div></section>}
-      {accountForm && <AccountForm key={location.hash.startsWith('#account-') ? location.hash : 'account'} guest={Boolean(session?.user.isGuest)} onSession={() => setAttempt(value => value + 1)} onCancel={() => setAccountForm(false)} />}
-      {!session && guestForm && <section className="workspace"><NameForm title={t("Zaloguj się jako gość")} submitLabel={t("Zapisz imię i wejdź")} onSubmit={name => handleSession(() => loginAsGuest(name))} onCancel={() => setGuestForm(false)} busy={busy} /></section>}
+      {!session && !busy && route.kind !== 'invite' && <section className="login-card"><img src="/pwa-192x192.png" width="64" height="64" alt="" /><h1>{t("Wspólne wyjścia.")}<br />{t("Proste rozliczenia.")}</h1><p>{t("Zaproś znajomych, dodaj wydatki i zobacz, kto komu oddaje.")}</p><div className="form-actions"><button className="primary-button" disabled={busy} onClick={startLogin}>{remembered ? t("WRÓĆ JAKO GOŚĆ") : t("ZALOGUJ JAKO GOŚĆ")}</button><button className="secondary-button" disabled={busy} onClick={startAccountLogin}>{t("ZALOGUJ / UTWÓRZ KONTO")}</button></div></section>}
+      {authForm === 'account' && <AccountForm key={location.hash.startsWith('#account-') ? location.hash : 'account'} guest={Boolean(session?.user.isGuest)} onSession={() => setAttempt(value => value + 1)} onCancel={() => setAuthForm(null)} />}
+      {!session && authForm === 'guest' && <section className="workspace"><NameForm title={t("Zaloguj się jako gość")} submitLabel={t("Zapisz imię i wejdź")} onSubmit={name => handleSession(() => loginAsGuest(name))} onCancel={() => setAuthForm(null)} busy={busy} /></section>}
       {session && (needsName || editingName) && <section className="workspace"><NameForm key={`${session.user.id}-${editingName}`} initialName={needsName && session.user.displayName === 'Gość' ? '' : session.user.displayName} title={needsName ? t("Jak masz na imię?") : t("Zmień imię")} onSubmit={saveName} onCancel={needsName ? undefined : () => setEditingName(false)} busy={busy} /></section>}
       {route.kind === 'invite' && <Invitation key={route.token} token={route.token} session={session} onLogin={startLogin} />}
       {session && !needsName && route.kind !== 'invite' && <EventWorkspace key={session.user.id} route={route} user={session.user} />}
@@ -85,7 +85,7 @@ export default function App() {
       <a href={legalUrl('data-deletion')}>{t("Usuwanie danych")}</a>
       <a href={legalUrl('terms')}>{t("Zasady korzystania")}</a>
       <a href="mailto:amb77ro@gmail.com">{t("Kontakt")}</a>
-      {githubUrl && <a className="footer-icon-link" href={githubUrl} target="_blank" rel="noopener noreferrer" aria-label={t('Kod źródłowy na GitHub (otwiera nową kartę)')} title={t('Kod źródłowy na GitHub (otwiera nową kartę)')}>
+      {githubUrl && <a className="footer-icon-link" href={githubUrl} target="_blank" rel="noopener noreferrer" aria-label={t('Kod źródłowy na GitHub (otwiera nową kartę)')}>
         <svg width="20" height="20" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82A7.65 7.65 0 0 1 8 3.86c.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8Z" /></svg>
         <span>GitHub</span>
       </a>}
