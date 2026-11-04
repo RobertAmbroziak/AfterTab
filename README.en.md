@@ -1,5 +1,13 @@
 # AfterTab
 
+---
+
+<div align="center">
+
+https://github.com/user-attachments/assets/83582d70-4d2b-4677-ae0a-f56cb08d18b1
+
+</div>
+
 **[Polski](README.md)** | **English**
 
 Package your own deployment for Android: [Android guide](after-tab-android/README.en.md).
