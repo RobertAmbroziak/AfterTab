@@ -1,70 +1,51 @@
-# Konfiguracja narzędzia wdrożeniowego
+# Migracje własnego wdrożenia SQL Server
 
-Polecenia poniżej uruchamiaj z głównego katalogu repozytorium AfterTab.
-Narzędzie jest oddzielne od działającego API i jego ustawień w Azure App Service.
+**Polski** | **[English](README.en.md)**
 
-## Jednorazowa konfiguracja komputera
+Ta gałąź aplikacji obsługuje SQL Server/Azure SQL. Dla własnego wdrożenia użyj
+standardowego EF CLI, który odczytuje `ConnectionStrings__AfterTab` i nie wymaga
+konkretnego serwera, nazwy bazy, konta Azure ani tożsamości API.
+Wartości w `<...>` zastąp danymi swojej bazy.
 
-Connection string przechowuj w lokalnym magazynie .NET User Secrets. Nie trafia on
-do Git ani do paczki publikowanego API. Magazyn jest lokalnym plikiem użytkownika,
-nie jest szyfrowany i nie służy do przechowywania konfiguracji produkcyjnego procesu.
+## Migracje
 
-```powershell
-$deploymentProject = 'after-tab-api/tools/AfterTab.Deployment/AfterTab.Deployment.csproj'
-dotnet user-secrets set 'Deployment:SqlConnectionString' 'Server=tcp:<serwer>.database.windows.net,1433;Database=AfterTabDb;Encrypt=True;TrustServerCertificate=False;Connect Timeout=90;' --project $deploymentProject
-```
-
-Zastąp `<serwer>` nazwą swojego serwera Azure SQL. Na komputerze, na którym
-wprowadzono tę zmianę, dotychczasowa wartość została już przeniesiona do User Secrets.
-Na nowym komputerze trzeba ustawić ją ponownie. Polecenie wpisane ręcznie może
-pozostać w historii terminala.
-
-Alternatywnie ustaw `AFTERTAB_SQL_CONNECTION_STRING` w środowisku procesu.
-Ta zmienna ma pierwszeństwo przed User Secrets. W przyszłym pipeline CI/CD
-zapisz wartość w magazynie sekretów pipeline i przekaż ją jako tę zmienną.
-Pliki `.env` nie są automatycznie wczytywane przez narzędzie.
-
-Connection string nie może zawierać hasła, loginu, `Integrated Security` ani
-ustawienia `Authentication`: narzędzie korzysta z osobno przekazanego tokenu Entra.
-Wymusza bazę `AfterTabDb`, szyfrowanie i weryfikację certyfikatu.
-
-## Kontrola połączenia przed wdrożeniem
-
-Zalogowane konto Azure musi mieć dostęp do bazy, a adres komputera musi być
-dopuszczony przez istniejące reguły sieciowe Azure SQL.
+Z głównego katalogu repozytorium przejdź do `after-tab-api`:
 
 ```powershell
-$deploymentProject = 'after-tab-api/tools/AfterTab.Deployment/AfterTab.Deployment.csproj'
-az login # tylko jeśli nie masz aktywnej sesji
-if ($LASTEXITCODE -ne 0) { throw 'Logowanie do Azure nie powiodło się.' }
-try {
-    $env:AFTERTAB_SQL_ACCESS_TOKEN = az account get-access-token --resource https://database.windows.net/ --query accessToken -o tsv
-    if ($LASTEXITCODE -ne 0 -or [string]::IsNullOrWhiteSpace($env:AFTERTAB_SQL_ACCESS_TOKEN)) {
-        throw 'Nie udało się pobrać tokenu Azure SQL.'
-    }
-    dotnet run --project $deploymentProject
-    if ($LASTEXITCODE -ne 0) { throw 'Kontrola bazy nie powiodła się.' }
-} finally {
-    Remove-Item Env:AFTERTAB_SQL_ACCESS_TOKEN -ErrorAction SilentlyContinue
-}
+cd after-tab-api
+$env:ConnectionStrings__AfterTab = 'Server=<sql-host>;Database=<database>;User ID=<migration-user>;Password=<password>;Encrypt=True;TrustServerCertificate=False'
+dotnet restore
+dotnet tool restore
+dotnet ef database update --project src/AfterTab.DAL.EF --startup-project src/AfterTab.API
 ```
 
-Uruchomienie bez argumentów odczytuje stan migracji i liczniki danych;
-nie stosuje migracji ani nie zmienia uprawnień. Token pobieraj na czas operacji,
-nie zapisuj go w Git ani na stałe w User Secrets.
+W Azure SQL host ma postać `tcp:<sql-server>.database.windows.net,1433`.
+Utwórz własną bazę i konto migracyjne z uprawnieniami do schematu. Przykład używa
+uwierzytelniania SQL; wybierz metodę dostępu dopuszczoną przez Twój serwer.
+Poświadczenia ustaw w środowisku procesu lub magazynie sekretów pipeline, poza Git.
+Dopuść połączenie w regułach sieciowych własnego serwera.
 
-## Migracje i publikacja
+Przed aktualizacją istniejącej bazy sprawdź connection string i wykonaj kopię.
+Migracje tej gałęzi nie są migracjami kluczy liczbowych z `develop` — dokumentację
+i polecenia zawsze stosuj z tej samej wersji co publikowany kod.
 
-Dotychczasowy tryb `--bootstrap` nadal działa: po pobraniu tokenu jak wyżej ustaw
-`AFTERTAB_API_PRINCIPAL_ID` na identyfikator obiektu managed identity właściwego API
-i uruchom `dotnet run --project $deploymentProject -- --bootstrap`.
-Ten tryb stosuje migracje i nadaje tożsamości API uprawnienia do danych;
-wymaga konta z odpowiednimi uprawnieniami administracyjnymi w tej bazie.
+## Konto działającego API
 
-Budowanie i publikowanie API oraz frontendu pozostaje bez zmian. Ta zmiana nie
-wymaga nowych ustawień w Azure: API już odczytuje własny connection string przez
-`ConnectionStrings:AfterTab` (np. zmienną `ConnectionStrings__AfterTab`).
-Nie zastępuj jego konfiguracji connection stringiem narzędzia: API może mieć
-własne ustawienie `Authentication` do logowania przez managed identity.
+Skonfiguruj connection string API niezależnie od konta migracyjnego. Konto API
+potrzebuje uprawnień do danych, a nie do zmiany schematu. Jeśli używasz managed
+identity w Azure, utwórz użytkownika tej tożsamości w swojej bazie i nadaj mu dostęp.
+Nazwa oraz identyfikator tożsamości pochodzą z Twojego zasobu API.
+API nie wykonuje migracji przy starcie.
 
-Zmiana usuwa adres serwera z bieżącego kodu, ale nie z wcześniejszych commitów.
+## Ograniczenia pomocnika w tym katalogu
+
+Program `AfterTab.Deployment` na tej gałęzi zawiera starszy tryb z dodatkowymi
+ograniczeniami bazy i nazwy użytkownika. Nie jest uniwersalnym mechanizmem
+konfiguracji własnej instancji. Powyższy wariant EF CLI działa niezależnie od tego
+pomocnika; nie wymaga `--bootstrap`, jego ustawień ani kont oryginalnego wdrożenia.
+
+## Publikacja
+
+Opublikuj API i frontend na wybranym hostingu, ustaw własne adresy, CORS, SMTP
+oraz klientów Google/Facebook zgodnie z [głównym README](../../../README.md).
+Push na GitHub nie publikuje aplikacji ani nie migruje bazy.
