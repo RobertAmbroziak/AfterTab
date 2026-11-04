@@ -134,18 +134,23 @@ details[open] > summary .chevron { transform: rotate(180deg); }
 .mobile-tabs, .mobile-add { display: none; }
 .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
 @media (max-width: 1050px) { .event-hero { padding-right: 22px; } .event-hero > .section-heading { margin-right: 0; } .event-hero .event-stats { position: static; width: auto; margin-top: 20px; } .event-columns { grid-template-columns: minmax(0, 1.3fr) minmax(300px, 1fr); } }
+@media (max-width: 1050px) {
+  .app-header { position: sticky; top: 0; z-index: 20; padding: max(12px, env(safe-area-inset-top)) 12px 12px; gap: 6px; flex-wrap: nowrap; border-radius: 0; border-left: 0; border-right: 0; }
+  .brand { gap: 8px; font-size: 18px; flex: 1 1 0; min-width: 0; }
+  .brand span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .brand img { width: 34px; height: 34px; flex-shrink: 0; }
+  .header-events { margin-left: 0; flex: 0 0 44px; padding: 10px; width: 44px; justify-content: center; }
+  .header-events span, .header-install .install-button span { display: none; }
+  .header-install { margin-left: 0; flex-shrink: 0; }
+  .header-install .install-button { width: 44px; padding: 10px; }
+  .account-control { position: static; margin-left: 0; flex: 0 0 44px; }
+  .account-button { width: 44px; height: 44px; padding: 5px; justify-content: center; }
+  .account-button > span:nth-child(2) { display: none; }
+  /* Anchor to the header so the dropdown stays inside the viewport. */
+  .account-menu { right: 12px; top: calc(100% + 8px); width: min(300px, calc(100vw - 24px)); max-height: calc(100vh - 120px - env(safe-area-inset-top)); max-height: calc(100dvh - 120px - env(safe-area-inset-top)); overflow-y: auto; overscroll-behavior: contain; }
+}
 @media (max-width: 760px) {
   .app-shell { padding: 0; margin: 0; }
-  .app-header { position: sticky; top: 0; z-index: 20; padding: max(12px, env(safe-area-inset-top)) 12px 12px; gap: 8px; flex-wrap: wrap; border-radius: 0; border-left: 0; border-right: 0; }
-  .brand { gap: 8px; font-size: 18px; flex-shrink: 0; }
-  .brand img { width: 34px; height: 34px; }
-  .header-events { margin-left: auto; padding: 10px; width: 44px; justify-content: center; }
-  .header-events span, .header-install .install-button span { display: none; }
-  .header-install { margin-left: 0; }
-  .header-install .install-button { width: 44px; padding: 10px; }
-  .account-control { margin-left: 0; }
-  .account-button { gap: 3px; }
-  .account-button > span:nth-child(2) { display: none; }
   .page-content { padding: 18px 14px calc(100px + env(safe-area-inset-bottom)); border: 0; }
   .workspace, .event-hero, .event-expenses, .settlement { padding: 18px 14px; border-radius: 14px; }
   h2 { font-size: 25px; } h3 { font-size: 20px; }
