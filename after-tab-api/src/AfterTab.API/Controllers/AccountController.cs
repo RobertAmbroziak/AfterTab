@@ -99,7 +99,7 @@ public sealed class AccountController(AccountService accounts, AppDbContext db, 
         var nonce = Convert.ToBase64String(RandomNumberGenerator.GetBytes(16));
         Response.Headers["Referrer-Policy"] = "same-origin";
         var origins = string.Join(" ", config.GetSection("Cors:AllowedOrigins").Get<string[]>() ?? []);
-        Response.Headers["Content-Security-Policy"] = $"default-src 'none'; script-src 'nonce-{nonce}'; form-action 'self' {origins} https://accounts.google.com https://www.facebook.com; base-uri 'none'; frame-ancestors 'none'";
+        Response.Headers["Content-Security-Policy"] = $"default-src 'none'; script-src 'nonce-{nonce}'; form-action 'self' {origins} https://accounts.google.com https://www.facebook.com https://m.facebook.com; base-uri 'none'; frame-ancestors 'none'";
         return Content("""
             <!doctype html><html lang="LANG_VALUE"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
             <title>AfterTab</title><p>STATUS_VALUE</p><noscript>NOSCRIPT_VALUE</noscript>
