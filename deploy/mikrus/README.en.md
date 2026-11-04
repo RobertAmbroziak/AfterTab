@@ -2,10 +2,10 @@
 
 [Polski](README.md)
 
-This deployment path is separate from Azure. Adding these files or pushing them
-to GitHub does not start containers, publish Azure Static Web Apps, or change the
-existing SQL Server database. The existing Azure build/publish commands still
-work; the API defaults to `SqlServer`. Only this Compose configuration selects PostgreSQL.
+This option runs your own frontend + API + PostgreSQL instance on a VPS.
+No Azure account is required. Pushing to GitHub does not start containers or deploy
+the application. The API defaults to `SqlServer`; Compose selects `PostgreSql`
+through environment variables.
 
 This model version requires an **empty database** on either engine. Before updating
 an older installation, follow the planned [schema reset](../../after-tab-api/docs/database.en.md).

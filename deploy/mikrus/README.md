@@ -2,10 +2,10 @@
 
 [English](README.en.md)
 
-To jest osobna ścieżka wdrożenia. Samo dodanie tych plików ani push na GitHub
-nie uruchamia kontenerów, nie publikuje Azure Static Web Apps i nie zmienia
-istniejącej bazy SQL Server. Dotychczasowy build/publish Azure działa jak wcześniej;
-domyślny provider API nadal to `SqlServer`. PostgreSQL wybiera wyłącznie ten Compose.
+Ten wariant uruchamia własną instancję frontend + API + PostgreSQL na VPS.
+Nie wymaga konta Azure. Push na GitHub nie uruchamia kontenerów ani nie publikuje
+aplikacji. Domyślny provider API to `SqlServer`; Compose wybiera `PostgreSql`
+przez zmienne środowiskowe.
 
 Ta wersja modelu wymaga **pustej bazy** na obu silnikach. Jeżeli uruchamiasz
 aktualizację starszej instalacji, najpierw wykonaj zaplanowany

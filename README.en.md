@@ -1,11 +1,5 @@
 # AfterTab
 
-<div align="center">
-
-https://github.com/user-attachments/assets/25916c2a-3627-4527-a872-bbfaf4d66934
-
-</div>
-
 **[Polski](README.md)** | **English**
 
 Package your own deployment for Android: [Android guide](after-tab-android/README.en.md).
@@ -13,7 +7,8 @@ Package your own deployment for Android: [Android guide](after-tab-android/READM
 AfterTab is a PWA for sharing expenses. Create events, invite friends, record who
 paid and how costs are split, then see who needs to pay whom.
 
-**[Open AfterTab](https://orange-stone-063c89710.4.azurestaticapps.net)**
+Run your own instance using the instructions below. Domains under `example.com`,
+email addresses ending in `@example.com`, and values in `<...>` are placeholders to replace.
 
 ## Languages
 
@@ -27,8 +22,8 @@ user content and are not translated.
 
 Privacy, data deletion and terms pages contain both languages at their original
 URLs. `?lang=pl` and `?lang=en` select a version. Without JavaScript, both complete
-versions are readable. Existing Google/Meta legal URLs and OAuth callback URLs
-remain the same. Account emails use the language selected when requesting them.
+versions are readable. Switching languages does not change the Google/Meta legal
+URLs or OAuth callbacks configured for your deployment. Account emails use the language selected when requesting them.
 
 ## Run locally
 
@@ -39,14 +34,14 @@ The workflow does not run for `main`, run integration tests, require a database,
 or deploy the application.
 
 Optional frontend + API + PostgreSQL deployment on mikr.us/VPS:
-[Docker Compose](deploy/mikrus/README.en.md). This is separate from the existing Azure deployment.
+[Docker Compose](deploy/mikrus/README.en.md). Azure is an optional hosting choice.
 
 Optional footer links use `VITE_GITHUB_URL` and `VITE_ANDROID_APK_URL`. Blank values
 hide the corresponding link, so another deployment does not have to point to the
 original author's repository or downloads. Keep production values outside Git,
 for example in `after-tab-app/.env.production.local`.
 
-The APK can be hosted in the same Azure Static Web App. For a URL such as
+The APK can be served by your frontend host, including Azure Static Web Apps. For a URL such as
 `/downloads/App-1.0.0.apk`, set `AFTERTAB_ANDROID_APK_PATH` to the local APK file
 (absolute or relative to `after-tab-app`). `npm run build` copies only the APK to
 `dist/downloads`, generates a SHA-256 checksum, and verifies the file is present.
@@ -96,6 +91,31 @@ to any other database.
 - Process health: `https://localhost:7180/api/health`; this does not check the database.
 
 Keep the backend terminal open.
+
+### Your deployment URLs
+
+The examples below use two public HTTPS origins. Replace them for your installation:
+
+| Purpose | Example to replace |
+| --- | --- |
+| Frontend / PWA | `https://app.example.com` |
+| API | `https://api.example.com` |
+| Sender approved by your SMTP service | `no-reply@example.com` |
+| Your instance administrator's contact | `support@example.com` |
+
+In the **API** environment, set `Authentication__FrontendOrigin` and
+`Cors__AllowedOrigins__0` to your public frontend origin, without a trailing `/`.
+When building the **frontend**, set `VITE_API_BASE_URL` to the API origin without
+a trailing `/api`; the client adds endpoint paths. Choose your own Azure resource
+names, subscription, database, SMTP account and OAuth clients.
+
+For one public origin, such as Docker Compose, both the frontend and API entry
+can use `https://app.example.com`. Leave `VITE_API_BASE_URL` empty, as Compose does;
+the client adds `/api` itself. OAuth callbacks must still reach the backend at
+`https://app.example.com/signin-google` and `https://app.example.com/signin-facebook`,
+outside `/api`. The reverse proxy forwards these routes to the API.
+Legal pages use the frontend origin. Configure Google/Meta with your actual URLs,
+not the example domains.
 
 ### Select SQL Server or PostgreSQL at deployment
 
@@ -298,11 +318,12 @@ Production requires SMTP. Setting `Mail:Host` takes priority over pickup mode.
 Use [Google Cloud Console](https://console.cloud.google.com/), choose a project,
 and open Google Auth Platform → Clients (or APIs & Services → Credentials). Create
 a Web application OAuth client for AfterTab or edit an appropriate existing client.
-Add these exact authorised redirect URIs:
+Add redirect URIs for the environments you use; replace the production example
+with your public API origin:
 
 ```text
 https://localhost:7180/signin-google
-https://aftertab-api-ambro.azurewebsites.net/signin-google
+https://api.example.com/signin-google
 ```
 
 Configure Branding/Audience and test users. A shared Google project's branding can
@@ -314,6 +335,8 @@ dotnet user-secrets set 'Authentication:Google:ClientId' '<client-id>' --project
 dotnet user-secrets set 'Authentication:Google:ClientSecret' '<client-secret>' --project src/AfterTab.API
 ```
 
+Set your own frontend domain, contact details and legal page URLs from the
+"Public legal pages" section in the consent screen configuration.
 Restart the API. No frontend Google SDK or keys are required. See the
 [Microsoft guide](https://learn.microsoft.com/en-us/aspnet/core/security/authentication/social/google-logins?view=aspnetcore-9.0)
 and [Google redirect rules](https://developers.google.com/identity/protocols/oauth2/web-server).
@@ -322,11 +345,12 @@ and [Google redirect rules](https://developers.google.com/identity/protocols/oau
 
 In [Meta for Developers](https://developers.facebook.com/apps/), create or select
 an app and enable Facebook Login for a website. A separate Meta app avoids shared
-branding and user identifiers. Add these Valid OAuth Redirect URIs:
+branding and user identifiers. Add Valid OAuth Redirect URIs for the environments
+you use; replace the production example with your public API origin:
 
 ```text
 https://localhost:7180/signin-facebook
-https://aftertab-api-ambro.azurewebsites.net/signin-facebook
+https://api.example.com/signin-facebook
 ```
 
 Enable web login and HTTPS and check access to `email`. AfterTab identifies users
@@ -342,7 +366,7 @@ dotnet user-secrets set 'Authentication:Facebook:AppSecret' '<app-secret>' --pro
 Restart the API. Both providers' callbacks point to the API, not the PWA. See the
 [Microsoft Facebook Login guide](https://learn.microsoft.com/en-us/aspnet/core/security/authentication/social/facebook-logins?view=aspnetcore-9.0).
 
-### SMTP and Azure configuration
+### SMTP and production hosting configuration
 
 Use an SMTP service with authenticated STARTTLS and an approved sender:
 
@@ -369,10 +393,12 @@ approved sender from that domain. Monitor secret expiry. Consult current
 and [SMTP setup](https://learn.microsoft.com/en-us/azure/communication-services/quickstarts/email/send-email-smtp/smtp-authentication).
 The API's region does not automatically determine the email service's data region.
 
-When deploying, configure the equivalent settings in Azure App Service:
+Configure the equivalent settings on your chosen host: environment settings in
+Azure App Service, or process/container settings on a VPS. Example API variables:
 
 ```text
-Authentication__FrontendOrigin=https://orange-stone-063c89710.4.azurestaticapps.net
+Authentication__FrontendOrigin=https://app.example.com
+Cors__AllowedOrigins__0=https://app.example.com
 Authentication__Google__ClientId
 Authentication__Google__ClientSecret
 Authentication__Facebook__AppId
@@ -384,8 +410,8 @@ Mail__Password
 Mail__From
 ```
 
-Keep the correct `ConnectionStrings__AfterTab`, `Cors__AllowedOrigins__0`, HTTPS and
-App Service forwarded-header settings. OAuth providers must receive HTTPS
+Set your own `ConnectionStrings__AfterTab`, frontend CORS origin, HTTPS and
+trusted forwarded-header settings for your host. OAuth providers must receive HTTPS
 callbacks. ASP.NET Data Protection keys must survive API restarts. Never store
 secrets in source code, `VITE_*` variables, committed commands or chat messages.
 
@@ -396,14 +422,26 @@ Automated tests do not replace real provider sign-in or actual SMTP delivery tes
 
 ## Public legal pages
 
-Controller: **AmbroDev Robert Ambroziak**, **amb77ro@gmail.com**.
+Before publishing, customize `after-tab-app/public/privacy.html`, `terms.html`
+and `data-deletion.html` in both languages for your installation: supply the
+data controller, contact details (such as `support@example.com`), service providers
+and retention rules. Replace the example contact with your administrator's actual address.
 
 - `/privacy.html` — privacy policy, PL and EN.
 - `/data-deletion.html` — email instructions for data deletion, PL and EN.
 - `/terms.html` — terms of use, PL and EN.
 
-These are static pages independent of the API and sign-in. Keep the existing
-privacy/data-deletion URLs in the Google and Meta dashboards. Meta's deletion
+These static pages are independent of the API and sign-in. Use your own frontend
+URLs in Google and Meta. Example fields for Meta App settings → Basic:
+
+```text
+Privacy policy URL: https://app.example.com/privacy.html
+Terms of Service URL: https://app.example.com/terms.html
+User data deletion → Data deletion instructions URL:
+https://app.example.com/data-deletion.html
+```
+
+Replace the example origin and configure the same legal page URLs in Google. Meta's deletion
 instructions URL is not an API callback. Requests must be processed manually,
 verifying account ownership and deleting or anonymising relevant data. Disconnecting
 a provider, signing out or forgetting a guest does not delete server data.
@@ -453,11 +491,9 @@ Use `participantId: null` to undo. The recipient must be included in the split.
 a participant also transfers the remainder recipient reference.
 
 Apply missing local migrations with the command in the startup instructions.
-For the separate Azure migration tool, configure `Deployment:SqlConnectionString`
-in .NET User Secrets or `AFTERTAB_SQL_CONNECTION_STRING` in the deployment process.
-Pass a fresh Entra token as `AFTERTAB_SQL_ACCESS_TOKEN`; do not save tokens in Git.
-The tool validates the AfterTabDb target and uses TLS with certificate validation.
-See [deployment instructions (Polish)](after-tab-api/tools/AfterTab.Deployment/README.md).
+For the separate migration tool, configure `Database__Provider` and
+`ConnectionStrings__AfterTab` in its environment. Run `--migrate` with a schema-authorized
+account for your own database. See the [deployment instructions](after-tab-api/tools/AfterTab.Deployment/README.en.md).
 User Secrets stay outside the repository but are not encrypted.
 
 Publishing the API/frontend and migrating Azure are separate operations. Pushing

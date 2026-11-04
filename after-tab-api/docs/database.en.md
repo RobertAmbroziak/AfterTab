@@ -38,14 +38,14 @@ Perform during a planned deployment, separately for each environment:
    dotnet run --project after-tab-api/tools/AfterTab.Deployment -- --migrate
    ```
 
-   For the existing Azure/Entra deployment mode, use `--bootstrap` instead,
-   following the [deployment tool instructions](../tools/AfterTab.Deployment/README.md).
-   Recreate the managed identity database user and its grants after recreating the database.
+   See the [deployment tool instructions](../tools/AfterTab.Deployment/README.en.md)
+   for SQL Server, PostgreSQL and Azure SQL settings. If your API uses a managed identity,
+   recreate its database user and grants after recreating the database.
 5. Publish the matching API and start the frontend. Verify guest/account creation,
    an event, an expense and its settlement. Everyone starts again: old accounts,
    sessions, events, invites, expenses and payment acknowledgements are unavailable.
 
-The deployment tool's `--migrate`/`--bootstrap` refuses unknown or old migration
+The deployment tool's `--migrate` refuses unknown or old migration
 history. It never drops data or tables to resolve incompatibility. The first
 `dotnet ef database update` for this release also requires an empty database.
 Subsequent updates to this schema use normal migrations without another reset.
@@ -56,8 +56,8 @@ against the new schema.
 
 The API account needs table CRUD and access to `EntityFrameworkHiLoSequence`:
 
-- SQL Server/Azure SQL: `UPDATE` on the sequence or the `dbo` schema. The existing
-  bootstrap grants CRUD on `dbo`, which covers sequence allocation.
+- SQL Server/Azure SQL: `UPDATE` on the sequence or the `dbo` schema. Granting
+  CRUD on `dbo` covers sequence allocation.
 - PostgreSQL: `USAGE` on the `public` schema and sequence. Compose's
   `init-runtime-user.sql` grants default `USAGE, SELECT` on sequences created by
   `aftertab_owner`, so `aftertab_app` also receives access to the HiLo sequence.

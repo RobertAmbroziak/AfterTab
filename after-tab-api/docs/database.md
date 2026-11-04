@@ -38,14 +38,14 @@ Wykonaj podczas planowanego wdrożenia, osobno dla każdego środowiska:
    dotnet run --project after-tab-api/tools/AfterTab.Deployment -- --migrate
    ```
 
-   Dla Azure z istniejącym trybem Entra użyj zamiast tego `--bootstrap`, zgodnie
-   z [instrukcją narzędzia](../tools/AfterTab.Deployment/README.md). Po odtworzeniu
-   bazy trzeba ponownie utworzyć użytkownika managed identity i nadać mu uprawnienia.
+   Warianty ustawień dla SQL Server, PostgreSQL i Azure SQL opisuje
+   [instrukcja narzędzia](../tools/AfterTab.Deployment/README.md). Jeśli API loguje się
+   przez managed identity, po odtworzeniu bazy utwórz ponownie jej użytkownika i uprawnienia.
 5. Opublikuj zgodną wersję API i uruchom frontend. Sprawdź utworzenie konta/gościa,
    wydarzenia i wydatku oraz odczyt rozliczenia. Każdy użytkownik zaczyna od nowa:
    konta, sesje, wydarzenia, zaproszenia, wydatki i oznaczenia płatności ze starej bazy nie działają.
 
-Narzędzie `--migrate`/`--bootstrap` odmawia pracy przy obcej/starej historii migracji.
+Narzędzie `--migrate` odmawia pracy przy obcej/starej historii migracji.
 Nie usuwa tabel ani danych, aby naprawić niezgodność. `dotnet ef database update`
 również wymaga pustej bazy do pierwszej migracji tej wersji. Do kolejnych aktualizacji
 tego schematu stosuj normalne migracje, bez ponownego resetu. Powrót do starego kodu
@@ -57,7 +57,7 @@ Konto API potrzebuje CRUD tabel oraz pobierania wartości sekwencji
 `EntityFrameworkHiLoSequence`:
 
 - SQL Server/Azure SQL: `UPDATE` na sekwencji lub schemacie `dbo`.
-  Obecny bootstrap nadaje CRUD na schemacie `dbo`, co obejmuje tę operację.
+  Nadanie CRUD na schemacie `dbo` obejmuje tę operację.
 - PostgreSQL: `USAGE` na schemacie `public` i sekwencji. Skrypt Compose
   `init-runtime-user.sql` nadaje domyślne `USAGE, SELECT` na sekwencjach tworzonych
   przez `aftertab_owner`, więc `aftertab_app` dostaje dostęp także do sekwencji HiLo.

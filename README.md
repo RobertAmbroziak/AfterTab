@@ -1,11 +1,5 @@
 # AfterTab
 
-<div align="center">
-
-https://github.com/user-attachments/assets/25916c2a-3627-4527-a872-bbfaf4d66934
-
-</div>
-
 **Polski** | **[English](README.en.md)**
 
 Instrukcja pakowania własnego wdrożenia na Androida: [Android](after-tab-android/README.md).
@@ -13,7 +7,8 @@ Instrukcja pakowania własnego wdrożenia na Androida: [Android](after-tab-andro
 AfterTab to aplikacja PWA do dzielenia wspólnych wydatków. Pozwala tworzyć wydarzenia,
 zapraszać uczestników, przypisywać koszty i wyliczać, kto komu powinien oddać pieniądze.
 
-**[Otwórz aplikację](https://orange-stone-063c89710.4.azurestaticapps.net)**
+Uruchom własną instancję według instrukcji poniżej. Domeny `example.com`,
+adresy e-mail `@example.com` i wartości w `<...>` są przykładami do zastąpienia.
 
 ## Język aplikacji
 
@@ -27,7 +22,7 @@ Kwoty pozostają w PLN; format liczb i dat dopasowuje się do języka.
 Strony prywatności, usuwania danych i zasad korzystania mają obie wersje pod
 dotychczasowymi adresami. Parametr `?lang=pl` lub `?lang=en` wskazuje wersję.
 Bez JavaScript obie wersje pozostają dostępne. Nie zmieniamy callbacków OAuth ani
-adresów stron zapisanych w panelach Google i Meta.
+adresów stron w panelach Google i Meta przy samym przełączaniu języka.
 
 Konfigurację narzędzia migracyjnego poza kodem opisuje
 [instrukcja wdrożeniowa](after-tab-api/tools/AfterTab.Deployment/README.md).
@@ -42,14 +37,14 @@ Workflow nie uruchamia się dla `main`, nie wykonuje testów integracyjnych,
 nie potrzebuje bazy i nie publikuje aplikacji.
 
 Opcjonalne wdrożenie frontend + API + PostgreSQL na mikr.us/VPS:
-[Docker Compose](deploy/mikrus/README.md). Jest oddzielne od obecnego wdrożenia Azure.
+[Docker Compose](deploy/mikrus/README.md). Azure jest opcjonalnym wariantem hostingu.
 
 Linki stopki można ustawić przez `VITE_GITHUB_URL` i `VITE_ANDROID_APK_URL`.
 Puste wartości ukrywają odpowiedni link, dzięki czemu inne wdrożenia nie muszą
 wskazywać repozytorium ani plików autora. Ustawienia produkcyjne przechowuj poza
 Git, np. w `after-tab-app/.env.production.local`.
 
-APK można udostępnić w tym samym Azure Static Web App. Dla adresu
+APK można udostępnić na własnym hostingu frontendu, np. Azure Static Web Apps. Dla adresu
 `/downloads/App-1.0.0.apk` ustaw `AFTERTAB_ANDROID_APK_PATH` na lokalny plik APK
 (ścieżka względna względem `after-tab-app` albo bezwzględna). `npm run build`
 kopiuje tylko APK do `dist/downloads`, generuje sumę SHA-256 i sprawdza obecność
@@ -104,6 +99,31 @@ nie uruchamiaj go przeciwko innej bazie bez sprawdzenia connection stringa.
 Pozostaw terminal backendu uruchomiony.
 
 Logowanie błędów, rotacja plików i ustawienia hostingu: [instrukcja logowania backendu](after-tab-api/docs/logging.md).
+
+### Domeny własnego wdrożenia
+
+Poniższe przykłady używają dwóch publicznych adresów HTTPS:
+
+| Przeznaczenie | Przykład do zastąpienia |
+| --- | --- |
+| Frontend / PWA | `https://app.example.com` |
+| API | `https://api.example.com` |
+| Nadawca poczty zaakceptowany przez własną usługę SMTP | `no-reply@example.com` |
+| Kontakt administratora własnej instancji | `support@example.com` |
+
+W konfiguracji **API** ustaw `Authentication__FrontendOrigin` i
+`Cors__AllowedOrigins__0` na publiczny adres frontendu, bez końcowego `/`.
+Przy budowaniu **frontendu** ustaw `VITE_API_BASE_URL` na publiczny adres API,
+bez końcowego `/api` — klient dopisuje ścieżki endpointów.
+Nazwy zasobów Azure, subskrypcję, bazę, konta SMTP i klientów OAuth wybierasz we własnych usługach.
+
+W wariancie jednej domeny, np. Docker Compose, frontend i publiczne wejście API
+mogą używać `https://app.example.com`. Pozostaw wtedy `VITE_API_BASE_URL` puste
+(tak robi Compose) — klient sam dodaje `/api`. Callbacki OAuth nadal muszą trafiać do backendu:
+`https://app.example.com/signin-google` i `https://app.example.com/signin-facebook`,
+a nie pod `/api/signin-*`. Reverse proxy przekazuje te ścieżki do API.
+Adresy polityk pozostają adresami frontendu. W panelach Google/Meta podaj
+rzeczywiste adresy swojego wdrożenia, nie domeny przykładowe.
 
 ### Wybór bazy przy wdrożeniu: SQL Server lub PostgreSQL
 
@@ -392,18 +412,18 @@ w produkcji trzeba skonfigurować SMTP. Nie publikuj plików `.eml` — zawieraj
 
 ### 2. Google
 
-Możesz używać tego samego konta administracyjnego Google co do drugiej aplikacji.
-Można dopisać adresy przekierowania do istniejącego klienta, ale oddzielny klient OAuth
-ułatwia zarządzanie AfterTab. Nie usuwaj adresów drugiej aplikacji.
+Użyj własnego projektu Google Cloud i klienta OAuth dla tego wdrożenia.
+Jeśli współdzielisz projekt lub klienta z innymi aplikacjami, zachowaj ich konfigurację.
 
 1. Otwórz [Google Cloud Console](https://console.cloud.google.com/) i wybierz projekt.
 2. Otwórz **Google Auth Platform → Clients** (w starszym widoku **APIs & Services → Credentials**).
 3. Utwórz klienta **Web application**, np. `AfterTab`, lub edytuj wybranego istniejącego.
-4. W **Authorized redirect URIs** dodaj dokładnie:
+4. W **Authorized redirect URIs** dodaj adresy środowisk, których używasz
+   (drugi przykład zastąp publicznym adresem swojego API):
    - `https://localhost:7180/signin-google`
-   - `https://aftertab-api-ambro.azurewebsites.net/signin-google`
+   - `https://api.example.com/signin-google`
 5. Skonfiguruj **Branding / Audience** i użytkowników testowych. Nazwa i ekran zgody
-   dotyczą projektu Google; zmiana ich we wspólnym projekcie może wpłynąć na drugą aplikację.
+   dotyczą projektu Google; zmiana ich we wspólnym projekcie może wpłynąć na inne aplikacje.
 6. Zapisz Client ID i Client secret w lokalnych User Secrets backendu:
 
 ```powershell
@@ -413,21 +433,23 @@ dotnet user-secrets set 'Authentication:Google:ClientSecret' '<client-secret>' -
 
 Nie potrzebujesz konfiguracji JavaScript SDK ani kluczy Google we frontendzie.
 Logowanie obsługuje backend. Restart API uaktywni przycisk.
+W ustawieniach ekranu zgody podaj własną domenę frontendu, dane kontaktowe oraz
+adresy polityk z sekcji „Publiczne strony informacyjne”.
 
 [Instrukcja Microsoft](https://learn.microsoft.com/en-us/aspnet/core/security/authentication/social/google-logins?view=aspnetcore-9.0)
 i [reguły przekierowań Google](https://developers.google.com/identity/protocols/oauth2/web-server).
 
 ### 3. Facebook
 
-Możesz używać tego samego konta administratora Meta. Istniejąca aplikacja Meta może
-obsługiwać dodatkowe przekierowania, ale ma wspólną nazwę, ustawienia i identyfikatory
-użytkowników. Dla osobnej aplikacji AfterTab najlepiej utworzyć osobną aplikację Meta.
+Użyj własnej aplikacji w Meta for Developers. Jeżeli współdzielisz ją z innym
+wdrożeniem, ustawienia nazwy, logowania i identyfikatorów użytkowników są wspólne.
 
 1. Otwórz [Meta for Developers](https://developers.facebook.com/apps/) i wybierz lub utwórz aplikację.
 2. Włącz przypadek użycia / produkt **Facebook Login** dla witryny.
-3. W **Facebook Login → Settings → Valid OAuth Redirect URIs** dodaj:
+3. W **Facebook Login → Settings → Valid OAuth Redirect URIs** dodaj adresy
+   używanych środowisk (drugi przykład zastąp publicznym adresem swojego API):
    - `https://localhost:7180/signin-facebook`
-   - `https://aftertab-api-ambro.azurewebsites.net/signin-facebook`
+   - `https://api.example.com/signin-facebook`
 4. Włącz logowanie przez WWW i HTTPS. Sprawdź dostępność uprawnienia `email`.
    AfterTab identyfikuje użytkownika identyfikatorem dostawcy i działa także bez e-maila Facebooka.
 5. Na początku testuj kontem administratora/dewelopera/testera aplikacji Meta.
@@ -461,13 +483,15 @@ dotnet user-secrets set 'Mail:From' '<zweryfikowany-adres-nadawcy>' --project sr
 Nie wpisuj sekretów do repozytorium ani do zmiennych `VITE_*`. Nie wysyłaj ich na czacie.
 Tryb PickupDirectory nie jest używany, jeśli podasz `Mail:Host`.
 
-### 5. Przy późniejszym deployu Azure
+### 5. Konfiguracja produkcyjnego API
 
-Ta zmiana kodu nie wykonuje deployu. Gdy zostanie zlecony, poza migracją i publikacją
-trzeba ustawić w konfiguracji API odpowiedniki powyższych sekretów:
+Na wybranym hostingu ustaw odpowiedniki powyższych sekretów i własne adresy.
+W Azure App Service użyj ustawień środowiska usługi, a na VPS konfiguracji procesu
+lub kontenera. Przykład nazw zmiennych dla API:
 
 ```text
-Authentication__FrontendOrigin=https://orange-stone-063c89710.4.azurestaticapps.net
+Authentication__FrontendOrigin=https://app.example.com
+Cors__AllowedOrigins__0=https://app.example.com
 Authentication__Google__ClientId
 Authentication__Google__ClientSecret
 Authentication__Facebook__AppId
@@ -479,10 +503,10 @@ Mail__Password
 Mail__From
 ```
 
-Zachowaj właściwe `Cors__AllowedOrigins__0`, HTTPS i konfigurację forwarded headers
-App Service — dostawca musi dostać callback HTTPS. Klucze ASP.NET Data Protection
+Podaj własny `ConnectionStrings__AfterTab`, włącz HTTPS i skonfiguruj zaufane
+forwarded headers zgodnie z hostingiem — dostawca musi dostać callback HTTPS. Klucze ASP.NET Data Protection
 muszą przetrwać restart API, aby trwające logowanie OAuth mogło się zakończyć.
-Sekrety ustawiaj w Azure, nie w kodzie ani w komendach przechowywanych w repozytorium.
+Sekrety ustawiaj w środowisku hostingu, nie w kodzie ani w komendach przechowywanych w repozytorium.
 
 ### 6. Sprawdzenie po konfiguracji
 
@@ -515,10 +539,8 @@ i [serwer SMTP Gmail](https://developers.google.com/workspace/gmail/imap/imap-sm
 
 ### Azure Communication Services Email
 
-Rozliczenie jest za użycie. Dokumentacja podaje przykładowo **0,00025 USD za wiadomość**
-oraz **0,00012 USD za MB danych**, czyli około **0,25 USD za 1000 krótkich maili** plus
-dane, podatki i przeliczenie waluty. To szacunek z dokumentacji, nie gwarantowana oferta;
-sprawdź cenę dla subskrypcji przed utworzeniem zasobów.
+To opcjonalny dostawca SMTP. Przed utworzeniem zasobów sprawdź aktualny cennik
+i dostępność dla swojej subskrypcji; konfigurację wykonujesz we własnym koncie Azure.
 
 1. W Azure utwórz **Email Communication Services** i dodaj domenę zarządzaną Azure
    albo zweryfikuj własną domenę. Domena Azure pozwala zacząć bez kupowania domeny.
@@ -532,7 +554,7 @@ sprawdź cenę dla subskrypcji przed utworzeniem zasobów.
 6. Sprawdź dostarczenie maila i spam. Pilnuj terminu ważności sekretu Entra.
 
 Regiony/dostępne obszary danych sprawdź dla usługi e-mail osobno; lokalizacja API
-w Poland Central nie oznacza automatycznie przetwarzania poczty w tym samym regionie.
+w wybranym regionie nie oznacza automatycznie przetwarzania poczty w tym samym regionie.
 
 [Cennik przykładowy](https://learn.microsoft.com/en-us/azure/communication-services/concepts/email-pricing)
 i [konfiguracja SMTP w Azure](https://learn.microsoft.com/en-us/azure/communication-services/quickstarts/email/send-email-smtp/smtp-authentication).
@@ -540,29 +562,32 @@ i [konfiguracja SMTP w Azure](https://learn.microsoft.com/en-us/azure/communicat
 
 ## Publiczne strony informacyjne AfterTab
 
-Administrator wskazany przez właściciela: **AmbroDev Robert Ambroziak**.
-Kontakt: **amb77ro@gmail.com**.
+Przed publikacją dostosuj `after-tab-app/public/privacy.html`, `terms.html` i
+`data-deletion.html` w obu językach do własnej instancji: wpisz administratora
+danych, kontakt (np. `support@example.com`), dostawców usług i zasady retencji.
+Przykładowy kontakt zastąp rzeczywistym adresem swojego administratora.
 Strony są statyczne, dostępne bez JavaScript, konta i połączenia z API:
 
 - `/privacy.html` — polityka prywatności.
 - `/data-deletion.html` — instrukcja zgłoszenia usunięcia danych e-mailem.
 - `/terms.html` — zasady korzystania.
 
-W Meta → App settings → Basic po opublikowaniu tych plików wpisz:
+W Meta → App settings → Basic po opublikowaniu tych plików wpisz adresy własnego
+frontendu. Przykład do zastąpienia (tych samych adresów polityk użyj w Google):
 
 ```text
-Privacy policy URL: https://orange-stone-063c89710.4.azurestaticapps.net/privacy.html
-Terms of Service URL: https://orange-stone-063c89710.4.azurestaticapps.net/terms.html
+Privacy policy URL: https://app.example.com/privacy.html
+Terms of Service URL: https://app.example.com/terms.html
 User data deletion → Data deletion instructions URL:
-https://orange-stone-063c89710.4.azurestaticapps.net/data-deletion.html
+https://app.example.com/data-deletion.html
 ```
 
 Instrukcja usuwania nie jest callbackiem API. Żądania trzeba obsługiwać ręcznie,
 potwierdzając własność konta i usuwając lub anonimizując odpowiednie dane.
 Odłączenie Facebooka/Google, wylogowanie i „Zapomnij gościa” nie realizują same
-usunięcia danych serwerowych. Strony opisują obecny stan funkcji; przy zmianie
+usunięcia danych serwerowych. Treść stron musi opisywać Twoje wdrożenie; przy zmianie
 retencji, dostawców, opłat lub sposobu usuwania trzeba zaktualizować ich treść.
-Sprawdź i zatwierdź treść przed publikacją. Sam build nie udostępnia stron na Azure.
+Sprawdź i zatwierdź treść przed publikacją na wybranym hostingu.
 
 ## Model uczestników i migracja lokalna
 
