@@ -11,12 +11,14 @@ using AfterTab.DAL.EF;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using Microsoft.Extensions.Logging;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace AfterTab.Tests.Integration;
@@ -30,6 +32,8 @@ public sealed class PublicIdHttpTests
         await using var connection = new SqliteConnection("Data Source=:memory:");
         await connection.OpenAsync();
         var builder = WebApplication.CreateBuilder();
+        builder.Logging.ClearProviders().AddConsole().SetMinimumLevel(LogLevel.Warning);
+        builder.Services.AddDataProtection().UseEphemeralDataProtectionProvider();
         builder.WebHost.UseTestServer();
         builder.Services.AddHttpContextAccessor();
         builder.Services.AddScoped<ICurrentUser, HttpCurrentUser>();

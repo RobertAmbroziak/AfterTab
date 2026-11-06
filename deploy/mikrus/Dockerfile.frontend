@@ -5,6 +5,8 @@ RUN npm ci
 COPY after-tab-app/ ./
 # A relative API URL keeps the image independent of any deployment hostname.
 ENV VITE_API_BASE_URL=""
+ARG VITE_MCP_ENABLED=false
+ENV VITE_MCP_ENABLED=$VITE_MCP_ENABLED
 RUN npm run build
 
 FROM nginx:stable-alpine AS frontend

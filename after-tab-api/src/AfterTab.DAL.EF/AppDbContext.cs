@@ -17,6 +17,12 @@ public sealed class AppDbContext(
     public DbSet<AccountAction> AccountActions => Set<AccountAction>();
     public DbSet<UserIdentity> UserIdentities => Set<UserIdentity>();
     public DbSet<Session> Sessions => Set<Session>();
+    public DbSet<McpAccessToken> McpAccessTokens => Set<McpAccessToken>();
+    public DbSet<McpOperation> McpOperations => Set<McpOperation>();
+    public DbSet<McpOAuthClient> McpOAuthClients => Set<McpOAuthClient>();
+    public DbSet<McpOAuthRequest> McpOAuthRequests => Set<McpOAuthRequest>();
+    public DbSet<McpOAuthAuthorizationCode> McpOAuthAuthorizationCodes => Set<McpOAuthAuthorizationCode>();
+    public DbSet<McpOAuthToken> McpOAuthTokens => Set<McpOAuthToken>();
     public DbSet<GuestDevice> GuestDevices => Set<GuestDevice>();
     public DbSet<GuestLoginRequest> GuestLoginRequests => Set<GuestLoginRequest>();
     public DbSet<Event> Events => Set<Event>();

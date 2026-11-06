@@ -642,6 +642,328 @@ namespace AfterTab.DAL.Migrations.PostgreSql.Migrations
                     b.ToTable("GuestLoginRequests", (string)null);
                 });
 
+            modelBuilder.Entity("AfterTab.DAL.Entities.Users.McpAccessToken", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    NpgsqlPropertyBuilderExtensions.UseHiLo(b.Property<long>("Id"));
+
+                    b.Property<bool>("CanWrite")
+                        .HasColumnType("boolean");
+
+                    b.Property<DateTimeOffset>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<long?>("CreatedByUserId")
+                        .HasColumnType("bigint");
+
+                    b.Property<DateTimeOffset>("ExpiresAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTimeOffset?>("ModifiedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<long?>("ModifiedByUserId")
+                        .HasColumnType("bigint");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<Guid>("PublicId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTimeOffset?>("RevokedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("TokenHash")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
+                    b.Property<long>("UserId")
+                        .HasColumnType("bigint");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CreatedByUserId");
+
+                    b.HasIndex("ModifiedByUserId");
+
+                    b.HasIndex("PublicId")
+                        .IsUnique();
+
+                    b.HasIndex("TokenHash")
+                        .IsUnique();
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("McpAccessTokens", (string)null);
+                });
+
+            modelBuilder.Entity("AfterTab.DAL.Entities.Users.McpOAuthAuthorizationCode", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    NpgsqlPropertyBuilderExtensions.UseHiLo(b.Property<long>("Id"));
+
+                    b.Property<string>("ClientId")
+                        .IsRequired()
+                        .HasMaxLength(80)
+                        .HasColumnType("character varying(80)");
+
+                    b.Property<string>("CodeChallenge")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)");
+
+                    b.Property<string>("CodeHash")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
+                    b.Property<DateTimeOffset?>("ConsumedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTimeOffset>("ExpiresAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("RedirectUri")
+                        .IsRequired()
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)");
+
+                    b.Property<string>("Resource")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<string>("Scope")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<long>("UserId")
+                        .HasColumnType("bigint");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CodeHash")
+                        .IsUnique();
+
+                    b.HasIndex("ExpiresAtUtc");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("McpOAuthAuthorizationCodes", (string)null);
+                });
+
+            modelBuilder.Entity("AfterTab.DAL.Entities.Users.McpOAuthClient", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    NpgsqlPropertyBuilderExtensions.UseHiLo(b.Property<long>("Id"));
+
+                    b.Property<string>("ClientId")
+                        .IsRequired()
+                        .HasMaxLength(80)
+                        .HasColumnType("character varying(80)");
+
+                    b.Property<string>("ClientName")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<DateTimeOffset>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("RedirectUrisJson")
+                        .IsRequired()
+                        .HasMaxLength(8000)
+                        .HasColumnType("character varying(8000)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ClientId")
+                        .IsUnique();
+
+                    b.ToTable("McpOAuthClients", (string)null);
+                });
+
+            modelBuilder.Entity("AfterTab.DAL.Entities.Users.McpOAuthRequest", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    NpgsqlPropertyBuilderExtensions.UseHiLo(b.Property<long>("Id"));
+
+                    b.Property<string>("ClientId")
+                        .IsRequired()
+                        .HasMaxLength(80)
+                        .HasColumnType("character varying(80)");
+
+                    b.Property<string>("CodeChallenge")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)");
+
+                    b.Property<DateTimeOffset>("ExpiresAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("PublicId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("RedirectUri")
+                        .IsRequired()
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)");
+
+                    b.Property<string>("Resource")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<string>("Scope")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<string>("State")
+                        .IsRequired()
+                        .HasMaxLength(512)
+                        .HasColumnType("character varying(512)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ExpiresAtUtc");
+
+                    b.HasIndex("PublicId")
+                        .IsUnique();
+
+                    b.ToTable("McpOAuthRequests", (string)null);
+                });
+
+            modelBuilder.Entity("AfterTab.DAL.Entities.Users.McpOAuthToken", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    NpgsqlPropertyBuilderExtensions.UseHiLo(b.Property<long>("Id"));
+
+                    b.Property<string>("ClientId")
+                        .IsRequired()
+                        .HasMaxLength(80)
+                        .HasColumnType("character varying(80)");
+
+                    b.Property<DateTimeOffset>("ExpiresAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("FamilyId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Resource")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<DateTimeOffset?>("RevokedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Scope")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<string>("TokenHash")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
+                    b.Property<string>("TokenType")
+                        .IsRequired()
+                        .HasMaxLength(16)
+                        .HasColumnType("character varying(16)");
+
+                    b.Property<long>("UserId")
+                        .HasColumnType("bigint");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ExpiresAtUtc");
+
+                    b.HasIndex("TokenHash")
+                        .IsUnique();
+
+                    b.HasIndex("UserId");
+
+                    b.HasIndex("FamilyId", "TokenType");
+
+                    b.ToTable("McpOAuthTokens", (string)null);
+                });
+
+            modelBuilder.Entity("AfterTab.DAL.Entities.Users.McpOperation", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    NpgsqlPropertyBuilderExtensions.UseHiLo(b.Property<long>("Id"));
+
+                    b.Property<bool>("Completed")
+                        .HasColumnType("boolean");
+
+                    b.Property<DateTimeOffset>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<long?>("CreatedByUserId")
+                        .HasColumnType("bigint");
+
+                    b.Property<string>("Fingerprint")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
+                    b.Property<DateTimeOffset?>("ModifiedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<long?>("ModifiedByUserId")
+                        .HasColumnType("bigint");
+
+                    b.Property<Guid>("OperationId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("ResultJson")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Tool")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
+                    b.Property<long>("UserId")
+                        .HasColumnType("bigint");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CreatedByUserId");
+
+                    b.HasIndex("ModifiedByUserId");
+
+                    b.HasIndex("UserId", "OperationId")
+                        .IsUnique();
+
+                    b.ToTable("McpOperations", (string)null);
+                });
+
             modelBuilder.Entity("AfterTab.DAL.Entities.Users.Session", b =>
                 {
                     b.Property<long>("Id")
@@ -732,6 +1054,11 @@ namespace AfterTab.DAL.Migrations.PostgreSql.Migrations
 
                     b.Property<DateTimeOffset?>("LastSeenAtUtc")
                         .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("McpInstructions")
+                        .IsRequired()
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)");
 
                     b.Property<DateTimeOffset?>("ModifiedAtUtc")
                         .HasColumnType("timestamp with time zone");
@@ -1068,6 +1395,62 @@ namespace AfterTab.DAL.Migrations.PostgreSql.Migrations
                         .WithMany()
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.NoAction);
+                });
+
+            modelBuilder.Entity("AfterTab.DAL.Entities.Users.McpAccessToken", b =>
+                {
+                    b.HasOne("AfterTab.DAL.Entities.Users.User", null)
+                        .WithMany()
+                        .HasForeignKey("CreatedByUserId")
+                        .OnDelete(DeleteBehavior.NoAction);
+
+                    b.HasOne("AfterTab.DAL.Entities.Users.User", null)
+                        .WithMany()
+                        .HasForeignKey("ModifiedByUserId")
+                        .OnDelete(DeleteBehavior.NoAction);
+
+                    b.HasOne("AfterTab.DAL.Entities.Users.User", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("AfterTab.DAL.Entities.Users.McpOAuthAuthorizationCode", b =>
+                {
+                    b.HasOne("AfterTab.DAL.Entities.Users.User", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("AfterTab.DAL.Entities.Users.McpOAuthToken", b =>
+                {
+                    b.HasOne("AfterTab.DAL.Entities.Users.User", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("AfterTab.DAL.Entities.Users.McpOperation", b =>
+                {
+                    b.HasOne("AfterTab.DAL.Entities.Users.User", null)
+                        .WithMany()
+                        .HasForeignKey("CreatedByUserId")
+                        .OnDelete(DeleteBehavior.NoAction);
+
+                    b.HasOne("AfterTab.DAL.Entities.Users.User", null)
+                        .WithMany()
+                        .HasForeignKey("ModifiedByUserId")
+                        .OnDelete(DeleteBehavior.NoAction);
+
+                    b.HasOne("AfterTab.DAL.Entities.Users.User", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("AfterTab.DAL.Entities.Users.Session", b =>

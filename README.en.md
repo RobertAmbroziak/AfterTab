@@ -10,6 +10,14 @@ https://github.com/user-attachments/assets/83582d70-4d2b-4677-ae0a-f56cb08d18b1
 
 **[Polski](README.md)** | **English**
 
+## AI integration
+
+[AfterTab MCP](after-tab-api/src/AfterTab.Mcp/README.en.md) currently uses manual
+tokens for technical MCP clients and supports ChatGPT OAuth in a browser. The
+feature is disabled by default and runs inside the existing API process. Configure
+a custom MCP server from ChatGPT on the web; the mobile app does not currently
+offer adding custom servers.
+
 Package your own deployment for Android: [Android guide](after-tab-android/README.en.md).
 
 AfterTab is a PWA for sharing expenses. Create events, invite friends, record who

@@ -4,6 +4,7 @@
     <UserSecretsId>aftertab-api-development</UserSecretsId>
   </PropertyGroup>
   <ItemGroup>
+    <ProjectReference Include="..\AfterTab.Mcp\AfterTab.Mcp.csproj" />
     <ProjectReference Include="..\AfterTab.Common\AfterTab.Common.csproj" />
     <ProjectReference Include="..\AfterTab.BL.DTO\AfterTab.BL.DTO.csproj" />
     <ProjectReference Include="..\AfterTab.BL.Interfaces\AfterTab.BL.Interfaces.csproj" />

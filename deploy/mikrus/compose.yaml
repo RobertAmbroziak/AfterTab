@@ -52,6 +52,7 @@ services:
     restart: unless-stopped
     environment:
       ASPNETCORE_ENVIRONMENT: Production
+      Mcp__Enabled: ${MCP_ENABLED:-false}
       ASPNETCORE_HTTP_PORTS: "8080"
       Database__Provider: PostgreSql
       ConnectionStrings__AfterTab: Host=postgres;Database=aftertab;Username=aftertab_app;Password=${DB_APP_PASSWORD:?Set DB_APP_PASSWORD in .env}
@@ -93,6 +94,8 @@ services:
     build:
       context: ../..
       dockerfile: deploy/mikrus/Dockerfile.frontend
+      args:
+        VITE_MCP_ENABLED: ${MCP_ENABLED:-false}
     restart: unless-stopped
     environment:
       TRUSTED_PROXY_CIDR: ${TRUSTED_PROXY_CIDR:-172.30.37.1/32}

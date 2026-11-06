@@ -16,6 +16,14 @@ server {
     location /api/ {
         include /etc/nginx/api-proxy.conf;
     }
+    location = /mcp {
+        include /etc/nginx/api-proxy.conf;
+        proxy_buffering off;
+    }
+    location /mcp/ {
+        include /etc/nginx/api-proxy.conf;
+        proxy_buffering off;
+    }
     location = /signin-google {
         include /etc/nginx/api-proxy.conf;
     }

@@ -1,4 +1,6 @@
 using AfterTab.API.Security;
+using AfterTab.API.Mcp;
+using AfterTab.Mcp;
 using AfterTab.API.Hosting;
 using AfterTab.BL.Services;
 using AfterTab.Common.Security;
@@ -63,6 +65,7 @@ try
                 return Task.CompletedTask;
             };
         });
+    builder.Services.AddAfterTabMcpHost(builder.Configuration, authentication);
     builder.Services.AddAuthorization();
     builder.Services.AddRateLimiter(options =>
     {
@@ -119,6 +122,7 @@ try
     app.UseAuthentication();
     app.UseAuthorization();
     app.MapControllers();
+    app.MapAfterTabMcp(builder.Configuration);
     app.Run();
 }
 catch (Exception exception) when (exception is not HostAbortedException)

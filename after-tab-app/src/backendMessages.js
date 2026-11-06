@@ -1,5 +1,10 @@
 // API messages are translated at the presentation boundary; API contracts stay stable.
 export const backendEnglish = {
+  'Instrukcje mogą mieć maksymalnie 2000 znaków.': 'Instructions can contain up to 2,000 characters.',
+  'Podaj nazwę tokena od 1 do 100 znaków i ważność od 1 do 90 dni.': 'Use a token name of 1–100 characters and an expiry of 1–90 days.',
+  'Unieważnij istniejący token integracji przed utworzeniem kolejnego (limit: 20).': 'Revoke an existing integration token before creating another (limit: 20).',
+  'Nie znaleziono tokena integracji.': 'Integration token not found.',
+  'Zaloguj się do AfterTab i najpierw potwierdź swoje imię.': 'Sign in to AfterTab and confirm your display name first.',
   'Nie znaleziono pozycji.': 'Expense not found.',
   'Nie znaleziono wydarzenia.': 'Event not found.',
   'Konto uczestnika jest nieaktywne.': 'The participant account is inactive.',
