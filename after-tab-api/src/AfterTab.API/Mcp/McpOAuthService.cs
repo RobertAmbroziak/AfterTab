@@ -132,37 +132,36 @@ public sealed class McpOAuthService(AppDbContext db, IHttpContextAccessor http,
     }
 
     public async Task<McpOAuthRedirect?> CompleteAuthorizationAsync(Guid requestId, long? userId, bool approve, CancellationToken ct)
-    {
-        var now = clock.GetUtcNow();
-        await using var transaction = await db.Database.BeginTransactionAsync(ct);
-        var request = await db.McpOAuthRequests.SingleOrDefaultAsync(x => x.PublicId == requestId && x.ExpiresAtUtc > now, ct);
-        if (request is null) return null;
-        var deleted = await db.McpOAuthRequests.Where(x => x.Id == request.Id)
-            .ExecuteDeleteAsync(ct);
-        if (deleted != 1) return null;
-        string redirect;
-        if (!approve)
+        => await InTransactionAsync(async () =>
         {
-            redirect = AddQuery(request.RedirectUri, ("error", "access_denied"), ("state", request.State));
-        }
-        else
-        {
-            if (userId is null || !await db.Users.AnyAsync(x => x.Id == userId && x.Status == DAL.Entities.Enums.UserStatus.Active
-                && x.DisplayNameConfirmed, ct)) return null;
-            var rawCode = "atc_code_" + WebEncoders.Base64UrlEncode(RandomNumberGenerator.GetBytes(32));
-            db.McpOAuthAuthorizationCodes.Add(new()
+            var now = clock.GetUtcNow();
+            var request = await db.McpOAuthRequests.SingleOrDefaultAsync(x => x.PublicId == requestId && x.ExpiresAtUtc > now, ct);
+            if (request is null) return null;
+            var deleted = await db.McpOAuthRequests.Where(x => x.Id == request.Id)
+                .ExecuteDeleteAsync(ct);
+            if (deleted != 1) return null;
+            string redirect;
+            if (!approve)
             {
-                CodeHash = Hash(rawCode), ClientId = request.ClientId, UserId = userId.Value,
-                RedirectUri = request.RedirectUri, CodeChallenge = request.CodeChallenge,
-                Scope = request.Scope, Resource = request.Resource,
-                ExpiresAtUtc = now.AddMinutes(2)
-            });
-            await db.SaveChangesAsync(ct);
-            redirect = AddQuery(request.RedirectUri, ("code", rawCode), ("state", request.State));
-        }
-        await transaction.CommitAsync(ct);
-        return new(redirect);
-    }
+                redirect = AddQuery(request.RedirectUri, ("error", "access_denied"), ("state", request.State));
+            }
+            else
+            {
+                if (userId is null || !await db.Users.AnyAsync(x => x.Id == userId && x.Status == DAL.Entities.Enums.UserStatus.Active
+                    && x.DisplayNameConfirmed, ct)) return null;
+                var rawCode = "atc_code_" + WebEncoders.Base64UrlEncode(RandomNumberGenerator.GetBytes(32));
+                db.McpOAuthAuthorizationCodes.Add(new()
+                {
+                    CodeHash = Hash(rawCode), ClientId = request.ClientId, UserId = userId.Value,
+                    RedirectUri = request.RedirectUri, CodeChallenge = request.CodeChallenge,
+                    Scope = request.Scope, Resource = request.Resource,
+                    ExpiresAtUtc = now.AddMinutes(2)
+                });
+                await db.SaveChangesAsync(ct);
+                redirect = AddQuery(request.RedirectUri, ("code", rawCode), ("state", request.State));
+            }
+            return new McpOAuthRedirect(redirect);
+        }, ct);
 
     public async Task<McpOAuthTokenResponse?> ExchangeCodeAsync(string? clientId, string? code, string? redirectUri,
         string? verifier, string? resource, CancellationToken ct)
@@ -170,44 +169,43 @@ public sealed class McpOAuthService(AppDbContext db, IHttpContextAccessor http,
         if (string.IsNullOrWhiteSpace(clientId) || string.IsNullOrWhiteSpace(code)
             || string.IsNullOrWhiteSpace(redirectUri) || string.IsNullOrWhiteSpace(verifier)
             || verifier.Length is < 43 or > 128 || string.IsNullOrWhiteSpace(resource) || resource != Resource) return null;
-        var now = clock.GetUtcNow();
-        await using var transaction = await db.Database.BeginTransactionAsync(ct);
-        var hash = Hash(code);
-        var grant = await db.McpOAuthAuthorizationCodes.SingleOrDefaultAsync(x => x.CodeHash == hash
-            && x.ClientId == clientId && x.RedirectUri == redirectUri && x.Resource == resource
-            && x.ExpiresAtUtc > now && x.ConsumedAtUtc == null, ct);
-        if (grant is null || !FixedEquals(grant.CodeChallenge, Challenge(verifier))) return null;
-        var consumed = await db.McpOAuthAuthorizationCodes.Where(x => x.Id == grant.Id && x.ConsumedAtUtc == null)
-            .ExecuteUpdateAsync(set => set.SetProperty(x => x.ConsumedAtUtc, now), ct);
-        if (consumed != 1) return null;
-        var result = await IssueTokensAsync(grant.UserId, grant.ClientId, grant.Scope, grant.Resource, Guid.NewGuid(), now, ct);
-        await transaction.CommitAsync(ct);
-        return result;
+        return await InTransactionAsync(async () =>
+        {
+            var now = clock.GetUtcNow();
+            var hash = Hash(code);
+            var grant = await db.McpOAuthAuthorizationCodes.SingleOrDefaultAsync(x => x.CodeHash == hash
+                && x.ClientId == clientId && x.RedirectUri == redirectUri && x.Resource == resource
+                && x.ExpiresAtUtc > now && x.ConsumedAtUtc == null, ct);
+            if (grant is null || !FixedEquals(grant.CodeChallenge, Challenge(verifier))) return null;
+            var consumed = await db.McpOAuthAuthorizationCodes.Where(x => x.Id == grant.Id && x.ConsumedAtUtc == null)
+                .ExecuteUpdateAsync(set => set.SetProperty(x => x.ConsumedAtUtc, now), ct);
+            if (consumed != 1) return null;
+            return await IssueTokensAsync(grant.UserId, grant.ClientId, grant.Scope, grant.Resource, Guid.NewGuid(), now, ct);
+        }, ct);
     }
 
     public async Task<McpOAuthTokenResponse?> RefreshAsync(string? clientId, string? rawToken, string? resource, CancellationToken ct)
     {
         if (string.IsNullOrWhiteSpace(clientId) || string.IsNullOrWhiteSpace(rawToken) || resource != Resource) return null;
-        var now = clock.GetUtcNow();
-        await using var transaction = await db.Database.BeginTransactionAsync(ct);
-        var hash = Hash(rawToken);
-        var token = await db.McpOAuthTokens.SingleOrDefaultAsync(x => x.TokenHash == hash && x.TokenType == RefreshType
-            && x.ClientId == clientId && x.Resource == resource, ct);
-        if (token is null) return null;
-        if (token.RevokedAtUtc is not null)
+        return await InTransactionAsync(async () =>
         {
-            await db.McpOAuthTokens.Where(x => x.FamilyId == token.FamilyId && x.RevokedAtUtc == null)
+            var now = clock.GetUtcNow();
+            var hash = Hash(rawToken);
+            var token = await db.McpOAuthTokens.SingleOrDefaultAsync(x => x.TokenHash == hash && x.TokenType == RefreshType
+                && x.ClientId == clientId && x.Resource == resource, ct);
+            if (token is null) return null;
+            if (token.RevokedAtUtc is not null)
+            {
+                await db.McpOAuthTokens.Where(x => x.FamilyId == token.FamilyId && x.RevokedAtUtc == null)
+                    .ExecuteUpdateAsync(set => set.SetProperty(x => x.RevokedAtUtc, now), ct);
+                return null;
+            }
+            if (token.ExpiresAtUtc <= now || !await ActiveUser(token.UserId, ct)) return null;
+            var changed = await db.McpOAuthTokens.Where(x => x.Id == token.Id && x.RevokedAtUtc == null)
                 .ExecuteUpdateAsync(set => set.SetProperty(x => x.RevokedAtUtc, now), ct);
-            await transaction.CommitAsync(ct);
-            return null;
-        }
-        if (token.ExpiresAtUtc <= now || !await ActiveUser(token.UserId, ct)) return null;
-        var changed = await db.McpOAuthTokens.Where(x => x.Id == token.Id && x.RevokedAtUtc == null)
-            .ExecuteUpdateAsync(set => set.SetProperty(x => x.RevokedAtUtc, now), ct);
-        if (changed != 1) return null;
-        var result = await IssueTokensAsync(token.UserId, token.ClientId, token.Scope, token.Resource, token.FamilyId, now, ct);
-        await transaction.CommitAsync(ct);
-        return result;
+            if (changed != 1) return null;
+            return await IssueTokensAsync(token.UserId, token.ClientId, token.Scope, token.Resource, token.FamilyId, now, ct);
+        }, ct);
     }
 
     public async Task RevokeAsync(string? rawToken, CancellationToken ct)
@@ -270,6 +268,17 @@ public sealed class McpOAuthService(AppDbContext db, IHttpContextAccessor http,
 
     private Task<bool> ActiveUser(long id, CancellationToken ct)
         => db.Users.AnyAsync(x => x.Id == id && x.Status == DAL.Entities.Enums.UserStatus.Active && x.DisplayNameConfirmed, ct);
+
+    private Task<T?> InTransactionAsync<T>(Func<Task<T?>> operation, CancellationToken ct)
+        => db.Database.CreateExecutionStrategy().ExecuteAsync(async () =>
+        {
+            // A retry must start with fresh tracked state and a new transaction.
+            db.ChangeTracker.Clear();
+            await using var transaction = await db.Database.BeginTransactionAsync(ct);
+            var result = await operation();
+            await transaction.CommitAsync(ct);
+            return result;
+        });
 
     private static string[]? ParseScopes(string? value, bool defaultToRead)
     {

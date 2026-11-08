@@ -137,6 +137,8 @@ public sealed class McpHttpTests
         await f.Issue();
         var initialized = await f.Rpc("initialize", new { protocolVersion = "2025-06-18", capabilities = new { }, clientInfo = new { name = "AfterTab tests", version = "1" } });
         Assert.AreEqual("AfterTab", initialized["serverInfo"]!["name"]!.GetValue<string>());
+        StringAssert.Contains(initialized["instructions"]!.GetValue<string>(), "isOwner=true");
+        StringAssert.Contains(initialized["instructions"]!.GetValue<string>(), "Expenses can include real and virtual event participants.");
         var tools = (await f.Rpc("tools/list", new { }))["tools"]!.AsArray();
         Assert.AreEqual(18, tools.Count);
         Assert.IsNotNull(tools.Single(x => x!["name"]!.GetValue<string>() == "get_current_user")!["_meta"]?["securitySchemes"]);
@@ -144,7 +146,8 @@ public sealed class McpHttpTests
         Assert.AreEqual(0, tools.Count(x => x!["annotations"]?["destructiveHint"]?.GetValue<bool>() == true));
         Assert.IsTrue(tools.Single(x => x!["name"]!.GetValue<string>() == "get_event")!["annotations"]!["readOnlyHint"]!.GetValue<bool>());
         var me = await f.Tool("get_current_user", new { });
-        Assert.AreNotEqual(Guid.Empty, Guid.Parse(me["id"]!.GetValue<string>()));
+        var currentUserId = Guid.Parse(me["id"]!.GetValue<string>());
+        Assert.AreNotEqual(Guid.Empty, currentUserId);
         Assert.AreEqual(string.Empty, (await f.Tool("get_user_instructions", new { }))["instructions"]!.GetValue<string>());
 
         var createId = Guid.NewGuid();
@@ -155,6 +158,8 @@ public sealed class McpHttpTests
         await f.Tool("create_event", new { operationId = createId, name = "Different" }, error: true);
         var eventId = created["event"]!["id"]!.GetValue<string>();
         var owner = created["participants"]![0]!["participantId"]!.GetValue<string>();
+        Assert.IsTrue(created["participants"]![0]!["isOwner"]!.GetValue<bool>());
+        Assert.AreEqual(currentUserId, Guid.Parse(created["participants"]![0]!["userId"]!.GetValue<string>()));
         var members = await f.Tool("add_virtual_participant", new { operationId = Guid.NewGuid(), eventId, displayName = "Alex" });
         var friend = members["participants"]!.AsArray().Single(x => x!["userId"] is null)!["participantId"]!.GetValue<string>();
         var expense = new { name = "Pizza", amountMinor = 10000, splitMethod = "Percentage", balanceParticipantId = friend,
@@ -162,6 +167,21 @@ public sealed class McpHttpTests
         var preview = await f.Tool("preview_expense", new { eventId, expense });
         Assert.AreEqual(0L, preview["othersAmountMinor"]!.GetValue<long>());
         Assert.AreEqual(3400L, preview["balanceAmountMinor"]!.GetValue<long>());
+        var badParticipantId = await f.Tool("preview_expense", new
+        {
+            eventId,
+            expense = new { name = "Invalid ID", amountMinor = 100, splitMethod = "Amount", shares = new[] { new { participantId = Guid.NewGuid(), amountMinor = 100 } } }
+        }, error: true);
+        StringAssert.Contains(badParticipantId["content"]![0]!["text"]!.GetValue<string>(), "Odczytaj get_event");
+        var duplicateParticipantId = await f.Tool("preview_expense", new
+        {
+            eventId,
+            expense = new { name = "Duplicate ID", amountMinor = 100, splitMethod = "Amount", shares = new[]
+            {
+                new { participantId = owner, amountMinor = 50 }, new { participantId = owner, amountMinor = 50 }
+            } }
+        }, error: true);
+        StringAssert.Contains(duplicateParticipantId["content"]![0]!["text"]!.GetValue<string>(), "więcej niż raz");
         var operationId = Guid.NewGuid();
         var saved = await f.Tool("create_expense", new { operationId, eventId, expense });
         retry = await f.Tool("create_expense", new { operationId, eventId, expense });

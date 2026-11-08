@@ -40,12 +40,12 @@ public sealed class AfterTabTools(IAfterTabMcpApplication app, IMcpWriteStore wr
 
     [McpServerTool(Name = "get_event", ReadOnly = true, OpenWorld = false),
      McpMeta("securitySchemes", JsonValue = ReadSecurity),
-     Description("Open/read an existing event and its real and virtual participants. Does not reopen a closed settlement. Use returned participant IDs, never infer identity from names alone.")]
+     Description("Open/read an existing event and its real and virtual participants. The authenticated account/event owner is the participant marked isOwner=true. Expenses may include that real participant as well as virtual participants. Use the exact returned participantId values; never infer IDs from names or invent them. Does not reopen a closed settlement.")]
     public Task<CallToolResult> GetEvent(Guid eventId, CancellationToken ct) => Read(() => app.GetEventAsync(eventId, ct));
 
     [McpServerTool(Name = "create_event", ReadOnly = false, Destructive = false, Idempotent = true, OpenWorld = false),
      McpMeta("securitySchemes", JsonValue = WriteSecurity),
-     Description("Create an event owned by the authenticated user. Currency is PLN. Generate a fresh operationId UUID for this intended change; reuse it only to retry exactly the same request. No invitation secret is returned.")]
+     Description("Create an event owned by the authenticated user; the account owner is also included as a real event participant. Currency is PLN. Generate a fresh operationId UUID for this intended change; reuse it only to retry exactly the same request. No invitation secret is returned.")]
     public Task<CallToolResult> CreateEvent(Guid operationId, string name, string? description = null, CancellationToken ct = default)
         => Write(operationId, "create_event", new { name, description }, () => app.CreateEventAsync(name, description, ct), ct);
 

@@ -32,12 +32,14 @@ public sealed class PublicIds(AppDbContext db)
     public async Task<IReadOnlyList<ExpenseShareDto>> SharesAsync(IReadOnlyList<PublicExpenseShare> shares, CancellationToken ct)
     {
         if (shares is null || shares.Count > 1000 || shares.Any(x => x is null))
-            throw new AppException(ErrorKind.Validation, "Nieprawidłowa lub powtórzona osoba w podziale.");
+            throw new AppException(ErrorKind.Validation, "Nieprawidłowa lista osób w podziale.");
         var ids = shares.Select(x => x.ParticipantId).Distinct().ToArray();
+        if (ids.Length != shares.Count)
+            throw new AppException(ErrorKind.Validation, "Ta sama osoba występuje w podziale więcej niż raz. Użyj każdego participantId tylko raz.");
         var map = await db.EventParticipants.Where(x => ids.Contains(x.PublicId))
             .ToDictionaryAsync(x => x.PublicId, x => x.Id, ct);
         if (ids.Any(x => !map.ContainsKey(x)))
-            throw new AppException(ErrorKind.Validation, "Nieprawidłowa lub powtórzona osoba w podziale.");
+            throw new AppException(ErrorKind.Validation, "Nie znaleziono uczestnika z podanym participantId. Odczytaj get_event i użyj dokładnego ID uczestnika z tego wydarzenia.");
         return shares.Select(x => new ExpenseShareDto(map[x.ParticipantId], x.AmountMinor, x.PercentageBps)).ToArray();
     }
 

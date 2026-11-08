@@ -1,0 +1,123 @@
+name: aftertab-api
+
+x-logging: &default-logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "3"
+
+services:
+  postgres:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: aftertab
+      POSTGRES_USER: aftertab_owner
+      POSTGRES_PASSWORD: ${DB_OWNER_PASSWORD:?Set DB_OWNER_PASSWORD in .env}
+      DB_APP_PASSWORD: ${DB_APP_PASSWORD:?Set DB_APP_PASSWORD in .env}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./init-runtime-user.sql:/docker-entrypoint-initdb.d/10-runtime-user.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -h 127.0.0.1 -U aftertab_owner -d aftertab"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 15s
+    networks: [backend]
+    logging: *default-logging
+
+  migrate:
+    build:
+      context: ../..
+      dockerfile: deploy/mikrus/Dockerfile.api
+      target: migrate
+    restart: "no"
+    environment:
+      Database__Provider: PostgreSql
+      ConnectionStrings__AfterTab: Host=postgres;Database=aftertab;Username=aftertab_owner;Password=${DB_OWNER_PASSWORD:?Set DB_OWNER_PASSWORD in .env}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks: [backend]
+    logging: *default-logging
+
+  api:
+    build:
+      context: ../..
+      dockerfile: deploy/mikrus/Dockerfile.api
+      target: api
+    restart: unless-stopped
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      ASPNETCORE_HTTP_PORTS: "8080"
+      Mcp__Enabled: ${MCP_ENABLED:-true}
+      Mcp__PublicOrigin: ${PUBLIC_API_ORIGIN:?Set PUBLIC_API_ORIGIN to the public HTTPS API origin}
+      Database__Provider: PostgreSql
+      ConnectionStrings__AfterTab: Host=postgres;Database=aftertab;Username=aftertab_app;Password=${DB_APP_PASSWORD:?Set DB_APP_PASSWORD in .env}
+      Authentication__FrontendOrigin: ${FRONTEND_ORIGIN:?Set FRONTEND_ORIGIN to the Azure frontend origin}
+      Cors__AllowedOrigins__0: ${FRONTEND_ORIGIN:?Set FRONTEND_ORIGIN to the Azure frontend origin}
+      ReverseProxy__Enabled: "true"
+      ReverseProxy__KnownProxies__0: 172.30.38.10
+      DataProtection__KeysPath: /app/keys
+      Serilog__WriteTo__1__Args__path: /app/logs/api-.log
+      Mail__Host: ${MAIL_HOST:-}
+      Mail__Port: ${MAIL_PORT:-587}
+      Mail__From: ${MAIL_FROM:-}
+      Mail__Username: ${MAIL_USERNAME:-}
+      Mail__Password: ${MAIL_PASSWORD:-}
+      Authentication__Google__ClientId: ${GOOGLE_CLIENT_ID:-}
+      Authentication__Google__ClientSecret: ${GOOGLE_CLIENT_SECRET:-}
+      Authentication__Facebook__AppId: ${FACEBOOK_APP_ID:-}
+      Authentication__Facebook__AppSecret: ${FACEBOOK_APP_SECRET:-}
+    volumes:
+      - api-logs:/app/logs
+      - api-keys:/app/keys
+    healthcheck:
+      test: ["CMD", "bash", "-c", "exec 3<>/dev/tcp/127.0.0.1/8080"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+      start_period: 10s
+    depends_on:
+      postgres:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    networks: [backend]
+    logging: *default-logging
+
+  api-edge:
+    image: nginx:stable-alpine
+    restart: unless-stopped
+    volumes:
+      - ./api-only.nginx.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      api:
+        condition: service_healthy
+    networks:
+      backend:
+        ipv4_address: 172.30.38.10
+    logging: *default-logging
+
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    restart: unless-stopped
+    command: tunnel --no-autoupdate run --token ${CLOUDFLARE_TUNNEL_TOKEN:?Set CLOUDFLARE_TUNNEL_TOKEN in .env}
+    depends_on:
+      api-edge:
+        condition: service_started
+    networks: [backend]
+    logging: *default-logging
+
+networks:
+  backend:
+    ipam:
+      config:
+        - subnet: 172.30.38.0/24
+          gateway: 172.30.38.1
+
+volumes:
+  postgres-data:
+  api-logs:
+  api-keys:

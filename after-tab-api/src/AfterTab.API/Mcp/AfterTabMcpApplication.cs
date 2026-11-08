@@ -49,7 +49,7 @@ public sealed class AfterTabMcpApplication(PublicIds ids, IUserService users, IE
         var members = details.Participants.Select(x => x.ParticipantId).ToHashSet();
         if (dto.Shares.Any(x => !members.Contains(x.ParticipantId))
             || (dto.PaidByParticipantId.HasValue && !members.Contains(dto.PaidByParticipantId.Value)))
-            throw new McpException("All expense participants must belong to this event.");
+            throw new McpException("Każde participantId w podziale i płatniku musi należeć do tego wydarzenia. Odczytaj get_event i użyj dokładnych ID zwróconych dla jego uczestników.");
         return await ids.ResponseAsync(ExpenseAllocation.Calculate(dto), ct);
     }
 
