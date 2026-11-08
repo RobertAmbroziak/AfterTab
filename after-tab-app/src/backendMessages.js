@@ -30,6 +30,7 @@ export const backendEnglish = {
   'Nie masz uprawnień do zmiany tej pozycji.': 'You do not have permission to change this expense.',
   'Nie znaleziono wydarzenia na Twojej liście.': 'This event was not found in your list.',
   'Nieprawidłowa lub powtórzona osoba w podziale.': 'Invalid or duplicate participant in the split.',
+  'Nieprawidłowa lista osób w podziale.': 'Invalid list of participants in the split.',
   'Nieprawidłowa lub wygasła próba logowania. Wróć do AfterTab i spróbuj ponownie.': 'Invalid or expired sign-in attempt. Return to AfterTab and try again.',
   'Nieprawidłowa wersja pozycji.': 'Invalid expense version.',
   'Nieprawidłowe lub wygasłe dane. Spróbuj ponownie.': 'Invalid or expired details. Please try again.',
