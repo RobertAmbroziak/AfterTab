@@ -10,6 +10,8 @@ import AccountForm from './AccountForm'
 import { hasEmailAction } from './auth'
 import InstallButton from './InstallButton'
 import SessionStatus from './SessionStatus'
+import McpTokens from './McpTokens'
+import McpOAuthConsent from './McpOAuthConsent'
 import { githubUrl, androidApkUrl } from './distributionLinks'
 import './App.css'
 
@@ -23,9 +25,11 @@ export default function App() {
   const [authForm, setAuthForm] = useState(() => hasEmailAction() ? 'account' : null)
   const [editingName, setEditingName] = useState(false)
   const [menu, setMenu] = useState(false)
+  const [mcpTokens, setMcpTokens] = useState(false)
   const [route, setRoute] = useState(readRoute)
   const [attempt, setAttempt] = useState(0)
   const inFlight = useRef(false)
+  const mcpOAuthRoute = location.hash.match(/^#mcp-oauth=([a-f\d-]{36})$/i)
   useEffect(() => {
     let active = true
     captureInvitation()
@@ -37,6 +41,7 @@ export default function App() {
       .catch(reason => { if (active) setError(reason.message) }).finally(() => { if (active) { setBusy(false); setChecking(false) } })
     return () => { active = false; window.removeEventListener('hashchange', syncRoute); window.removeEventListener('aftertab:session-expired', expired) }
   }, [attempt])
+  if (mcpOAuthRoute) return <McpOAuthConsent requestId={mcpOAuthRoute[1]} />
   async function handleSession(action) {
     if (inFlight.current) return
     inFlight.current = true; setBusy(true); setChecking(false); setError('')
@@ -64,9 +69,9 @@ export default function App() {
       </div>
       <div className="account-control"><button className="account-button" aria-label={session?.user.displayName || t("Konto")} aria-expanded={menu} aria-controls="account-menu" onClick={() => setMenu(value => !value)}><span className="account-avatar" aria-hidden="true">{session ? [...session.user.displayName][0]?.toLocaleUpperCase(getLocale()) : <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M5 6h14M5 12h14M5 18h14" /></svg>}</span><span>{session?.user.displayName || t("Konto")}</span></button>
         {menu && <section className="account-menu" id="account-menu" aria-label={t("Konto użytkownika")}>
-          {session ? <><strong>{session.user.displayName}</strong><p className="helper-text">{session.user.isGuest ? t("Gość zapamiętany w tej przeglądarce") : t("Konto trwałe")}</p>{session.user.isGuest && <button className="text-button" onClick={startAccountLogin}>{t("Zachowaj konto / Zaloguj")}</button>}<button className="text-button" onClick={() => { setEditingName(true); setMenu(false) }}>{t("Zmień imię")}</button><button className="text-button" disabled={busy} onClick={() => { setMenu(false); handleSession(logout) }}>{t("Wyloguj")}</button></>
+          {session ? <><strong>{session.user.displayName}</strong><p className="helper-text">{session.user.isGuest ? t("Gość zapamiętany w tej przeglądarce") : t("Konto trwałe")}</p><div className="account-menu-group"><button className="text-button" onClick={() => { setEditingName(true); setMenu(false) }}>{t("Zmień imię")}</button>{session.user.isGuest && <button className="text-button" onClick={startAccountLogin}>{t("Zachowaj konto / Zaloguj")}</button>}{session.user.isGuest && remembered && <button className="text-button danger" disabled={busy} onClick={() => { setMenu(false); handleForget() }}>{t("Zapomnij gościa")}</button>}<button className="text-button" disabled={busy} onClick={() => { setMenu(false); handleSession(logout) }}>{t("Wyloguj")}</button></div>{!needsName && import.meta.env.VITE_MCP_ENABLED === 'true' && <div className="account-menu-integration"><button className="text-button" onClick={() => { setMcpTokens(true); setMenu(false) }}>{t('Integracje AI')}</button></div>}</>
             : <><button className="primary-button" disabled={busy} onClick={startLogin}>{remembered ? t("WRÓĆ JAKO GOŚĆ") : t("ZALOGUJ JAKO GOŚĆ")}</button><button className="text-button" disabled={busy} onClick={startAccountLogin}>{t("Zaloguj / Utwórz konto")}</button></>}
-          {remembered && <button className="text-button danger" disabled={busy} onClick={handleForget}>{t("Zapomnij gościa")}</button>}
+          {!session && remembered && <button className="text-button danger" disabled={busy} onClick={handleForget}>{t("Zapomnij gościa")}</button>}
         </section>}
       </div>
     </header>
@@ -78,7 +83,8 @@ export default function App() {
       {!session && authForm === 'guest' && <section className="workspace"><NameForm title={t("Zaloguj się jako gość")} submitLabel={t("Zapisz imię i wejdź")} onSubmit={name => handleSession(() => loginAsGuest(name))} onCancel={() => setAuthForm(null)} busy={busy} /></section>}
       {session && (needsName || editingName) && <section className="workspace"><NameForm key={`${session.user.id}-${editingName}`} initialName={needsName && session.user.displayName === 'Gość' ? '' : session.user.displayName} title={needsName ? t("Jak masz na imię?") : t("Zmień imię")} onSubmit={saveName} onCancel={needsName ? undefined : () => setEditingName(false)} busy={busy} /></section>}
       {route.kind === 'invite' && <Invitation key={route.token} token={route.token} session={session} onLogin={startLogin} />}
-      {session && !needsName && route.kind !== 'invite' && <EventWorkspace key={session.user.id} route={route} user={session.user} />}
+      {session && !needsName && import.meta.env.VITE_MCP_ENABLED === 'true' && mcpTokens && <McpTokens key={`mcp-${session.user.id}`} onClose={() => setMcpTokens(false)} />}
+      {session && !needsName && !mcpTokens && route.kind !== 'invite' && <EventWorkspace key={`events-${session.user.id}`} route={route} user={session.user} />}
     </div>
     <footer className="app-footer" aria-label={t("Informacje o aplikacji")}>
       <a href={legalUrl('privacy')}>{t("Prywatność")}</a>

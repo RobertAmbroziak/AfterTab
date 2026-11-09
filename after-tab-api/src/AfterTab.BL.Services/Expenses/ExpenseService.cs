@@ -10,9 +10,9 @@ using AfterTab.DAL.Interfaces.Users;
 namespace AfterTab.BL.Services.Expenses;
 public sealed class ExpenseService(IExpenseRepository expenses, IUserRepository users, ICurrentUser actor, TimeProvider clock) : IExpenseService
 {
-    private async Task<ExpenseEvent> Access(Guid eventId, bool write, CancellationToken ct)
+    private async Task<ExpenseEvent> Access(long eventId, bool write, CancellationToken ct)
     {
-        var user = actor.UserId is Guid id ? await users.GetByIdAsync(id, ct) : null;
+        var user = actor.UserId is long id ? await users.GetByIdAsync(id, ct) : null;
         if (user?.Status != UserStatus.Active) throw new AppException(ErrorKind.Forbidden, "Zaloguj się ponownie.");
         var ev = await expenses.GetEventAsync(eventId, ct);
         if (ev is null || !ev.Participants.Any(x => x.Participant.UserId == user.Id))
@@ -26,12 +26,12 @@ public sealed class ExpenseService(IExpenseRepository expenses, IUserRepository 
     private static ExpenseDto Map(ExpenseReadModel x) => new(x.Expense.Id, x.Expense.Name, x.Expense.AmountMinor,
         x.AuthorName, x.AuthorUserId, x.Expense.SplitMethod.ToString(), x.Expense.Balanced, x.Expense.OthersAmountMinor,
         x.Splits.Select(s => new ExpensePersonDto(s.ParticipantId, s.DisplayName, s.AmountMinor, s.PercentageBps)).ToList(), Convert.ToBase64String(x.Expense.RowVersion), x.PaidByParticipantId, x.PayerName, x.Expense.BalanceParticipantId, x.Expense.BalanceAmountMinor);
-    public async Task<IReadOnlyList<ExpenseDto>> ListAsync(Guid eventId, CancellationToken ct)
+    public async Task<IReadOnlyList<ExpenseDto>> ListAsync(long eventId, CancellationToken ct)
     {
         await Access(eventId, false, ct);
         return (await expenses.ListAsync(eventId, ct)).Select(Map).ToList();
     }
-    public async Task<ExpenseDto> CreateAsync(Guid eventId, CreateExpenseDto input, CancellationToken ct)
+    public async Task<ExpenseDto> CreateAsync(long eventId, CreateExpenseDto input, CancellationToken ct)
     {
         var ev = await Access(eventId, true, ct);
         var name = input.Name?.Trim();
@@ -57,7 +57,7 @@ public sealed class ExpenseService(IExpenseRepository expenses, IUserRepository 
         return Map(new(expense, author.DisplayName, actor.UserId!.Value,
             calculated.Splits.Select(x => new ExpenseSplitReadModel(x.ParticipantId, participants[x.ParticipantId].DisplayName, x.AmountMinor, x.PercentageBps)).ToList(), payerId, participants[payerId].DisplayName));
     }
-    public async Task<ExpenseDto> UpdateSplitAsync(Guid eventId, Guid expenseId, UpdateExpenseSplitDto input, CancellationToken ct)
+    public async Task<ExpenseDto> UpdateSplitAsync(long eventId, long expenseId, UpdateExpenseSplitDto input, CancellationToken ct)
     {
         var ev = await Access(eventId, true, ct);
         var existing = (await expenses.ListAsync(eventId, ct)).SingleOrDefault(x => x.Expense.Id == expenseId)
@@ -84,7 +84,7 @@ public sealed class ExpenseService(IExpenseRepository expenses, IUserRepository 
     }
     private bool CanBalance(ExpenseEvent ev, Expense expense)
         => ev.Event.OwnerUserId == actor.UserId || ev.Participants.Any(x => x.Participant.Id == expense.PaidByParticipantId && x.Participant.UserId == actor.UserId);
-    public async Task<ExpenseDto> UpdateBalanceAsync(Guid eventId, Guid expenseId, UpdateExpenseBalanceDto input, CancellationToken ct)
+    public async Task<ExpenseDto> UpdateBalanceAsync(long eventId, long expenseId, UpdateExpenseBalanceDto input, CancellationToken ct)
     {
         var ev = await Access(eventId, true, ct);
         var existing = (await expenses.ListAsync(eventId, ct)).SingleOrDefault(x => x.Expense.Id == expenseId)
@@ -111,7 +111,7 @@ public sealed class ExpenseService(IExpenseRepository expenses, IUserRepository 
         await expenses.UpdateSplitAsync(replacement, actor.UserId!.Value, version, ct, balanceOnly: true);
         return Map((await expenses.ListAsync(eventId, ct)).Single(x => x.Expense.Id == expenseId));
     }
-    public async Task<ExpenseDto> UpdatePayerAsync(Guid eventId, Guid expenseId, UpdateExpensePayerDto input, CancellationToken ct)
+    public async Task<ExpenseDto> UpdatePayerAsync(long eventId, long expenseId, UpdateExpensePayerDto input, CancellationToken ct)
     {
         var ev = await Access(eventId, true, ct);
         if (ev.Event.OwnerUserId != actor.UserId) throw new AppException(ErrorKind.Forbidden, "Tylko autor wydarzenia może zmienić płacącego.");

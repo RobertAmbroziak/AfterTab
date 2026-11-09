@@ -7,9 +7,9 @@ namespace AfterTab.Tests.Unit;
 [TestClass]
 public sealed class ExpenseAllocationTests
 {
-    private static readonly Guid A = Guid.Parse("00000000-0000-0000-0000-000000000001");
-    private static readonly Guid B = Guid.Parse("00000000-0000-0000-0000-000000000002");
-    private static readonly Guid C = Guid.Parse("00000000-0000-0000-0000-000000000003");
+    private static readonly long A = 1L;
+    private static readonly long B = 2L;
+    private static readonly long C = 3L;
     [TestMethod]
     public void Three_33_Percent_Shares_Balance_Only_To_Explicitly_Selected_Person()
     {
@@ -55,7 +55,7 @@ public sealed class ExpenseAllocationTests
         var valid = new CreateExpenseDto("Pizza", 100, "Amount", [new(A, 100)]);
         CreateExpenseDto[] invalid = [valid with { AmountMinor = 0 }, valid with { AmountMinor = long.MaxValue },
             valid with { Shares = [new(A, 101)] }, valid with { Shares = [new(A, -1)] },
-            valid with { Shares = [new(A, 50), new(A, 50)] }, valid with { Shares = [new(Guid.Empty, 50)] },
+            valid with { Shares = [new(A, 50), new(A, 50)] }, valid with { Shares = [new(0, 50)] },
             valid with { Shares = [new(A, 50, 1)] }, valid with { Shares = null! }, valid with { SplitMethod = "Other" },
             valid with { SplitMethod = "Percentage", Shares = [new(A, PercentageBps: 5001), new(B, PercentageBps: 5000)] },
             valid with { SplitMethod = "Percentage", Shares = [new(A, 1, 5000)] }];

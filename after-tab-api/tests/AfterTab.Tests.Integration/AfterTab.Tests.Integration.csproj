@@ -14,5 +14,9 @@
     <PackageReference Include="MSTest.TestFramework" />
     <PackageReference Include="MSTest.TestAdapter" PrivateAssets="all" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" />
+    <PackageReference Include="Microsoft.AspNetCore.TestHost" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="../../src/AfterTab.API/appsettings.json" Link="Logging.appsettings.json" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 </Project>

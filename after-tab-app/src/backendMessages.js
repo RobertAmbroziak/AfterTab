@@ -1,5 +1,10 @@
 // API messages are translated at the presentation boundary; API contracts stay stable.
 export const backendEnglish = {
+  'Instrukcje mogą mieć maksymalnie 2000 znaków.': 'Instructions can contain up to 2,000 characters.',
+  'Podaj nazwę tokena od 1 do 100 znaków i ważność od 1 do 90 dni.': 'Use a token name of 1–100 characters and an expiry of 1–90 days.',
+  'Unieważnij istniejący token integracji przed utworzeniem kolejnego (limit: 20).': 'Revoke an existing integration token before creating another (limit: 20).',
+  'Nie znaleziono tokena integracji.': 'Integration token not found.',
+  'Zaloguj się do AfterTab i najpierw potwierdź swoje imię.': 'Sign in to AfterTab and confirm your display name first.',
   'Nie znaleziono pozycji.': 'Expense not found.',
   'Nie znaleziono wydarzenia.': 'Event not found.',
   'Konto uczestnika jest nieaktywne.': 'The participant account is inactive.',
@@ -24,7 +29,10 @@ export const backendEnglish = {
   'Nie masz uprawnień do zmiany tego podziału lub wyrównania.': 'You do not have permission to change this split or remainder.',
   'Nie masz uprawnień do zmiany tej pozycji.': 'You do not have permission to change this expense.',
   'Nie znaleziono wydarzenia na Twojej liście.': 'This event was not found in your list.',
+  'Nie znaleziono uczestnika z podanym participantId. Odczytaj get_event i użyj dokładnego ID uczestnika z tego wydarzenia.': 'No participant was found with the provided participantId. Read get_event and use the exact participant ID from that event.',
   'Nieprawidłowa lub powtórzona osoba w podziale.': 'Invalid or duplicate participant in the split.',
+  'Nieprawidłowa lista osób w podziale.': 'Invalid list of participants in the split.',
+  'Ta sama osoba występuje w podziale więcej niż raz. Użyj każdego participantId tylko raz.': 'The same person appears in the split more than once. Use each participantId only once.',
   'Nieprawidłowa lub wygasła próba logowania. Wróć do AfterTab i spróbuj ponownie.': 'Invalid or expired sign-in attempt. Return to AfterTab and try again.',
   'Nieprawidłowa wersja pozycji.': 'Invalid expense version.',
   'Nieprawidłowe lub wygasłe dane. Spróbuj ponownie.': 'Invalid or expired details. Please try again.',

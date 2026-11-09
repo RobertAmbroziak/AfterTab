@@ -6,6 +6,7 @@ using AfterTab.DAL.Entities.Expenses;
 using AfterTab.DAL.EF.Configurations;
 using AfterTab.DAL.Interfaces;
 using Microsoft.EntityFrameworkCore;
+using System.Security.Cryptography;
 namespace AfterTab.DAL.EF;
 public sealed class AppDbContext(
     DbContextOptions<AppDbContext> options,
@@ -16,6 +17,12 @@ public sealed class AppDbContext(
     public DbSet<AccountAction> AccountActions => Set<AccountAction>();
     public DbSet<UserIdentity> UserIdentities => Set<UserIdentity>();
     public DbSet<Session> Sessions => Set<Session>();
+    public DbSet<McpAccessToken> McpAccessTokens => Set<McpAccessToken>();
+    public DbSet<McpOperation> McpOperations => Set<McpOperation>();
+    public DbSet<McpOAuthClient> McpOAuthClients => Set<McpOAuthClient>();
+    public DbSet<McpOAuthRequest> McpOAuthRequests => Set<McpOAuthRequest>();
+    public DbSet<McpOAuthAuthorizationCode> McpOAuthAuthorizationCodes => Set<McpOAuthAuthorizationCode>();
+    public DbSet<McpOAuthToken> McpOAuthTokens => Set<McpOAuthToken>();
     public DbSet<GuestDevice> GuestDevices => Set<GuestDevice>();
     public DbSet<GuestLoginRequest> GuestLoginRequests => Set<GuestLoginRequest>();
     public DbSet<Event> Events => Set<Event>();
@@ -26,11 +33,27 @@ public sealed class AppDbContext(
     public DbSet<TransferConfirmation> TransferConfirmations => Set<TransferConfirmation>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
-        => modelBuilder.ApplyConfigurationsFromAssembly(typeof(AppDbContext).Assembly);
+    {
+        // Allocate blocks on the client before saving graphs, using a database sequence.
+        // Gaps are expected; keys are unique across processes and deployments.
+        if (Database.IsSqlServer())
+            SqlServerModelBuilderExtensions.UseHiLo(modelBuilder);
+        else if (Database.IsNpgsql())
+            NpgsqlModelBuilderExtensions.UseHiLo(modelBuilder);
+        modelBuilder.ApplyConfigurationsFromAssembly(typeof(AppDbContext).Assembly);
+        if (Database.IsNpgsql()) PostgreSqlModelConfiguration.Configure(modelBuilder);
+    }
 
     private void ApplyAudit()
     {
         ChangeTracker.DetectChanges();
+        if (Database.IsNpgsql())
+        {
+            // Keep the API's opaque byte[] version while SQL Server retains native rowversion.
+            foreach (var entry in ChangeTracker.Entries<Expense>())
+                if (entry.State is EntityState.Added or EntityState.Modified)
+                    entry.Entity.RowVersion = RandomNumberGenerator.GetBytes(16);
+        }
         var now = timeProvider.GetUtcNow();
         var actor = currentUser.UserId;
         foreach (var entry in ChangeTracker.Entries<BaseEntity>())

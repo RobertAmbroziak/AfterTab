@@ -4,14 +4,18 @@
     <UserSecretsId>aftertab-api-development</UserSecretsId>
   </PropertyGroup>
   <ItemGroup>
+    <ProjectReference Include="..\AfterTab.Mcp\AfterTab.Mcp.csproj" />
     <ProjectReference Include="..\AfterTab.Common\AfterTab.Common.csproj" />
     <ProjectReference Include="..\AfterTab.BL.DTO\AfterTab.BL.DTO.csproj" />
     <ProjectReference Include="..\AfterTab.BL.Interfaces\AfterTab.BL.Interfaces.csproj" />
     <ProjectReference Include="..\AfterTab.BL.Services\AfterTab.BL.Services.csproj" />
     <ProjectReference Include="..\AfterTab.DAL.EF\AfterTab.DAL.EF.csproj" />
+    <ProjectReference Include="..\AfterTab.DAL.Migrations.PostgreSql\AfterTab.DAL.Migrations.PostgreSql.csproj" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.EntityFrameworkCore.Design" PrivateAssets="all" />
+    <PackageReference Include="Serilog.AspNetCore" />
+    <PackageReference Include="Serilog.Sinks.File" />
     <PackageReference Include="Microsoft.AspNetCore.Authentication.Google" />
     <PackageReference Include="Microsoft.AspNetCore.Authentication.Facebook" />
   </ItemGroup>

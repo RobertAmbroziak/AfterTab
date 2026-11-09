@@ -18,9 +18,9 @@ namespace AfterTab.Tests.Integration;
 [TestClass]
 public sealed class ExpenseTests
 {
-    private sealed class Actor : ICurrentUser { public Guid? UserId { get; set; } }
+    private sealed class Actor : ICurrentUser { public long? UserId { get; set; } }
     // SQLite has no SQL Server rowversion generator. Stale-version behavior is also checked on LocalDB.
-    public sealed class SqliteModel(ModelCustomizerDependencies dependencies) : RelationalModelCustomizer(dependencies)
+    public sealed class SqliteModel(ModelCustomizerDependencies dependencies) : SqliteUtcModelCustomizer(dependencies)
     {
         public override void Customize(ModelBuilder builder, DbContext context)
         {

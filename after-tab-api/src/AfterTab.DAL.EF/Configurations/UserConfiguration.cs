@@ -10,6 +10,7 @@ public sealed class UserConfiguration : IEntityTypeConfiguration<User>
     {
         b.ConfigureAudit("Users");
         b.Property(x => x.DisplayName).HasMaxLength(100).IsRequired();
+        b.Property(x => x.McpInstructions).HasMaxLength(2000).IsRequired();
         b.Property(x => x.Status).HasConversion<string>().HasMaxLength(20);
     }
 }

@@ -88,7 +88,7 @@ public sealed class AccountService(AppDbContext db, ISessionService sessions, IA
         foreach (var sibling in siblings) Consume(sibling);
         await SaveOnceAsync(ct);
     }
-    public async Task<Guid> LoginAsync(string email, string password, CancellationToken ct)
+    public async Task<long> LoginAsync(string email, string password, CancellationToken ct)
     {
         var normalized = Email(email);
         if (password.Length > 128) throw Invalid("Nieprawidłowy e-mail lub hasło.");
@@ -119,7 +119,7 @@ public sealed class AccountService(AppDbContext db, ISessionService sessions, IA
         new Microsoft.Extensions.Options.OptionsWrapper<PasswordHasherOptions>(new() { IterationCount = 210000 }))
         .HashPassword(new(), "unusable-dummy-password"));
 
-    public string AddAction(Guid? userId, string purpose, TimeSpan lifetime, string? challenge = null, string? state = null, string? origin = null)
+    public string AddAction(long? userId, string purpose, TimeSpan lifetime, string? challenge = null, string? state = null, string? origin = null)
     {
         var token = Secret();
         db.AccountActions.Add(new AccountAction { UserId = userId, Purpose = purpose, TokenHash = Hash(token), ExpiresAtUtc = Now.Add(lifetime),
@@ -139,7 +139,7 @@ public sealed class AccountService(AppDbContext db, ISessionService sessions, IA
         try { await db.SaveChangesAsync(ct); }
         catch (DbUpdateConcurrencyException) { db.ChangeTracker.Clear(); throw Invalid(); }
     }
-    public async Task<Guid> ExternalAsync(IdentityProvider provider, string subject, string? name, string? email, Guid? guestId, CancellationToken ct)
+    public async Task<long> ExternalAsync(IdentityProvider provider, string subject, string? name, string? email, long? guestId, CancellationToken ct)
     {
         if (string.IsNullOrWhiteSpace(subject) || subject.Length > 255) throw Invalid();
         var identity = await db.UserIdentities.SingleOrDefaultAsync(x => x.Provider == provider && x.ProviderSubject == subject, ct);
@@ -160,7 +160,7 @@ public sealed class AccountService(AppDbContext db, ISessionService sessions, IA
         await db.SaveChangesAsync(ct);
         return user.Id;
     }
-    public async Task<GuestSessionDto> IssueSessionAsync(Guid userId, CancellationToken ct, bool persistentCookie = false)
+    public async Task<GuestSessionDto> IssueSessionAsync(long userId, CancellationToken ct, bool persistentCookie = false)
     {
         var user = await db.Users.SingleOrDefaultAsync(x => x.Id == userId && x.Status == UserStatus.Active, ct) ?? throw Invalid();
         var token = Secret();

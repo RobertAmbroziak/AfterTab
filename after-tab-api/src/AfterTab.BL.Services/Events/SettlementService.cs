@@ -7,11 +7,11 @@ using AfterTab.DAL.Interfaces.Events;
 namespace AfterTab.BL.Services.Events;
 public sealed class SettlementService(ISettlementRepository settlements, ICurrentUser actor, TimeProvider clock) : ISettlementService
 {
-    private Guid Actor => actor.UserId ?? throw new AppException(ErrorKind.Forbidden, "Zaloguj się ponownie.");
-    public async Task<SettlementDto> GetAsync(Guid eventId, CancellationToken ct) => Map(await settlements.ReadAsync(eventId, Actor, ct));
-    public async Task<SettlementDto> SetClosedAsync(Guid eventId, bool closed, CancellationToken ct)
+    private long Actor => actor.UserId ?? throw new AppException(ErrorKind.Forbidden, "Zaloguj się ponownie.");
+    public async Task<SettlementDto> GetAsync(long eventId, CancellationToken ct) => Map(await settlements.ReadAsync(eventId, Actor, ct));
+    public async Task<SettlementDto> SetClosedAsync(long eventId, bool closed, CancellationToken ct)
         => Map(await settlements.SetClosedAsync(eventId, Actor, closed, clock.GetUtcNow(), ct));
-    public async Task<SettlementDto> MarkAsync(Guid eventId, MarkTransferDto input, CancellationToken ct)
+    public async Task<SettlementDto> MarkAsync(long eventId, MarkTransferDto input, CancellationToken ct)
     {
         var current = await GetAsync(eventId, ct);
         if (!current.IsFinal || current.Version != input.Version) throw new AppException(ErrorKind.Conflict, "Przelewy można oznaczać tylko w aktualnym, zamkniętym rozliczeniu.");

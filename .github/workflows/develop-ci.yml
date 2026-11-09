@@ -1,0 +1,62 @@
+name: Develop CI
+
+on:
+  push:
+    branches:
+      - develop
+
+permissions:
+  contents: read
+
+jobs:
+  backend:
+    name: Backend build and unit tests
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: after-tab-api
+    env:
+      DOTNET_CLI_TELEMETRY_OPTOUT: '1'
+      DOTNET_NOLOGO: 'true'
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Install .NET SDK
+        uses: actions/setup-dotnet@0f4a354dd5547a28c70b7853dbd95d5b67886e73 # v6.1.0
+        with:
+          # Match the feature band and latestPatch policy in after-tab-api/global.json.
+          dotnet-version: '9.0.3xx'
+      - name: Restore dependencies
+        run: dotnet restore AfterTabApi.sln
+      - name: Build backend
+        run: dotnet build AfterTabApi.sln --configuration Release --no-restore
+      - name: Run unit tests
+        run: dotnet test tests/AfterTab.Tests.Unit/AfterTab.Tests.Unit.csproj --configuration Release --no-build --no-restore --verbosity normal
+
+  frontend:
+    name: Frontend build and unit tests
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: after-tab-app
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Install Node.js
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: after-tab-app/package-lock.json
+      - name: Install dependencies
+        run: npm ci
+      - name: Run unit tests
+        run: npm test
+      - name: Build frontend
+        run: npm run build

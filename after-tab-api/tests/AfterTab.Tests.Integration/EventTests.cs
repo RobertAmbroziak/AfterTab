@@ -17,7 +17,7 @@ namespace AfterTab.Tests.Integration;
 [TestClass]
 public sealed class EventTests
 {
-    private sealed class Actor : ICurrentUser { public Guid? UserId { get; set; } }
+    private sealed class Actor : ICurrentUser { public long? UserId { get; set; } }
     private sealed class Scope : IAsyncDisposable
     {
         public required SqliteConnection Connection { get; init; }
@@ -170,7 +170,7 @@ public sealed class EventTests
         await using var s = await Scope.Create();
         for (var i = 0; i < 11; i++) s.Db.Events.Add(new Event { OwnerUserId = s.Owner.Id, Name = $"Existing {i}" });
         await s.Db.SaveChangesAsync();
-        var controller = new AfterTab.API.Controllers.EventsController(s.Events);
+        var controller = new AfterTab.API.Controllers.EventsController(s.Events, new AfterTab.API.Contracts.PublicIds(s.Db), s.Db);
         var legacy = (Microsoft.AspNetCore.Mvc.OkObjectResult)await controller.List(default);
         Assert.AreEqual(10, ((IReadOnlyList<EventSummaryDto>)legacy.Value!).Count);
         var current = (Microsoft.AspNetCore.Mvc.OkObjectResult)await controller.List(default, 2);
@@ -216,7 +216,7 @@ public sealed class EventTests
         await Assert.ThrowsExactlyAsync<AppException>(() => s.Events.CreateAsync(new("  "), default));
         var ev = new Event { OwnerUserId = s.Owner.Id, Name = "Rollback" };
         await Assert.ThrowsExactlyAsync<DbUpdateException>(() => new EventRepository(s.Db).CreateAsync(ev,
-            new EventParticipant { EventId = ev.Id, UserId = Guid.NewGuid() }, new EventInvite { EventId = ev.Id, TokenHash = new string('A', 64) }, default));
+            new EventParticipant { EventId = ev.Id, UserId = long.MaxValue }, new EventInvite { EventId = ev.Id, TokenHash = new string('A', 64) }, default));
         s.Db.ChangeTracker.Clear();
         Assert.AreEqual(0, await s.Db.Events.CountAsync());
         Assert.AreEqual(0, await s.Db.EventInvites.CountAsync());

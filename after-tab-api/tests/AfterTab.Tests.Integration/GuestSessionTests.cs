@@ -14,7 +14,7 @@ namespace AfterTab.Tests.Integration;
 [TestClass]
 public sealed class GuestSessionTests
 {
-    private sealed class Actor : ICurrentUser { public Guid? UserId => null; }
+    private sealed class Actor : ICurrentUser { public long? UserId => null; }
     private sealed class Clock : TimeProvider
     {
         public DateTimeOffset Now { get; set; } = new(2026, 10, 25, 12, 0, 0, TimeSpan.Zero);
@@ -27,7 +27,7 @@ public sealed class GuestSessionTests
         await using var connection = new SqliteConnection("Data Source=:memory:");
         await connection.OpenAsync();
         var clock = new Clock();
-        var options = new DbContextOptionsBuilder<AppDbContext>().UseSqlite(connection).Options;
+        var options = new DbContextOptionsBuilder<AppDbContext>().UseSqlite(connection).ReplaceService<Microsoft.EntityFrameworkCore.Infrastructure.IModelCustomizer, NumericKeyModelCustomizer>().Options;
         await using var db = new AppDbContext(options, new Actor(), clock);
         await db.Database.EnsureCreatedAsync();
         var service = new SessionService(new SessionRepository(db), new UserRepository(db), clock, new GuestBrowserRepository(db));
@@ -59,7 +59,7 @@ public sealed class GuestSessionTests
         await using var connection = new SqliteConnection("Data Source=:memory:");
         await connection.OpenAsync();
         var clock = new Clock();
-        var options = new DbContextOptionsBuilder<AppDbContext>().UseSqlite(connection).Options;
+        var options = new DbContextOptionsBuilder<AppDbContext>().UseSqlite(connection).ReplaceService<Microsoft.EntityFrameworkCore.Infrastructure.IModelCustomizer, NumericKeyModelCustomizer>().Options;
         await using var db = new AppDbContext(options, new Actor(), clock);
         await db.Database.EnsureCreatedAsync();
         var service = new SessionService(new SessionRepository(db), new UserRepository(db), clock, new GuestBrowserRepository(db));

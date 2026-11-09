@@ -40,7 +40,7 @@ public sealed class GuestBrowserService(IGuestBrowserRepository repository, IUse
         var device = IsSecret(deviceToken) ? await repository.FindDeviceAsync(Hash(deviceToken!), ct) : null;
         User? user = null;
         // A valid old session can adopt its existing account instead of creating a new guest.
-        if (request.LegacyUserId is Guid legacyUser && request.LegacySessionId is Guid legacySession)
+        if (request.LegacyUserId is long legacyUser && request.LegacySessionId is long legacySession)
         {
             // Preparation happened at most five minutes ago, but logout/revocation must still be respected.
             var session = await sessions.FindByIdAsync(legacySession, ct);
@@ -89,15 +89,15 @@ public sealed class GuestBrowserService(IGuestBrowserRepository repository, IUse
         var now = clock.GetUtcNow();
         if (request is null || request.ExpiresAtUtc <= now || request.ConsumedAtUtc is not null
             || !CryptographicOperations.FixedTimeEquals(Encoding.ASCII.GetBytes(request.Challenge), Encoding.ASCII.GetBytes(Hash(input.Verifier)))) return null;
-        var device = request.GuestDeviceId is Guid deviceId ? await repository.FindDeviceAsync(deviceId, ct) : null;
+        var device = request.GuestDeviceId is long deviceId ? await repository.FindDeviceAsync(deviceId, ct) : null;
         if (request.Action != "forget" && (device is null || device.RevokedAtUtc is not null || device.ExpiresAtUtc <= now
-            || request.UserId is not Guid id || await ActiveGuestAsync(id, ct) is null)) return null;
+            || request.UserId is not long id || await ActiveGuestAsync(id, ct) is null)) return null;
         if (request.Action == "forget" && device is not null)
         {
             device.RevokedAtUtc = now;
             await repository.RevokeDeviceSessionsAsync(device.Id, now, ct);
         }
-        if (request.LegacySessionId is Guid legacySessionId)
+        if (request.LegacySessionId is long legacySessionId)
         {
             var legacySession = await sessions.FindByIdAsync(legacySessionId, ct);
             if (legacySession is not null && legacySession.RevokedAtUtc is null) legacySession.RevokedAtUtc = now;
@@ -117,7 +117,7 @@ public sealed class GuestBrowserService(IGuestBrowserRepository repository, IUse
         return await repository.SaveAsync(ct) ? new(result, request.Action != "forget") : null;
     }
 
-    private async Task<User?> ActiveGuestAsync(Guid id, CancellationToken ct)
+    private async Task<User?> ActiveGuestAsync(long id, CancellationToken ct)
     {
         var user = await users.GetByIdAsync(id, ct);
         return user?.Status == UserStatus.Active && !await users.HasIdentityAsync(id, ct) ? user : null;

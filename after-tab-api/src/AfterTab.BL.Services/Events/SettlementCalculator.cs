@@ -8,9 +8,9 @@ public static class SettlementCalculator
     {
         var sortKeys = members.ToDictionary(x => x.ParticipantId, x => x.UserId ?? x.ParticipantId);
         var names = members.ToDictionary(x => x.ParticipantId, x => x.DisplayName);
-        var paid = new Dictionary<Guid, long>();
-        var cost = new Dictionary<Guid, long>();
-        var pending = new Dictionary<Guid, long>();
+        var paid = new Dictionary<long, long>();
+        var cost = new Dictionary<long, long>();
+        var pending = new Dictionary<long, long>();
         long total = 0, unassigned = 0;
         foreach (var e in expenses)
         {

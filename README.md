@@ -10,6 +10,12 @@ https://github.com/user-attachments/assets/83582d70-4d2b-4677-ae0a-f56cb08d18b1
 
 **Polski** | **[English](README.en.md)**
 
+Opcjonalna integracja AI: [AfterTab MCP](after-tab-api/src/AfterTab.Mcp/README.md).
+Obsługuje OAuth dla ChatGPT w przeglądarce oraz ręczne tokeny dla klientów MCP.
+Integracja jest domyślnie wyłączona i działa w procesie istniejącego API. Własny
+serwer MCP trzeba skonfigurować w ChatGPT w przeglądarce; aplikacja mobilna nie
+oferuje obecnie dodawania własnych serwerów.
+
 Instrukcja pakowania własnego wdrożenia na Androida: [Android](after-tab-android/README.md).
 
 AfterTab to aplikacja PWA do dzielenia wspólnych wydatków. Pozwala tworzyć wydarzenia,
@@ -38,6 +44,15 @@ Nie zapisuj connection stringa narzędzia ani tokenów w repozytorium.
 
 ## Uruchomienie lokalne
 
+GitHub Actions uruchamia workflow **Develop CI** po każdym pushu na `develop`:
+instaluje zależności, buduje backend i frontend oraz wykonuje testy jednostkowe
+(.NET i Node.js). Wyniki i logi są w zakładce **Actions** repozytorium.
+Workflow nie uruchamia się dla `main`, nie wykonuje testów integracyjnych,
+nie potrzebuje bazy i nie publikuje aplikacji.
+
+Opcjonalne wdrożenie frontend + API + PostgreSQL na mikr.us/VPS:
+[Docker Compose](deploy/mikrus/README.md). Azure jest opcjonalnym wariantem hostingu.
+
 Linki stopki można ustawić przez `VITE_GITHUB_URL` i `VITE_ANDROID_APK_URL`.
 Puste wartości ukrywają odpowiedni link, dzięki czemu inne wdrożenia nie muszą
 wskazywać repozytorium ani plików autora. Ustawienia produkcyjne przechowuj poza
@@ -53,7 +68,7 @@ Pełny ZIP z PWABuilder i klucze podpisywania pozostają prywatne.
 
 ### Wymagania
 
-- Windows i SQL Server Express LocalDB, np. z instalacji Visual Studio 2022.
+- SQL Server albo PostgreSQL. Poniższy domyślny przykład używa SQL Server Express LocalDB na Windows; PostgreSQL pozwala uruchomić backend również na Linuxie.
 - .NET SDK 9.0.3xx, zgodnie z `after-tab-api/global.json`.
 - Node.js 22.12 lub nowszy oraz npm.
 - Przy pracy w Visual Studio: wersja 2022 17.14 z narzędziami ASP.NET.
@@ -67,11 +82,15 @@ after-tab-app/    Frontend React, Vite i PWA
 
 ### 1. Backend i lokalna baza
 
+Ta wersja wymaga **pustej bazy**: przebudowa kluczy nie przenosi dotychczasowych danych.
+Przed aktualizacją istniejącej instalacji przeczytaj [reset schematu i klucze](after-tab-api/docs/database.md).
+
 Otwórz PowerShell w głównym katalogu repozytorium:
 
 ```powershell
 cd after-tab-api
 
+$env:Database__Provider = 'SqlServer'
 $env:ConnectionStrings__AfterTab = 'Server=(localdb)\MSSQLLocalDB;Database=AfterTab;Trusted_Connection=True;TrustServerCertificate=True'
 $env:Cors__AllowedOrigins__0 = 'http://localhost:5173'
 
@@ -93,6 +112,8 @@ nie uruchamiaj go przeciwko innej bazie bez sprawdzenia connection stringa.
 
 Pozostaw terminal backendu uruchomiony.
 
+Logowanie błędów, rotacja plików i ustawienia hostingu: [instrukcja logowania backendu](after-tab-api/docs/logging.md).
+
 ### Domeny własnego wdrożenia
 
 Poniższe przykłady używają dwóch publicznych adresów HTTPS:
@@ -110,13 +131,74 @@ Przy budowaniu **frontendu** ustaw `VITE_API_BASE_URL` na publiczny adres API,
 bez końcowego `/api` — klient dopisuje ścieżki endpointów.
 Nazwy zasobów Azure, subskrypcję, bazę, konta SMTP i klientów OAuth wybierasz we własnych usługach.
 
-W wariancie jednej domeny frontend i publiczne wejście API
+W wariancie jednej domeny, np. Docker Compose, frontend i publiczne wejście API
 mogą używać `https://app.example.com`. Pozostaw wtedy `VITE_API_BASE_URL` puste
-— klient sam dodaje `/api`. Callbacki OAuth nadal muszą trafiać do backendu:
+(tak robi Compose) — klient sam dodaje `/api`. Callbacki OAuth nadal muszą trafiać do backendu:
 `https://app.example.com/signin-google` i `https://app.example.com/signin-facebook`,
 a nie pod `/api/signin-*`. Reverse proxy przekazuje te ścieżki do API.
 Adresy polityk pozostają adresami frontendu. W panelach Google/Meta podaj
 rzeczywiste adresy swojego wdrożenia, nie domeny przykładowe.
+
+### Wybór bazy przy wdrożeniu: SQL Server lub PostgreSQL
+
+Ten sam build API obsługuje oba silniki. W `appsettings.json` domyślne
+`Database:Provider` to `SqlServer`. Konfiguracja wyboru silnika pozostaje taka sama;
+ta wersja wymaga jednak utworzenia pustego schematu również na Azure SQL.
+Na serwerze lub w pipeline ustaw poza Git:
+
+| Ustawienie środowiska | SQL Server / Azure SQL | PostgreSQL |
+| --- | --- | --- |
+| `Database__Provider` | `SqlServer` | `PostgreSql` |
+| `ConnectionStrings__AfterTab` | Connection string SQL Server | Connection string PostgreSQL |
+
+Zmiana wymaga ponownego uruchomienia API. Nieznana nazwa dostawcy przerywa start;
+aplikacja nie przełącza się automatycznie na inny silnik. Wybór dotyczy jednego
+silnika na uruchomiony proces i nie kopiuje danych pomiędzy bazami.
+
+Dla PostgreSQL uruchom wcześniej własny serwer i utwórz użytkownika oraz bazę.
+Następnie w katalogu `after-tab-api` (po `dotnet restore` i `dotnet tool restore`):
+
+```powershell
+$env:Database__Provider = 'PostgreSql'
+$env:ConnectionStrings__AfterTab = 'Host=localhost;Port=5432;Database=AfterTab;Username=aftertab;Password=<haslo>'
+dotnet ef database update --project src/AfterTab.DAL.Migrations.PostgreSql --startup-project src/AfterTab.API
+dotnet run --project src/AfterTab.API --launch-profile https
+```
+
+`<haslo>` to placeholder. Prawdziwe dane dostępowe przechowuj w konfiguracji
+środowiska lub magazynie sekretów. W produkcji skonfiguruj TLS zgodnie z
+wymaganiami dostawcy bazy i stosuj migracje kontem z uprawnieniami do schematu.
+Konto działającego API nie musi mieć uprawnień do tworzenia tabel.
+
+Migracje SQL Server są w `src/AfterTab.DAL.EF/Migrations`, a PostgreSQL w osobnym projekcie
+`src/AfterTab.DAL.Migrations.PostgreSql`. Oba silniki mają nową migrację początkową
+`InitialNumericKeys`, która zastępuje wcześniejszą historię. Wymaga pustej bazy;
+nie konwertuje danych ze starego modelu GUID. Każda kolejna zmiana modelu wymaga migracji
+dla obu silników, np.:
+
+```powershell
+dotnet ef migrations add NazwaZmiany --project src/AfterTab.DAL.EF --startup-project src/AfterTab.API -- --Database:Provider SqlServer
+dotnet ef migrations add NazwaZmiany --project src/AfterTab.DAL.Migrations.PostgreSql --startup-project src/AfterTab.API -- --Database:Provider PostgreSql
+```
+
+Dla każdego polecenia ustaw connection string odpowiedniego silnika. Nie stosuj
+migracji SQL Server do PostgreSQL. API nie wykonuje migracji podczas startu.
+Do wdrożenia obu silników można też użyć narzędzia z `--migrate`, opisanego
+w [instrukcji wdrożeniowej](after-tab-api/tools/AfterTab.Deployment/README.md).
+
+Ochrona równoczesnej edycji zachowuje format Base64 w API: SQL Server używa
+natywnego `rowversion`, PostgreSQL tokenu aktualizowanego przez EF przy zapisie.
+Ręczne modyfikacje wydatków w PostgreSQL z pominięciem EF muszą również zmieniać
+ten token. Klucze główne i obce mają typ `bigint` (`long` w C#), generowany przez
+sekwencję HiLo. Publiczne identyfikatory kont, sesji, wydarzeń, uczestników i wydatków
+pozostają GUID-ami z unikalnym indeksem; relacje i indeksy kluczy obcych używają liczb.
+Szczegóły resetu i uprawnień sekwencji: [baza danych](after-tab-api/docs/database.md).
+
+Testy konfiguracji i SQL uruchamiają się przez `dotnet test AfterTabApi.sln`.
+Testy rzeczywistych serwerów wymagają zmiennych `AFTERTAB_TEST_SQLSERVER` oraz
+`AFTERTAB_TEST_POSTGRESQL` z connection stringami do lokalnych serwerów testowych
+i uprawnieniami do tworzenia/usuwania baz. Tworzą i usuwają własne bazy o losowych
+nazwach `aftertab_test_*`; bez zmiennych te dwa przypadki są pomijane.
 
 ### 2. Frontend
 
@@ -326,8 +408,9 @@ oraz inny wygląd zamkniętych wierszy wskazują stan wydarzenia.
 ### 1. Migracja lokalna i e-maile testowe
 
 W katalogu `after-tab-api` wykonaj migrację jak w instrukcji uruchamiania.
-Nowa migracja `PermanentAccountsAndEventPaging` dodaje tabelę jednorazowych operacji
-konta, pola blokady logowania oraz indeks listy wydarzeń. Nie usuwa danych.
+Schemat `InitialNumericKeys` zawiera tabelę jednorazowych operacji konta, pola
+blokady logowania oraz indeks listy wydarzeń. Wcześniejsze migracje zostały
+zastąpione; istniejąca instalacja wymaga resetu opisanego powyżej.
 
 Do sprawdzenia potwierdzania i resetu bez prawdziwej skrzynki, w terminalu backendu:
 
@@ -528,15 +611,13 @@ Uczestnicy z kontem wyświetlają aktualne imię z `Users`. Łączenie zachowuje
 uczestnika bez konta, a wycofany wiersz staje się aliasem `MergedIntoParticipantId`,
 żeby zachować prywatną historię płatności. Nie tworzymy fikcyjnych rekordów `Users`.
 
-Migracja `VirtualEventParticipants` zmienia `UserId` uczestnika na opcjonalny,
-uzupełnia dotychczasowe imiona i zamienia identyfikatory kont w historycznych
-`TransferConfirmations` na identyfikatory uczestników tego samego wydarzenia.
-Istniejące wydarzenia, kwoty i oznaczenia przelewów pozostają zachowane.
-Migracja w dół odmawia wykonania, jeżeli istnieją osoby bez konta lub aliasy po połączeniu,
-aby nie usuwać ich danych finansowych. Przed aktualizacją rzeczywistej bazy wykonaj kopię.
+Schemat `InitialNumericKeys` od razu tworzy opcjonalny `UserId` uczestnika
+i powiązania `TransferConfirmations` z uczestnikami tego samego wydarzenia.
+W bazie `Id` oraz klucze obce są liczbowe; API używa odrębnego `PublicId` GUID.
+Nie ma migracji zachowującej dane ze starego schematu — reset usuwa również historię płatności.
 
 Po pobraniu tej wersji uruchom lokalne `dotnet ef database update` z instrukcji powyżej.
-Do testów używaj lokalnej LocalDB i frontendu z `VITE_API_BASE_URL=https://localhost:7180`.
+Do testów używaj lokalnej LocalDB lub PostgreSQL i frontendu z `VITE_API_BASE_URL=https://localhost:7180`.
 Frontend oraz API muszą pochodzić z tej samej wersji: pola rozliczeń odnoszą się teraz
 do uczestników (`participantId`, `paidByParticipantId`, `fromParticipantId`, `toParticipantId`),
 a nie kont. `authorUserId` nadal oznacza konto autora wpisu. Aktualizacja frontend/API
@@ -556,14 +637,9 @@ blokadę zamkniętych wydarzeń i prywatną historię. Nie łączymy osób autom
 
 ### Jawne wyrównanie na uczestnika
 
-Migracja `ExplicitParticipantBalance` dodaje do `Expenses` opcjonalne
-`BalanceParticipantId` i kwotę `BalanceAmountMinor`. Dzięki temu wyrównanie można
-przenosić po zapisie bez zgadywania poprzednich udziałów. Istniejące kwoty i podziały
-nie są przeliczane przez migrację. Dla starych pozycji wyrównanych wcześniejszym
-mechanizmem nie znamy osoby ani kwoty korekty — dostają `null` i `0`, zachowując
-dotychczasowe finalne udziały oraz znacznik `Balanced`. Aby wybrać nowe wyrównanie
-w takiej pozycji, jej autor musi najpierw poprawić bazowy podział; nowe wyrównanie
-wskazuje następnie płacący albo autor wydarzenia.
+Schemat `InitialNumericKeys` zawiera opcjonalne `Expenses.BalanceParticipantId`
+i kwotę `BalanceAmountMinor`. Dzięki temu wyrównanie można przenosić po zapisie
+bez zgadywania poprzednich udziałów. Wyrównanie wskazuje płacący albo autor wydarzenia.
 
 Tworzenie i edycja podziału przyjmują `balanceParticipantId` zamiast automatycznego
 wyboru. Pozostawione pole `balance=true` bez wybranej osoby jest odrzucane.

@@ -1,11 +1,11 @@
 using AfterTab.DAL.Entities.Enums;
 namespace AfterTab.DAL.Entities.Events;
-public sealed class EventParticipant : BaseEntity
+public sealed class EventParticipant : PublicEntity
 {
-    public Guid EventId { get; set; }
-    public Guid? UserId { get; set; }
+    public long EventId { get; set; }
+    public long? UserId { get; set; }
     public string DisplayName { get; set; } = string.Empty;
-    public Guid? MergedIntoParticipantId { get; set; }
+    public long? MergedIntoParticipantId { get; set; }
     public ParticipantStatus Status { get; set; } = ParticipantStatus.Active;
     public DateTimeOffset JoinedAtUtc { get; set; }
     public DateTimeOffset? LeftAtUtc { get; set; }

@@ -17,7 +17,7 @@ public sealed class EventRepository(AppDbContext db) : IEventRepository
            select new EventReadModel(ev, owner.DisplayName,
                db.EventParticipants.Count(p => p.EventId == ev.Id && p.Status == ParticipantStatus.Active));
 
-    public async Task<(IReadOnlyList<EventReadModel> Items, int TotalCount)> ListAsync(Guid userId, int page, CancellationToken ct)
+    public async Task<(IReadOnlyList<EventReadModel> Items, int TotalCount)> ListAsync(long userId, int page, CancellationToken ct)
     {
         var query = db.Events.AsNoTracking().Where(ev => ev.OwnerUserId == userId || db.EventParticipants.Any(p =>
             p.EventId == ev.Id && p.UserId == userId && p.Status == ParticipantStatus.Active));
@@ -27,14 +27,14 @@ public sealed class EventRepository(AppDbContext db) : IEventRepository
         return (items, count);
     }
 
-    public Task<EventReadModel?> GetAsync(Guid id, CancellationToken ct)
+    public Task<EventReadModel?> GetAsync(long id, CancellationToken ct)
         => ReadQuery(db.Events.AsNoTracking().Where(x => x.Id == id)).SingleOrDefaultAsync(ct);
-    public Task<bool> IsMemberAsync(Guid eventId, Guid userId, CancellationToken ct)
+    public Task<bool> IsMemberAsync(long eventId, long userId, CancellationToken ct)
         => db.EventParticipants.AnyAsync(p => p.EventId == eventId && p.UserId == userId && p.Status == ParticipantStatus.Active, ct);
-    public async Task<IReadOnlyList<ExpenseParticipant>> ParticipantsAsync(Guid eventId, CancellationToken ct)
+    public async Task<IReadOnlyList<ExpenseParticipant>> ParticipantsAsync(long eventId, CancellationToken ct)
         => (await new ExpenseRepository(db).GetEventAsync(eventId, ct))?.Participants ?? [];
 
-    private async Task<Event> OwnedOpen(Guid eventId, Guid ownerId, CancellationToken ct)
+    private async Task<Event> OwnedOpen(long eventId, long ownerId, CancellationToken ct)
     {
         var ev = await db.Events.SingleOrDefaultAsync(x => x.Id == eventId, ct)
             ?? throw new AppException(ErrorKind.NotFound, "Nie znaleziono wydarzenia.");
@@ -42,11 +42,11 @@ public sealed class EventRepository(AppDbContext db) : IEventRepository
         if (ev.Status != EventStatus.Active) throw new AppException(ErrorKind.Conflict, "Najpierw otwórz wydarzenie.");
         return ev;
     }
-    private async Task<EventParticipant> Virtual(Guid eventId, Guid participantId, CancellationToken ct)
+    private async Task<EventParticipant> Virtual(long eventId, long participantId, CancellationToken ct)
         => await db.EventParticipants.SingleOrDefaultAsync(x => x.EventId == eventId && x.Id == participantId
             && x.UserId == null && x.Status == ParticipantStatus.Active && x.MergedIntoParticipantId == null, ct)
             ?? throw new AppException(ErrorKind.Conflict, "Uczestnik bez konta nie jest już dostępny. Odśwież wydarzenie.");
-    public Task AddVirtualAsync(Guid eventId, Guid ownerId, string name, DateTimeOffset now, CancellationToken ct)
+    public Task AddVirtualAsync(long eventId, long ownerId, string name, DateTimeOffset now, CancellationToken ct)
         => InTransaction(async () =>
         {
             await OwnedOpen(eventId, ownerId, ct);
@@ -55,14 +55,14 @@ public sealed class EventRepository(AppDbContext db) : IEventRepository
             db.EventParticipants.Add(new EventParticipant { EventId = eventId, DisplayName = name, JoinedAtUtc = now });
             await db.SaveChangesAsync(ct); return true;
         }, ct);
-    public Task RenameVirtualAsync(Guid eventId, Guid ownerId, Guid participantId, string name, CancellationToken ct)
+    public Task RenameVirtualAsync(long eventId, long ownerId, long participantId, string name, CancellationToken ct)
         => InTransaction(async () =>
         {
             await OwnedOpen(eventId, ownerId, ct);
             (await Virtual(eventId, participantId, ct)).DisplayName = name;
             await db.SaveChangesAsync(ct); return true;
         }, ct);
-    public Task RemoveVirtualAsync(Guid eventId, Guid ownerId, Guid participantId, CancellationToken ct)
+    public Task RemoveVirtualAsync(long eventId, long ownerId, long participantId, CancellationToken ct)
         => InTransaction(async () =>
         {
             await OwnedOpen(eventId, ownerId, ct);
@@ -74,7 +74,7 @@ public sealed class EventRepository(AppDbContext db) : IEventRepository
             participant.Status = ParticipantStatus.Removed;
             await db.SaveChangesAsync(ct); return true;
         }, ct);
-    public Task LinkVirtualAsync(Guid eventId, Guid ownerId, Guid participantId, Guid targetParticipantId, CancellationToken ct)
+    public Task LinkVirtualAsync(long eventId, long ownerId, long participantId, long targetParticipantId, CancellationToken ct)
         => InTransaction(async () =>
         {
             await OwnedOpen(eventId, ownerId, ct);
@@ -123,6 +123,8 @@ public sealed class EventRepository(AppDbContext db) : IEventRepository
     public async Task CreateAsync(Event ev, EventParticipant owner, EventInvite invite, CancellationToken ct)
     {
         db.Events.Add(ev);
+        owner.EventId = ev.Id;
+        invite.EventId = ev.Id;
         db.EventParticipants.Add(owner);
         db.EventInvites.Add(invite);
         await db.SaveChangesAsync(ct);
@@ -130,7 +132,7 @@ public sealed class EventRepository(AppDbContext db) : IEventRepository
     public Task<EventInvite?> FindInviteAsync(string hash, CancellationToken ct)
         => db.EventInvites.AsNoTracking().SingleOrDefaultAsync(x => x.TokenHash == hash, ct);
 
-    public Task<Guid> JoinAsync(string hash, Guid userId, DateTimeOffset now, CancellationToken ct)
+    public Task<long> JoinAsync(string hash, long userId, DateTimeOffset now, CancellationToken ct)
         => InTransaction(async () =>
         {
             var invite = await db.EventInvites.SingleOrDefaultAsync(x => x.TokenHash == hash, ct);
@@ -154,7 +156,7 @@ public sealed class EventRepository(AppDbContext db) : IEventRepository
             return ev.Id;
         }, ct);
 
-    public Task RotateInviteAsync(Guid eventId, Guid ownerId, EventInvite? replacement, DateTimeOffset now, CancellationToken ct)
+    public Task RotateInviteAsync(long eventId, long ownerId, EventInvite? replacement, DateTimeOffset now, CancellationToken ct)
         => InTransaction(async () =>
         {
             var ev = await db.Events.SingleOrDefaultAsync(x => x.Id == eventId, ct)

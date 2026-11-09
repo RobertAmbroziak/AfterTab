@@ -10,6 +10,14 @@ https://github.com/user-attachments/assets/83582d70-4d2b-4677-ae0a-f56cb08d18b1
 
 **[Polski](README.md)** | **English**
 
+## AI integration
+
+[AfterTab MCP](after-tab-api/src/AfterTab.Mcp/README.en.md) currently uses manual
+tokens for technical MCP clients and supports ChatGPT OAuth in a browser. The
+feature is disabled by default and runs inside the existing API process. Configure
+a custom MCP server from ChatGPT on the web; the mobile app does not currently
+offer adding custom servers.
+
 Package your own deployment for Android: [Android guide](after-tab-android/README.en.md).
 
 AfterTab is a PWA for sharing expenses. Create events, invite friends, record who
@@ -35,6 +43,15 @@ URLs or OAuth callbacks configured for your deployment. Account emails use the l
 
 ## Run locally
 
+GitHub Actions runs **Develop CI** on every push to `develop`: it installs
+dependencies, builds the backend and frontend, and runs the .NET and Node.js
+unit tests. Results and logs appear in the repository's **Actions** tab.
+The workflow does not run for `main`, run integration tests, require a database,
+or deploy the application.
+
+Optional frontend + API + PostgreSQL deployment on mikr.us/VPS:
+[Docker Compose](deploy/mikrus/README.en.md). Azure is an optional hosting choice.
+
 Optional footer links use `VITE_GITHUB_URL` and `VITE_ANDROID_APK_URL`. Blank values
 hide the corresponding link, so another deployment does not have to point to the
 original author's repository or downloads. Keep production values outside Git,
@@ -50,7 +67,7 @@ PWABuilder ZIP and signing credentials private.
 
 Requirements:
 
-- Windows and SQL Server Express LocalDB, for example from Visual Studio 2022.
+- SQL Server or PostgreSQL. The default example below uses SQL Server Express LocalDB on Windows; PostgreSQL also allows running the backend on Linux.
 - .NET SDK 9.0.3xx, as specified in `after-tab-api/global.json`.
 - Node.js 22.12 or later and npm.
 - Visual Studio users: VS 2022 17.14 with ASP.NET tools.
@@ -64,10 +81,14 @@ after-tab-app/    React, Vite and PWA frontend
 
 ### Backend and local database
 
+This release requires an **empty database**. Existing installations must follow the
+[database reset instructions](after-tab-api/docs/database.en.md) before updating.
+
 Open PowerShell in the repository root:
 
 ```powershell
 cd after-tab-api
+$env:Database__Provider = 'SqlServer'
 $env:ConnectionStrings__AfterTab = 'Server=(localdb)\MSSQLLocalDB;Database=AfterTab;Trusted_Connection=True;TrustServerCertificate=True'
 $env:Cors__AllowedOrigins__0 = 'http://localhost:5173'
 dotnet restore
@@ -104,13 +125,76 @@ When building the **frontend**, set `VITE_API_BASE_URL` to the API origin withou
 a trailing `/api`; the client adds endpoint paths. Choose your own Azure resource
 names, subscription, database, SMTP account and OAuth clients.
 
-For one public origin, both the frontend and API entry
-can use `https://app.example.com`. Leave `VITE_API_BASE_URL` empty;
+For one public origin, such as Docker Compose, both the frontend and API entry
+can use `https://app.example.com`. Leave `VITE_API_BASE_URL` empty, as Compose does;
 the client adds `/api` itself. OAuth callbacks must still reach the backend at
 `https://app.example.com/signin-google` and `https://app.example.com/signin-facebook`,
 outside `/api`. The reverse proxy forwards these routes to the API.
 Legal pages use the frontend origin. Configure Google/Meta with your actual URLs,
 not the example domains.
+
+### Select SQL Server or PostgreSQL at deployment
+
+The same API build supports both engines. `Database:Provider` defaults to
+`SqlServer` in `appsettings.json`. Provider selection stays the same, but this
+release requires a fresh empty schema, including on Azure SQL. Read the
+[numeric keys and database reset instructions](after-tab-api/docs/database.en.md)
+before updating an existing installation. Configure these environment variables on the server or in the
+deployment pipeline, outside Git:
+
+| Environment setting | SQL Server / Azure SQL | PostgreSQL |
+| --- | --- | --- |
+| `Database__Provider` | `SqlServer` | `PostgreSql` |
+| `ConnectionStrings__AfterTab` | SQL Server connection string | PostgreSQL connection string |
+
+Restart the API after changing these settings. An unknown provider prevents
+startup instead of silently selecting a different engine. Each process uses one
+engine; switching the setting does not transfer data between databases.
+
+For PostgreSQL, first provision a server, database and user. Then, from
+`after-tab-api` after `dotnet restore` and `dotnet tool restore`:
+
+```powershell
+$env:Database__Provider = 'PostgreSql'
+$env:ConnectionStrings__AfterTab = 'Host=localhost;Port=5432;Database=AfterTab;Username=aftertab;Password=<password>'
+dotnet ef database update --project src/AfterTab.DAL.Migrations.PostgreSql --startup-project src/AfterTab.API
+dotnet run --project src/AfterTab.API --launch-profile https
+```
+
+`<password>` is a placeholder. Keep real credentials in environment configuration
+or a secret store. Configure production TLS according to your database provider
+and run migrations with a schema-authorized account. The running API account
+does not need permission to create tables.
+
+SQL Server migrations are in `src/AfterTab.DAL.EF/Migrations`. PostgreSQL has its own
+migration project, `src/AfterTab.DAL.Migrations.PostgreSql`. Both engines now start
+with `InitialNumericKeys`, replacing the previous migration history. It requires
+an empty database and does not convert existing GUID-based data. Every subsequent model change needs a migration
+for each engine, for example:
+
+```powershell
+dotnet ef migrations add ChangeName --project src/AfterTab.DAL.EF --startup-project src/AfterTab.API -- --Database:Provider SqlServer
+dotnet ef migrations add ChangeName --project src/AfterTab.DAL.Migrations.PostgreSql --startup-project src/AfterTab.API -- --Database:Provider PostgreSql
+```
+
+Set the matching engine's connection string for each command. Never apply SQL
+Server migrations to PostgreSQL. The API does not migrate on startup. The
+deployment tool also supports both engines through `--migrate`; see the
+[deployment instructions](after-tab-api/tools/AfterTab.Deployment/README.md).
+
+Concurrency protection keeps the API's Base64 version format. SQL Server uses
+native `rowversion`; PostgreSQL uses a token refreshed by EF on writes. Direct
+PostgreSQL expense updates outside EF must refresh that token as well. Primary and
+foreign keys are `bigint` (`long` in C#), generated using a HiLo sequence. Public
+user, session, event, participant and expense identifiers remain GUIDs with unique
+indexes; relationships use numeric IDs. See [database setup](after-tab-api/docs/database.en.md)
+for reset steps and sequence permissions.
+
+Run configuration and generated-SQL tests with `dotnet test AfterTabApi.sln`.
+Real-server tests require `AFTERTAB_TEST_SQLSERVER` and `AFTERTAB_TEST_POSTGRESQL`
+connection strings to local test servers with create/drop database permissions.
+They create and delete their own randomly named `aftertab_test_*` databases;
+without those variables, the two real-server cases are skipped.
 
 ### Frontend
 
@@ -230,8 +314,9 @@ to two minutes. Use **Retry connection** after a timeout.
 
 ### Local migration and test emails
 
-Apply local migrations using the startup instructions. `PermanentAccountsAndEventPaging`
-adds one-time account operations, sign-in lockout fields and an event-list index.
+Apply local migrations using the startup instructions. `InitialNumericKeys`
+includes one-time account operations, sign-in lockout fields and an event-list index.
+It replaces the old migration history and requires a reset for existing installations.
 To test confirmation and reset emails without SMTP, in the backend terminal:
 
 ```powershell
@@ -386,11 +471,11 @@ Linked participants show the current user name. Merging preserves the identifier
 of the participant without an account and makes the retired row an alias through
 `MergedIntoParticipantId`, preserving private payment history. No fake Users are created.
 
-`VirtualEventParticipants` makes participant UserId optional, fills existing names
-and maps historical transfer confirmations from account IDs to event participant
-IDs. Events, amounts and payment marks are preserved. Downgrade refuses to run if
-participants without accounts or merged aliases exist. Back up a real database
-before applying migrations. API and frontend must use compatible versions:
+`InitialNumericKeys` creates optional participant UserId and links transfer
+confirmations to participants in the same event. Database keys are numeric;
+HTTP identifiers use a separate GUID PublicId. There is no data-preserving upgrade
+from the previous schema: the reset also removes payment history.
+API and frontend must use compatible versions:
 `participantId`, `paidByParticipantId`, `fromParticipantId` and `toParticipantId`
 refer to participants; `authorUserId` still refers to the author account.
 
@@ -406,10 +491,9 @@ POST   /api/events/{eventId}/participants/{participantId}/link
 
 The merge target must be an active participant with an account in the same event.
 
-`ExplicitParticipantBalance` adds optional `BalanceParticipantId` and
-`BalanceAmountMinor` without recalculating existing amounts. Older balanced expenses
-retain their amounts and Balanced flag, with a null participant and zero recorded
-remainder. Their author must edit the base split before a new explicit assignment.
+`InitialNumericKeys` includes optional `BalanceParticipantId` and
+`BalanceAmountMinor`, allowing the payer or event owner to move a saved remainder
+without guessing the original shares.
 Create/edit requests use `balanceParticipantId`; `balance=true` without a selected
 person is rejected. To move or undo a saved remainder:
 
@@ -423,8 +507,9 @@ Use `participantId: null` to undo. The recipient must be included in the split.
 a participant also transfers the remainder recipient reference.
 
 Apply missing local migrations with the command in the startup instructions.
-For your own SQL Server/Azure SQL database, set `ConnectionStrings__AfterTab`
-and apply migrations with EF CLI using a schema-authorized account. See the [deployment instructions](after-tab-api/tools/AfterTab.Deployment/README.en.md).
+For the separate migration tool, configure `Database__Provider` and
+`ConnectionStrings__AfterTab` in its environment. Run `--migrate` with a schema-authorized
+account for your own database. See the [deployment instructions](after-tab-api/tools/AfterTab.Deployment/README.en.md).
 User Secrets stay outside the repository but are not encrypted.
 
 Publishing the API/frontend and migrating Azure are separate operations. Pushing
