@@ -19,11 +19,16 @@ export default function AccountForm({ guest = false, onSession, onCancel }) {
   const [error, setError] = useState('')
   const [message, setMessage] = useState('')
   const lock = useRef(false)
+  const nameInput = useRef(null)
+  const emailInput = useRef(null)
   useEffect(() => {
     let active = true
     api('auth/account/providers').then(value => { if (active) setProviders(value) }).catch(() => {})
     return () => { active = false }
   }, [])
+  useEffect(() => {
+    if (mode === 'login' || mode === 'register') (nameInput.current || emailInput.current)?.focus()
+  }, [mode])
   function change(value) {
     setMode(value); setError(''); setMessage('')
     if (initial) history.replaceState(null, '', location.pathname + location.search)
@@ -66,8 +71,8 @@ export default function AccountForm({ guest = false, onSession, onCancel }) {
       </button>
     </div>}
     <form className="app-form" onSubmit={submit}>
-      {mode === 'register' && <label>{t("Imię")}<input name="displayName" required maxLength={100} autoComplete="given-name" /></label>}
-      {!['confirm', 'reset'].includes(mode) && <label>{t("E-mail")}<input name="email" type="email" required maxLength={254} autoComplete="username" /></label>}
+      {mode === 'register' && <label>{t("Imię")}<input ref={nameInput} name="displayName" required maxLength={100} autoComplete="given-name" /></label>}
+      {!['confirm', 'reset'].includes(mode) && <label>{t("E-mail")}<input ref={emailInput} name="email" type="email" required maxLength={254} autoComplete="username" /></label>}
       {['login', 'register', 'reset'].includes(mode) && <label>{t("Hasło")}<input aria-label={t("Hasło")} name="password" type="password" required minLength={mode === 'login' ? undefined : 12} maxLength={128} autoComplete={mode === 'login' ? 'current-password' : 'new-password'} /><small>{mode !== 'login' && t("Od 12 do 128 znaków.")}</small></label>}
       {mode === 'confirm' && <p>{t("Kliknij, aby potwierdzić adres. Link jest jednorazowy.")}</p>}
       {mode === 'register' && <p className="helper-text">{t("Przed utworzeniem konta zapoznaj się z")} <a href={legalUrl('terms')} target="_blank" rel="noopener noreferrer">{t("zasadami korzystania")}</a> {t("i")} <a href={legalUrl('privacy')} target="_blank" rel="noopener noreferrer">{t("polityką prywatności")}</a>.</p>}
