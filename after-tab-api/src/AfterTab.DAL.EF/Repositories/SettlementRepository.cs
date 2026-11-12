@@ -34,7 +34,7 @@ public sealed class SettlementRepository(AppDbContext db) : ISettlementRepositor
             if (ev.Status == EventStatus.Archived) throw new AppException(ErrorKind.Conflict, "To wydarzenie jest zarchiwizowane.");
             if (closed && data.Expenses.Any(x => x.Expense.OthersAmountMinor != 0
                 || x.Splits.Sum(s => s.AmountMinor) != x.Expense.AmountMinor))
-                throw new AppException(ErrorKind.Conflict, "Najpierw uzupełnij podziały: kwota „Inni” musi wynosić 0 zł w każdej pozycji.");
+                throw new AppException(ErrorKind.Conflict, "Najpierw uzupełnij podziały: nieprzypisana kwota musi wynosić 0 zł w każdej pozycji.");
             var target = closed ? EventStatus.Closed : EventStatus.Active;
             if (ev.Status != target)
             {

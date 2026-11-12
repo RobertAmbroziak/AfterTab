@@ -142,7 +142,7 @@ Kwoty są całkowitymi groszami: `100 PLN = 10000 amountMinor`. Udziały procent
 to punkty bazowe: `33% = 3300 percentageBps`. `splitMethod` to `Amount` lub `Percentage`.
 W metodzie procentowej `amountMinor` każdego udziału wynosi 0, a przy kwotowej
 `percentageBps` wynosi 0. `balanceParticipantId` wskazuje osobę już obecną w podziale;
-brak wartości pozostawia resztę jako „Inni”. Wyrównanie nigdy nie wybiera osoby samo.
+brak wartości pozostawia resztę nieprzypisaną. Wyrównanie nigdy nie wybiera osoby samo.
 
 Edycja wymaga aktualnego `rowVersion` z listy wydatków. Oznaczenie przelewu wymaga
 aktualnej wersji, pary osób i kwoty z planu rozliczenia. Oznaczenie to deklaracja
