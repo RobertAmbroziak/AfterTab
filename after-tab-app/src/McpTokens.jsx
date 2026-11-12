@@ -122,7 +122,7 @@ export default function McpTokens({ onClose }) {
     {error && <p role="alert" className="auth-error">{t(error)}</p>}
 
     <details className="manual-mcp" open={tokens.length === 0}>
-      <summary>{t('Ręczny token MCP dla testów')}</summary>
+      <summary><span>{t('Ręczny token MCP dla testów')}</span></summary>
       <p className="helper-text">{t('Token działa z uprawnieniami bieżącego konta AfterTab. Konto może być trwałe albo zapamiętanym gościem. Nie wklejaj tokenu do rozmowy z ChatGPT.')}</p>
       <form className="app-form" onSubmit={create}>
         <label>{t('Nazwa tokena')}<input value={name} maxLength={100} required onChange={event => setName(event.target.value)} /></label>

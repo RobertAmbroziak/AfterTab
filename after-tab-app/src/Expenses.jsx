@@ -90,7 +90,7 @@ function PayerEditor({ eventId, item, participants, onChanged }) {
     catch (reason) { setError(reason.message) }
     finally { setBusy(false) }
   }
-  return <details className="payer-editor"><summary>{t("Zmień płacącego")}</summary><form className="app-form" onSubmit={save}><label>{t("Płacący")}<select aria-label={t("Płacący")} value={payerId} onChange={e => setPayerId(e.target.value)} disabled={busy}>{participants.map(person => <option key={person.participantId} value={person.participantId}>{person.displayName}{person.isVirtual ? t(" — bez konta") : ''}</option>)}</select></label><button className="secondary-button" disabled={busy}>{t("Zapisz płacącego")}</button><p className="helper-text">{t("Autor pozycji pozostanie bez zmian.")}</p>{error && <p className="auth-error" role="alert">{t(error)}</p>}</form></details>
+  return <details className="payer-editor"><summary><span>{t("Zmień płacącego")}</span></summary><form className="app-form" onSubmit={save}><label>{t("Płacący")}<select aria-label={t("Płacący")} value={payerId} onChange={e => setPayerId(e.target.value)} disabled={busy}>{participants.map(person => <option key={person.participantId} value={person.participantId}>{person.displayName}{person.isVirtual ? t(" — bez konta") : ''}</option>)}</select></label><button className="secondary-button" disabled={busy}>{t("Zapisz płacącego")}</button><p className="helper-text">{t("Autor pozycji pozostanie bez zmian.")}</p>{error && <p className="auth-error" role="alert">{t(error)}</p>}</form></details>
 }
 
 export function Expenses({ ref, eventId, participants, user, isOwner, refresh, active, onChanged, onEditing }) {

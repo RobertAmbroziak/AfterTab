@@ -156,7 +156,7 @@ function EventDetails({ id, knownToken, onToken, user }) {
     </div>
     {details.event.status === 'Active' && !editing && <button className="primary-button mobile-add" onClick={() => { setTab('expenses'); expenseActions.current?.add(); document.getElementById('expenses-panel')?.scrollIntoView({ behavior: 'smooth', block: 'start' }) }}>{t("＋ Dodaj pozycję")}</button>}
     {details.event.isOwner && details.event.status === 'Active' && <details className="event-invite-tools">
-      <summary>{t("Zaproś znajomych")}</summary>
+      <summary><span>{t("Zaproś znajomych")}</span></summary>
       {link ? <><label>{t("Link zaproszenia")}<input ref={linkInput} value={link} readOnly onFocus={e => e.target.select()} /></label><div className="form-actions"><button className="primary-button" onClick={copy}>{t("Kopiuj link")}</button><button className="secondary-button" onClick={share}>{t("Udostępnij")}</button></div></>
         : <p>{t("Jeśli masz wcześniej skopiowany link, możesz nadal go udostępniać. Nowy link unieważni poprzedni.")}</p>}
       <div className="form-actions"><button className="secondary-button" disabled={busy} onClick={() => manageInvite(false)}>{t("Wygeneruj nowy link")}</button><button className="text-button" disabled={busy} onClick={() => manageInvite(true)}>{t("Unieważnij link")}</button></div>

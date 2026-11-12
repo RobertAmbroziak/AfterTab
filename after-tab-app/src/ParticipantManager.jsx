@@ -46,7 +46,7 @@ export default function ParticipantManager({ eventId, participants, active, edit
     finally { lock.current = false; setBusy(false) }
   }
   return <details className="participant-tools">
-    <summary>{t("Uczestnicy bez konta")}{virtual.length > 0 ? ` (${virtual.length})` : ''}</summary>
+    <summary><span>{t("Uczestnicy bez konta")}{virtual.length > 0 ? ` (${virtual.length})` : ''}</span></summary>
     <p>{t("Dodaj osobę bez telefonu lub konta. Będzie można uwzględnić ją w podziałach i wskazać jako płacącego. Jeśli później dołączy przez zaproszenie, połącz obie pozycje poniżej.")}</p>
     {!active ? <p className="helper-text">{t("Aby zmienić uczestników, najpierw otwórz wydarzenie ponownie.")}</p> : <>
       {editing && <p className="helper-text">{t("Najpierw zatwierdź lub anuluj formularz pozycji.")}</p>}
