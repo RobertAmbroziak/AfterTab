@@ -273,9 +273,10 @@ the app. People are never merged automatically by name.
 Add an expense name and amount. The event owner can select another participant as
 the payer; otherwise the author is the payer. Choose who shares the expense and
 split it by amount or percentage. Values accept a decimal comma or dot, with up
-to two decimal places. The preview shows allocated shares, **Others** and the total.
+to two decimal places. The preview shows allocated shares, the amount in the **Assign**
+row and the total.
 
-An unallocated amount goes to **Others**. **Assign remainder** allocates it to a
+An unallocated amount appears in the **Assign** row. **Assign remainder** allocates it to a
 selected person included in the split. Selecting another person moves the same
 remainder; selecting the current person again removes the assignment. Changing
 the amount, shares, selected people or split method clears the pending remainder
@@ -294,7 +295,7 @@ mobile uses **Expenses / Settlement** tabs.
   15-second update while the screen is visible.
 - **Close and settle** finalises the current plan and locks adding expenses,
   editing splits and joining. Only the owner can close it, after every expense's
-  **Others** amount reaches zero and any expense form has been saved or cancelled.
+  amount in the **Assign** row reaches zero and any expense form has been saved or cancelled.
 - In a final settlement, the sender can mark **Sent** and the recipient **Received**.
   Each edits only their own mark. Both marks are private to those two parties and
   are statements, not bank confirmations.

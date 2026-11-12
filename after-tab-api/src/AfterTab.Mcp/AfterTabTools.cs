@@ -79,7 +79,7 @@ public sealed class AfterTabTools(IAfterTabMcpApplication app, IMcpWriteStore wr
 
     [McpServerTool(Name = "create_expense", ReadOnly = false, Destructive = false, Idempotent = true, OpenWorld = false),
      McpMeta("securitySchemes", JsonValue = WriteSecurity),
-     Description("Save a named expense and its shares atomically in an open event. Use preview_expense first. Money is integer grosze, percentageBps is 1/100 percent. Optional balanceParticipantId explicitly receives the unallocated remainder; null leaves Others. Payer defaults to the author; only the event owner can choose another payer. Fresh operationId per intended expense; reuse exactly for retries.")]
+     Description("Save a named expense and its shares atomically in an open event. Use preview_expense first. Money is integer grosze, percentageBps is 1/100 percent. Optional balanceParticipantId explicitly receives the unallocated remainder; null leaves it unassigned. Payer defaults to the author; only the event owner can choose another payer. Fresh operationId per intended expense; reuse exactly for retries.")]
     public Task<CallToolResult> CreateExpense(Guid operationId, Guid eventId, ExpenseInput expense, CancellationToken ct)
         => Write(operationId, "create_expense", new { eventId, expense }, () => app.CreateExpenseAsync(eventId, expense, ct), ct, eventId);
 

@@ -23,7 +23,7 @@ export const backendEnglish = {
   'Możesz oznaczyć tylko własne wysłanie lub odbiór przelewu.': 'You can only mark your own sent or received payment.',
   'Najpierw otwórz wydarzenie.': 'Reopen the event first.',
   'Najpierw podaj swoje imię.': 'Enter your name first.',
-  'Najpierw uzupełnij podziały: kwota „Inni” musi wynosić 0 zł w każdej pozycji.': 'Complete the splits first: “Others” must be PLN 0 for every expense.',
+  'Najpierw uzupełnij podziały: nieprzypisana kwota musi wynosić 0 zł w każdej pozycji.': 'Complete the splits first: the unassigned amount must be PLN 0 for every expense.',
   'Nazwa pozycji musi mieć od 1 do 200 znaków.': 'The expense name must contain 1 to 200 characters.',
   'Nazwa wydarzenia musi mieć od 1 do 150 znaków.': 'The event name must contain 1 to 150 characters.',
   'Nie masz uprawnień do zmiany tego podziału lub wyrównania.': 'You do not have permission to change this split or remainder.',

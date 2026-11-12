@@ -275,7 +275,8 @@ i wydatki obu wpisów; jeżeli oba były w tej samej pozycji, ich kwoty i zadane
 są sumowane. Płacący zostają przypisani do połączonego uczestnika, a autorzy wpisów
 pozostają bez zmian. Łączenie nie przenosi danych z innych wydarzeń ani nie łączy kont.
 Takie samo imię nigdy nie powoduje automatycznego połączenia. Dodanie lub połączenie
-uczestnika nie rozdziela automatycznie kwoty **Inni** — autor pozycji nadal poprawia podział.
+uczestnika nie przypisuje automatycznie kwoty widocznej w wierszu **Przypisz** — autor
+pozycji nadal poprawia podział.
 
 Uczestnik bez konta nie może sam oznaczać **Wysłane/Odebrane**. Zalogowana druga
 strona może oznaczyć wyłącznie własną stronę przelewu; autor wydarzenia nie uzyskuje
@@ -297,15 +298,17 @@ wprowadziła; płacący to osoba, która poniosła koszt. Domyślnie jest to ta 
 Tylko **autor wydarzenia** może wskazać innego płacącego lub zmienić go później
 w szczegółach pozycji przez **Zmień płacącego**.
 
-Nierozdzielona kwota trafia do **Inni**. Znane osoby bez konta warto dodać jako
-uczestników bez konta i wskazać je w podziale, zamiast pozostawiać ich koszt w „Inni”.
+Nierozdzielona kwota jest widoczna w wierszu **Przypisz**. Znane osoby bez konta warto
+dodać jako uczestników bez konta i wskazać je w podziale, zamiast pozostawiać ich koszt
+nieprzypisany.
 Mały przycisk **Wyrównaj** przy każdej osobie w podziale przypisuje resztę właśnie
 tej osobie — bez automatycznego wyboru największego udziału ani autora wpisu.
 Wybrany przycisk jest podświetlony. Kliknięcie przy innej osobie przenosi wyrównanie:
 poprzednia osoba wraca do swojego udziału bazowego, a nowa dostaje tę samą resztę.
-Ponowne kliknięcie podświetlonego przycisku wycofuje wyrównanie do **Inni**.
+Ponowne kliknięcie podświetlonego przycisku wycofuje wyrównanie, a kwota wraca do wiersza
+**Przypisz**.
 Gdy nie ma reszty ani wcześniej przypisanego wyrównania, przyciski są wyszarzone.
-Suma udziałów wraz z „Inni” zawsze odpowiada całej kwocie.
+Suma udziałów i kwoty w wierszu **Przypisz** zawsze odpowiada całej kwocie.
 
 Wyrównanie może zmienić tylko **autor wydarzenia lub wskazany płacący** i tylko
 w otwartym wydarzeniu. Samo autorstwo pozycji nie daje tego uprawnienia, jeżeli
@@ -333,8 +336,8 @@ Na komputerze rozliczenie jest obok wydatków, na telefonie w zakładce **Rozlic
 - **Podgląd** jest bieżącym planem, który może się zmieniać. Dane można odświeżyć
   przyciskiem **Odśwież**; widoczny ekran aktualizuje się także co 15 sekund.
 - **Zamknij i rozlicz** zatwierdza plan i blokuje dodawanie pozycji, zmianę podziałów
-  oraz dołączanie. Może to zrobić tylko autor wydarzenia, gdy „Inni” wynosi zero
-  we wszystkich pozycjach i formularz dodawania/edycji jest zakończony.
+  oraz dołączanie. Może to zrobić tylko autor wydarzenia, gdy we wszystkich pozycjach
+  kwota w wierszu **Przypisz** wynosi zero, a formularz dodawania/edycji jest zakończony.
 - Dopiero w zamkniętym rozliczeniu nadawca może zaznaczyć **Wysłane**, a odbiorca
   **Odebrane**. Każdy zmienia wyłącznie własne oznaczenie. Oba statusy widzą tylko
   strony przelewu; pozostali uczestnicy ich nie widzą.

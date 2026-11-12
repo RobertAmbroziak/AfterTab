@@ -142,7 +142,7 @@ Money uses integer grosze: `100 PLN = 10000 amountMinor`. Percentage shares use
 basis points: `33% = 3300 percentageBps`. `splitMethod` is `Amount` or `Percentage`.
 Each percentage share has `amountMinor=0`; each amount share has `percentageBps=0`.
 `balanceParticipantId` must identify someone already in the shares. Omitting it
-leaves the remainder as Others. The server never picks a remainder recipient automatically.
+leaves the remainder unassigned. The server never picks a remainder recipient automatically.
 
 Editing requires the current `rowVersion` from the expense list. Payment marking
 requires the current settlement version, exact participant pair and amount.
