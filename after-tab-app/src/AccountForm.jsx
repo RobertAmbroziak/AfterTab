@@ -2,6 +2,7 @@ import { t, legalUrl } from './i18n.js'
 import { useEffect, useRef, useState } from 'react'
 import { api } from './api'
 import { loginAccount, loginExternal } from './auth'
+import { focusAndReveal } from './focusAndReveal'
 
 function emailAction() {
   const params = new URLSearchParams(location.hash.slice(1))
@@ -27,7 +28,7 @@ export default function AccountForm({ guest = false, onSession, onCancel }) {
     return () => { active = false }
   }, [])
   useEffect(() => {
-    if (mode === 'login' || mode === 'register') (nameInput.current || emailInput.current)?.focus()
+    if (mode === 'login' || mode === 'register') return focusAndReveal(nameInput.current || emailInput.current)
   }, [mode])
   function change(value) {
     setMode(value); setError(''); setMessage('')
