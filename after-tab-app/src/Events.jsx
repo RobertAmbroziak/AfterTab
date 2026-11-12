@@ -6,6 +6,7 @@ import { Expenses, PersonAvatar } from './Expenses'
 import { Settlement } from './Settlement'
 import { money } from './expenseAllocation'
 import ParticipantManager from './ParticipantManager'
+import { focusAndReveal } from './focusAndReveal'
 
 function ErrorMessage({ error }) { return error ? <p className="auth-error" role="alert">{t(error)}</p> : null }
 
@@ -67,6 +68,8 @@ function CreateEvent({ onCreated, onCancel }) {
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
   const lock = useRef(false)
+  const nameInput = useRef(null)
+  useEffect(() => focusAndReveal(nameInput.current), [])
   async function submit(event) {
     event.preventDefault()
     if (lock.current) return
@@ -80,7 +83,7 @@ function CreateEvent({ onCreated, onCancel }) {
   }
   return <form className="app-form" onSubmit={submit}>
     <h2>{t("Utwórz wydarzenie")}</h2>
-    <label>{t("Nazwa wydarzenia")}<input name="name" required maxLength={150} placeholder={t("Np. Pizza w piątek")} autoFocus /></label>
+    <label>{t("Nazwa wydarzenia")}<input ref={nameInput} name="name" required maxLength={150} placeholder={t("Np. Pizza w piątek")} /></label>
     <label>{t("Opis (opcjonalnie)")}<textarea name="description" maxLength={2000} rows={3} /></label>
     <div className="form-actions"><button className="primary-button" disabled={busy}>{busy ? t("Tworzenie…") : t("Utwórz i wygeneruj zaproszenie")}</button><button type="button" className="secondary-button" onClick={onCancel} disabled={busy}>{t("Anuluj")}</button></div>
     <ErrorMessage error={t(error)} />

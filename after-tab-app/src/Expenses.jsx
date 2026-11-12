@@ -2,6 +2,7 @@ import { t, getLocale } from './i18n.js'
 import { useEffect, useImperativeHandle, useRef, useState } from 'react'
 import { api } from './api'
 import { calculateAllocation, equalPercentages, money, parseHundredths } from './expenseAllocation'
+import { focusAndReveal } from './focusAndReveal'
 
 const colors = ['#1d4ed8', '#7e22ce', '#047857', '#b45309', '#be123c', '#0e7490']
 export function PersonAvatar({ person }) {
@@ -25,6 +26,8 @@ function CreateExpense({ eventId, participants, user, isOwner, onCreated, onCanc
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
   const lock = useRef(false)
+  const nameInput = useRef(null)
+  useEffect(() => focusAndReveal(nameInput.current), [])
   const people = new Map(participants.map(person => [person.participantId, person]))
   const canBalance = isOwner || payerId === user.participantId
   const calculation = calculateAllocation(amount, method, shares, balanceTarget)
@@ -57,7 +60,7 @@ function CreateExpense({ eventId, participants, user, isOwner, onCreated, onCanc
   return <form className="app-form expense-form" onSubmit={submit}>
     <h3>{item ? t("Popraw podział") : t("Dodaj pozycję")}</h3>
     <fieldset disabled={busy}>
-      <label>{t("Nazwa pozycji")}<input value={name} readOnly={!!item} onChange={e => setName(e.target.value)} required maxLength={200} placeholder={t("Np. Pizza")} autoFocus /></label>
+      <label>{t("Nazwa pozycji")}<input ref={nameInput} value={name} readOnly={!!item} onChange={e => setName(e.target.value)} required maxLength={200} placeholder={t("Np. Pizza")} /></label>
       <label>{t("Kwota pozycji (zł)")}<input inputMode="decimal" value={amount} readOnly={!!item} onChange={e => change(() => setAmount(e.target.value))} required placeholder="62,50" /></label>
       {!item && isOwner && <label>{t("Płacący")}<select aria-label={t("Płacący")} value={payerId} onChange={e => setPayerId(e.target.value)}>{participants.map(person => <option key={person.participantId} value={person.participantId}>{person.displayName}{person.isVirtual ? t(" — bez konta") : ''}</option>)}</select></label>}
       <div className="form-actions" role="group" aria-label={t("Rodzaj podziału")}>
