@@ -241,8 +241,13 @@ imienia nie odzyskuje wcześniejszego konta.
 
 1. Przejdź do **Wydarzenia** i wybierz **Utwórz wydarzenie**.
 2. Wpisz nazwę i opcjonalny opis.
-3. Rozwiń **Zaproś znajomych**, a następnie skopiuj lub udostępnij link.
+3. Otwórz wydarzenie i wybierz **Uczestnicy**. Rozwiń **Zaproś znajomych**,
+   a następnie skopiuj lub udostępnij link.
 4. Odbiorca otwiera zaproszenie, loguje się i potwierdza **Dołącz do wydarzenia**.
+
+W widoku wydarzenia przełączaj zakładki **Uczestnicy**, **Wydatki** i **Rozliczenia**.
+Zakładka **Uczestnicy** zawiera zwijane sekcje **Uczestnicy bez konta** i
+**Zaproś znajomych**; narzędzia są dostępne dla autora wydarzenia zgodnie z jego uprawnieniami.
 
 Autor i dołączone osoby widzą wydarzenie na swoich listach.
 Formularz **Dołącz linkiem lub kodem** pozwala również wprowadzić zaproszenie ręcznie.
@@ -331,7 +336,7 @@ automatycznie.
 Rozliczenie przelicza zapisane pozycje i kompensuje długi. Jeśli jedna osoba jest
 winna drugiej 12 zł, a druga pierwszej 3 zł, wynik to jeden przelew 9 zł.
 Kwota do oddania lub otrzymania jest widoczna nad listą wydatków.
-Na komputerze rozliczenie jest obok wydatków, na telefonie w zakładce **Rozliczenie**.
+Rozliczenie otworzysz w zakładce **Rozliczenia** w widoku wydarzenia.
 
 - **Podgląd** jest bieżącym planem, który może się zmieniać. Dane można odświeżyć
   przyciskiem **Odśwież**; widoczny ekran aktualizuje się także co 15 sekund.
