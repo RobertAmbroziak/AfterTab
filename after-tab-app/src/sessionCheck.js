@@ -1,13 +1,13 @@
-import { t } from './i18n.js'
-export const SESSION_CHECK_MS = 120000
-export const SESSION_TIMEOUT_MESSAGE = t("Serwer potrzebuje więcej czasu. Nie udało się sprawdzić sesji w ciągu 2 minut. Ponów połączenie — Twoje konto pozostaje zapamiętane.")
+import { NETWORK_ERROR, fetchWithNetworkStatus } from './networkStatus'
+export const SESSION_CHECK_MS = 25000
+export const SESSION_TIMEOUT_MESSAGE = NETWORK_ERROR
 
 // Retry only explicitly selected reads and the restore preparation. Never retry
 // passwords, one-use exchanges or expense writes after an ambiguous response.
 export async function fetchSessionResponse(url, options = {}, {
   deadline = Date.now() + SESSION_CHECK_MS,
   retry = true,
-  fetchImpl = fetch,
+  fetchImpl = fetchWithNetworkStatus,
   now = Date.now,
   sleep = ms => new Promise(resolve => setTimeout(resolve, ms)),
   timeoutSignal = ms => AbortSignal.timeout(ms),
@@ -19,7 +19,8 @@ export async function fetchSessionResponse(url, options = {}, {
     try {
       response = await fetchImpl(url, { ...options, signal: timeoutSignal(Math.max(1, Math.ceil(Math.min(remaining, retry ? 25000 : SESSION_CHECK_MS)))) })
     } catch (error) {
-      if (!retry || !['TypeError', 'TimeoutError', 'AbortError'].includes(error.name)) {
+      const retryable = error.message === NETWORK_ERROR || ['TypeError', 'TimeoutError', 'AbortError'].includes(error.name)
+      if (!retry || !retryable) {
         if (now() >= deadline || error.name === 'TimeoutError') throw new Error(SESSION_TIMEOUT_MESSAGE, { cause: error })
         throw error
       }

@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { api } from './api'
 import { getLocale, t } from './i18n'
+import { isNetworkError } from './networkStatus'
 
 export default function McpTokens({ onClose }) {
   const [tokens, setTokens] = useState([])
@@ -119,7 +120,7 @@ export default function McpTokens({ onClose }) {
       </div>)}
     </section>
 
-    {error && <p role="alert" className="auth-error">{t(error)}</p>}
+    {error && !isNetworkError(error) && <p role="alert" className="auth-error">{t(error)}</p>}
 
     <details className="manual-mcp" open={tokens.length === 0}>
       <summary><span>{t('Ręczny token MCP dla testów')}</span></summary>

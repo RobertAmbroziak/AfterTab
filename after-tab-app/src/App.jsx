@@ -9,7 +9,8 @@ import NameForm from './NameForm'
 import AccountForm from './AccountForm'
 import { hasEmailAction } from './auth'
 import InstallButton from './InstallButton'
-import SessionStatus from './SessionStatus'
+import NetworkStatus from './NetworkStatus.jsx'
+import { isNetworkError } from './networkStatus'
 import McpTokens from './McpTokens'
 import McpOAuthConsent from './McpOAuthConsent'
 import { githubUrl, androidApkUrl } from './distributionLinks'
@@ -19,7 +20,6 @@ export default function App() {
   const language = useLanguage()
   const [session, setSession] = useState(null)
   const [busy, setBusy] = useState(true)
-  const [checking, setChecking] = useState(true)
   const [error, setError] = useState('')
   const [remembered, setRemembered] = useState(hasRememberedGuest)
   const [authForm, setAuthForm] = useState(() => hasEmailAction() ? 'account' : null)
@@ -47,13 +47,13 @@ export default function App() {
     window.addEventListener('hashchange', syncRoute)
     window.addEventListener('aftertab:session-expired', expired)
     restoreSession().then(value => { if (active) { setSession(value); setRemembered(hasRememberedGuest()); setRoute(readRoute()) } })
-      .catch(reason => { if (active) setError(reason.message) }).finally(() => { if (active) { setBusy(false); setChecking(false) } })
+      .catch(reason => { if (active) setError(reason.message) }).finally(() => { if (active) setBusy(false) })
     return () => { active = false; window.removeEventListener('hashchange', syncRoute); window.removeEventListener('aftertab:session-expired', expired) }
   }, [attempt])
   if (mcpOAuthRoute) return <McpOAuthConsent requestId={mcpOAuthRoute[1]} />
   async function handleSession(action) {
     if (inFlight.current) return
-    inFlight.current = true; setBusy(true); setChecking(false); setError('')
+    inFlight.current = true; setBusy(true); setError('')
     try { setSession(await action() ?? null); setRemembered(hasRememberedGuest()); setAuthForm(null) }
     catch (reason) { setError(reason.message) }
     finally { inFlight.current = false; setBusy(false) }
@@ -85,8 +85,8 @@ export default function App() {
       </div>
     </header>
     <div className="page-content">
-      {busy && (checking ? <SessionStatus key={attempt} /> : <div className="connection-status" role="status"><span className="spinner" />{t("Łączenie z kontem…")}</div>)}
-      {error && <div className="connection-status auth-error" role="alert"><span>{t(error)}</span><button className="secondary-button" disabled={busy} onClick={() => { setError(''); setChecking(true); setBusy(true); setAttempt(value => value + 1) }}>{t("Ponów połączenie")}</button></div>}
+      <NetworkStatus />
+      {error && !isNetworkError(error) && <div className="connection-status auth-error" role="alert"><span>{t(error)}</span><button className="secondary-button" disabled={busy} onClick={() => { setError(''); setBusy(true); setAttempt(value => value + 1) }}>{t("Ponów połączenie")}</button></div>}
       {!session && !busy && route.kind !== 'invite' && <section className="login-card"><img src="/pwa-192x192.png" width="64" height="64" alt="" /><h1>{t("Wspólne wyjścia.")}<br />{t("Proste rozliczenia.")}</h1><p>{t("Zaproś znajomych, dodaj wydatki i zobacz, kto komu oddaje.")}</p><div className="form-actions"><button className="primary-button" disabled={busy} onClick={startLogin}>{remembered ? t("WRÓĆ JAKO GOŚĆ") : t("ZALOGUJ JAKO GOŚĆ")}</button><button className="secondary-button" disabled={busy} onClick={startAccountLogin}>{t("ZALOGUJ / UTWÓRZ KONTO")}</button></div></section>}
       {authForm === 'account' && <AccountForm key={location.hash.startsWith('#account-') ? location.hash : 'account'} guest={Boolean(session?.user.isGuest)} onSession={() => setAttempt(value => value + 1)} onCancel={() => setAuthForm(null)} />}
       {!session && authForm === 'guest' && <section className="workspace"><NameForm title={t("Zaloguj się jako gość")} submitLabel={t("Zapisz imię i wejdź")} onSubmit={name => handleSession(() => loginAsGuest(name))} onCancel={() => setAuthForm(null)} busy={busy} /></section>}

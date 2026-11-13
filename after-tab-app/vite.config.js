@@ -26,7 +26,12 @@ export default defineConfig({
         // Routes use URL hashes; only the app shell may fall back to index.html.
         // Downloads and other public files must retain their actual responses.
         navigateFallbackAllowlist: [/^\/(?:index\.html)?(?:\?|$)/],
-        additionalManifestEntries: ['pwa-192x192.png', 'pwa-512x512.png'].map(name => ({ url: iconUrl(name), revision: null })),
+        additionalManifestEntries: ['pwa-192x192.png', 'pwa-512x512.png'].flatMap(name => [
+          { url: iconUrl(name), revision: null },
+          // The app header and login screen use the stable, unversioned URL.
+          // Precache it too so a pull-to-refresh while offline keeps the logo visible.
+          { url: `/${name}`, revision: createHash('sha256').update(readFileSync(new URL(`./public/${name}`, import.meta.url))).digest('hex').slice(0, 12) },
+        ]),
       },
       manifest: {
         id: '/',
