@@ -256,6 +256,11 @@ stop working; existing participants stay in the event. A closed event cannot be
 joined. **My events** lists 10 events per page, newest first, with Previous/Next
 navigation and Open/Closed indicators.
 
+Use the event tabs **Participants**, **Expenses** and **Settlements** to switch
+between these views. **Participants** contains the collapsible **Participants
+without accounts** and **Invite friends** sections. Their tools are available to
+the event owner according to their permissions.
+
 ### Participants without accounts
 
 The owner of an open event can add someone without a phone or account. They can
@@ -288,8 +293,7 @@ the payer without changing authorship. Concurrent edits require refreshing data.
 
 The settlement offsets mutual debts to simplify transfers. If A owes B PLN 12 and
 B owes A PLN 3, the result is one PLN 9 transfer. Your amount owed or receivable
-appears above the expenses. Desktop shows expenses and settlement side by side;
-mobile uses **Expenses / Settlement** tabs.
+appears above the event tabs. Open the **Settlements** tab to view the settlement.
 
 - **Preview** follows saved data. Refresh manually or wait for the automatic
   15-second update while the screen is visible.

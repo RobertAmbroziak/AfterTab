@@ -86,7 +86,7 @@ export const english = {
   'Pozycje': 'Expenses', 'Pozycje wydarzenia': 'Event expenses', 'Procentowo': 'By percentage',
   'Proste rozliczenia.': 'Simple settlements.', 'Proszę czekać…': 'Please wait…',
   'Prywatność': 'Privacy', 'Przelew': 'Transfer', 'Płacący': 'Paid by', 'Razem': 'Total',
-  'Rodzaj podziału': 'Split method', 'Rozliczenie': 'Settlement', 'Rozumiem': 'Got it',
+  'Rodzaj podziału': 'Split method', 'Rozliczenie': 'Settlement', 'Rozliczenia': 'Settlements', 'Rozumiem': 'Got it',
   'Salda uczestników': 'Participant balances', 'Sprawdzanie sesji…': 'Checking session…',
   'Sprawdzanie zaproszenia…': 'Checking invitation…', 'Sprawdź zaproszenie': 'Check invitation',
   'Strona': 'Page', 'Strony wydarzeń': 'Event pages', 'Szczegóły wydarzenia': 'Event details',
