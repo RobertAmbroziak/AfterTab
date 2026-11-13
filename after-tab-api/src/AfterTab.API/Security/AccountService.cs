@@ -34,7 +34,7 @@ public sealed class AccountService(AppDbContext db, ISessionService sessions, IA
     }
     private static void Password(string value)
     {
-        if (value.Length < 12 || value.Length > 128) throw Invalid("Hasło musi mieć od 12 do 128 znaków.");
+        if (value.Length < 8 || value.Length > 128) throw Invalid("Hasło musi mieć od 8 do 128 znaków.");
     }
     public string Frontend => configuration["Authentication:FrontendOrigin"]
         ?? throw new InvalidOperationException("Missing Authentication:FrontendOrigin");

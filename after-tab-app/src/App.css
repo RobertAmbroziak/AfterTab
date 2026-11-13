@@ -51,6 +51,10 @@ select { appearance: none; padding-right: 40px; background-image: url("data:imag
 input::placeholder, textarea::placeholder { color: #829ba5; }
 input:focus-visible, select:focus-visible, textarea:focus-visible { outline: 2px solid var(--mint); outline-offset: 2px; }
 input[readonly] { background: #1d292d; color: #b7cbd3; }
+.password-input-wrap { position: relative; display: block; min-width: 0; }
+.password-input-wrap input { padding-right: 48px; }
+.password-visibility-button { position: absolute; top: 50%; right: 6px; display: inline-flex; width: 38px; height: 38px; align-items: center; justify-content: center; padding: 0; transform: translateY(-50%); border: 0; border-radius: 8px; background: transparent; color: var(--muted); cursor: pointer; }
+.password-visibility-button:hover { color: var(--mint); background: #223338; }
 textarea { resize: vertical; }
 .app-form { display: grid; gap: 16px; }
 .app-form p { margin: 0; }

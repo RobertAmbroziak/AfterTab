@@ -224,7 +224,7 @@ a guest or clearing browser data can remove access; entering the same name does
 not recover the same identity. These actions do not delete server data.
 
 Choose **SIGN IN / CREATE ACCOUNT** for an email account or an available Google or
-Facebook provider. Email registration requires a name and a 12–128 character
+Facebook provider. Email registration requires a name and an 8–128 character
 password. Confirm the email address with the one-time link, valid for 24 hours,
 before signing in. Password recovery links last 30 minutes. Resetting a password
 revokes previous sessions and other reset links; the link itself does not sign you

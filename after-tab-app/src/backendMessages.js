@@ -12,7 +12,7 @@ export const backendEnglish = {
   'Kwota przelewu jest nieaktualna.': 'The transfer amount is out of date.',
   'Autor usunął Cię z tego wydarzenia.': 'The owner removed you from this event.',
   'E-mail potwierdzony. Możesz się zalogować.': 'Email confirmed. You can sign in.',
-  'Hasło musi mieć od 12 do 128 znaków.': 'Your password must contain 12 to 128 characters.',
+  'Hasło musi mieć od 8 do 128 znaków.': 'Your password must contain 8 to 128 characters.',
   'Hasło zmienione. Zaloguj się ponownie.': 'Password changed. Please sign in again.',
   'Jeśli adres pasuje do konta, wysłaliśmy wiadomość. Sprawdź skrzynkę i spam.': 'If the address matches an account, we have sent an email. Check your inbox and spam folder.',
   'Jeśli rejestracja jest możliwa, wysłaliśmy wiadomość. Sprawdź pocztę albo skorzystaj z odzyskiwania hasła.': 'If registration is possible, we have sent an email. Check your inbox or use password recovery.',
