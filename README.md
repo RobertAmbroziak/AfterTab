@@ -389,7 +389,7 @@ nie uruchamia automatycznego deployu.
 Wybierz **ZALOGUJ / UTWÓRZ KONTO**. Możesz zarejestrować e-mail i hasło albo użyć
 Google/Facebooka, jeśli administrator skonfigurował danego dostawcę.
 
-- Rejestracja e-mail wymaga imienia i hasła o długości 12–128 znaków. Przed pierwszym
+- Rejestracja e-mail wymaga imienia i hasła o długości 8–128 znaków. Przed pierwszym
   logowaniem trzeba potwierdzić adres jednorazowym linkiem z wiadomości (ważność 24 godziny).
 - **Nie pamiętam hasła** wysyła link ważny 30 minut. Ustawienie nowego hasła unieważnia
   dotychczasowe sesje i pozostałe linki resetu. Link sam w sobie nie loguje użytkownika.

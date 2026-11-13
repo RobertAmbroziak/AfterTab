@@ -20,6 +20,7 @@ export default function AccountForm({ guest = false, onSession, onCancel }) {
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
   const [message, setMessage] = useState('')
+  const [showPassword, setShowPassword] = useState(false)
   const lock = useRef(false)
   const nameInput = useRef(null)
   const emailInput = useRef(null)
@@ -75,7 +76,7 @@ export default function AccountForm({ guest = false, onSession, onCancel }) {
     <form className="app-form" onSubmit={submit}>
       {mode === 'register' && <label>{t("Imię")}<input ref={nameInput} name="displayName" required maxLength={100} autoComplete="given-name" /></label>}
       {!['confirm', 'reset'].includes(mode) && <label>{t("E-mail")}<input ref={emailInput} name="email" type="email" required maxLength={254} autoComplete="username" /></label>}
-      {['login', 'register', 'reset'].includes(mode) && <label>{t("Hasło")}<input aria-label={t("Hasło")} name="password" type="password" required minLength={mode === 'login' ? undefined : 12} maxLength={128} autoComplete={mode === 'login' ? 'current-password' : 'new-password'} /><small>{mode !== 'login' && t("Od 12 do 128 znaków.")}</small></label>}
+      {['login', 'register', 'reset'].includes(mode) && <label>{t("Hasło")}<span className="password-input-wrap"><input aria-label={t("Hasło")} name="password" type={showPassword ? 'text' : 'password'} required minLength={mode === 'login' ? undefined : 8} maxLength={128} autoComplete={mode === 'login' ? 'current-password' : 'new-password'} /><button className="password-visibility-button" type="button" aria-label={t(showPassword ? "Ukryj hasło" : "Pokaż hasło")} aria-pressed={showPassword} title={t(showPassword ? "Ukryj hasło" : "Pokaż hasło")} onClick={() => setShowPassword(value => !value)}><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">{showPassword ? <><path d="M3 3l18 18"/><path d="M10.6 10.6a2 2 0 0 0 2.8 2.8"/><path d="M9.9 5.2A11.8 11.8 0 0 1 12 5c5 0 8.3 4.5 9 7-.3 1.1-1.1 2.5-2.4 3.7M6.2 6.2C3.9 7.7 2.4 10 2 12c.7 2.5 4 7 10 7 1 0 2-.2 2.9-.5"/></> : <><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></>}</svg></button></span><small>{mode !== 'login' && t("Od 8 do 128 znaków.")}</small></label>}
       {mode === 'confirm' && <p>{t("Kliknij, aby potwierdzić adres. Link jest jednorazowy.")}</p>}
       {mode === 'register' && <p className="helper-text">{t("Przed utworzeniem konta zapoznaj się z")} <a href={legalUrl('terms')} target="_blank" rel="noopener noreferrer">{t("zasadami korzystania")}</a> {t("i")} <a href={legalUrl('privacy')} target="_blank" rel="noopener noreferrer">{t("polityką prywatności")}</a>.</p>}
       <p className="helper-text">{t("Logowanie jest zapamiętywane w tej przeglądarce do wylogowania lub wygaśnięcia sesji (maksymalnie rok).")}</p>

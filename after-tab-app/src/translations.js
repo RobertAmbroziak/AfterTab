@@ -74,7 +74,7 @@ export const english = {
   'Następna →': 'Next →', 'Nazwa pozycji': 'Expense name', 'Nazwa wydarzenia': 'Event name',
   'Nie pamiętam hasła': 'Forgot password', 'Nowy link jest gotowy. Skopiuj go i zachowaj.': 'Your new link is ready. Copy it and keep it.',
   'Np. Adam': 'e.g. Alex', 'Np. Pizza': 'e.g. Pizza', 'Np. Pizza w piątek': 'e.g. Friday pizza',
-  'Obliczanie rozliczenia…': 'Calculating settlement…', 'Od 12 do 128 znaków.': '12 to 128 characters.',
+  'Obliczanie rozliczenia…': 'Calculating settlement…', 'Od 8 do 128 znaków.': '8 to 128 characters.', 'Pokaż hasło': 'Show password', 'Ukryj hasło': 'Hide password',
   'Odebrane': 'Received', 'Odzyskaj hasło': 'Reset password', 'Odśwież': 'Refresh',
   'Opis (opcjonalnie)': 'Description (optional)', 'Osoby do podziału': 'People sharing the expense',
   'Otwarte': 'Open', 'Otwórz menu': 'Open the', 'Otwórz ponownie': 'Reopen', 'Otwórz wydarzenie': 'Open event',
