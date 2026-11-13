@@ -1,4 +1,4 @@
-import { NETWORK_ERROR, fetchWithNetworkStatus } from './networkStatus'
+import { NETWORK_ERROR, fetchWithNetworkStatus } from './networkStatus.js'
 export const SESSION_CHECK_MS = 25000
 export const SESSION_TIMEOUT_MESSAGE = NETWORK_ERROR
 
