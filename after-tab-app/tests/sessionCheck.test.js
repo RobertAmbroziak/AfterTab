@@ -24,21 +24,21 @@ function scenario(steps) {
   }
 }
 
-test('cold API and database recover automatically after multiple transient failures', async () => {
-  const s = scenario([{ error: 'TimeoutError', elapsed: 25000 }, { status: 503 }, { error: 'TypeError' }, { status: 200 }])
+test('transient API failures recover within the shared connection deadline', async () => {
+  const s = scenario([{ error: 'TypeError' }, { status: 503 }, { error: 'TypeError' }, { status: 200 }])
   const response = await fetchSessionResponse('/me', { headers: { Authorization: 'Bearer unchanged' } }, s.options)
   assert.equal(response.status, 200)
   assert.equal(s.calls.length, 4)
-  assert.equal(s.elapsed(), 31000)
+  assert.equal(s.elapsed(), 6000)
   assert(s.calls.every(call => call.init.headers.Authorization === 'Bearer unchanged'))
 })
 
-test('all attempts and pauses share one two-minute deadline', async () => {
-  const s = scenario([])
+test('all attempts and pauses share one 25-second deadline', async () => {
+  const s = scenario([{ error: 'TimeoutError', elapsed: 12000 }, { error: 'TimeoutError', elapsed: 11000 }])
   await assert.rejects(fetchSessionResponse('/me', {}, s.options), { message: SESSION_TIMEOUT_MESSAGE })
-  assert.equal(s.elapsed(), 120000)
-  assert.equal(s.calls.length, 5)
-  assert.equal(s.calls.at(-1).init.signal.timeout, 12000)
+  assert.equal(s.elapsed(), SESSION_CHECK_MS)
+  assert.equal(s.calls.length, 2)
+  assert.equal(s.calls.at(-1).init.signal.timeout, 11000)
 })
 
 for (const status of [200, 400, 401, 403, 429]) {
@@ -55,7 +55,7 @@ test('one-use exchange is never replayed after an ambiguous server error', async
   const response = await fetchSessionResponse('/exchange', { method: 'POST' }, { ...s.options, retry: false })
   assert.equal(response.status, 503)
   assert.equal(s.calls.length, 1)
-  assert.equal(s.calls[0].init.signal.timeout, 120000)
+  assert.equal(s.calls[0].init.signal.timeout, SESSION_CHECK_MS)
 })
 
 test('one-use exchange is never replayed after a network failure', async () => {
