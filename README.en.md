@@ -311,9 +311,12 @@ appears above the event tabs. Open the **Settlements** tab to view the settlemen
 
 Use the install button in the header. Supported Android and desktop browsers show
 an installation prompt; otherwise the app shows instructions. On iPhone, use the
-browser's **Share → Add to Home Screen** menu. Signing in, saving and fetching
-settlements requires the API. The first connection after inactivity can take up
-to two minutes. Use **Retry connection** after a timeout.
+browser's **Share → Add to Home Screen** menu. The PWA caches its interface files,
+including the logo, so its screen can be reopened after losing internet access.
+Event data is not available offline: signing in, fetching or saving data, and
+settlements require the API. A shared indicator appears during requests, with one
+notice when the connection is unavailable. After internet access returns, refresh
+the view to fetch the data again.
 
 ## Configure registered accounts
 

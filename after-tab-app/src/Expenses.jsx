@@ -3,6 +3,7 @@ import { useEffect, useImperativeHandle, useRef, useState } from 'react'
 import { api } from './api'
 import { calculateAllocation, equalPercentages, money, parseHundredths } from './expenseAllocation'
 import { focusAndReveal } from './focusAndReveal'
+import { isNetworkError } from './networkStatus'
 
 const colors = ['#1d4ed8', '#7e22ce', '#047857', '#b45309', '#be123c', '#0e7490']
 export function PersonAvatar({ person }) {
@@ -79,7 +80,7 @@ function CreateExpense({ eventId, participants, user, isOwner, onCreated, onCanc
       <p className="helper-text">{t("Nierozdzielona kwota pojawia się w wierszu „Przypisz”. Osobę bez telefonu autor wydarzenia może dodać jako uczestnika bez konta. Dodanie osoby nie zmienia już zapisanych podziałów.")}</p>
       <div className="form-actions"><button className="primary-button" disabled={!!calculation.error}>{busy ? t("Zapisywanie…") : t("Zatwierdź")}</button><button type="button" className="text-button" onClick={onCancel}>{t("Anuluj")}</button></div>
     </fieldset>
-    {error && <p className="auth-error" role="alert">{t(error)}</p>}
+    {error && !isNetworkError(error) && <p className="auth-error" role="alert">{t(error)}</p>}
   </form>
 }
 
@@ -93,7 +94,7 @@ function PayerEditor({ eventId, item, participants, onChanged }) {
     catch (reason) { setError(reason.message) }
     finally { setBusy(false) }
   }
-  return <details className="payer-editor"><summary><span>{t("Zmień płacącego")}</span></summary><form className="app-form" onSubmit={save}><label>{t("Płacący")}<select aria-label={t("Płacący")} value={payerId} onChange={e => setPayerId(e.target.value)} disabled={busy}>{participants.map(person => <option key={person.participantId} value={person.participantId}>{person.displayName}{person.isVirtual ? t(" — bez konta") : ''}</option>)}</select></label><button className="secondary-button" disabled={busy}>{t("Zapisz płacącego")}</button><p className="helper-text">{t("Autor pozycji pozostanie bez zmian.")}</p>{error && <p className="auth-error" role="alert">{t(error)}</p>}</form></details>
+  return <details className="payer-editor"><summary><span>{t("Zmień płacącego")}</span></summary><form className="app-form" onSubmit={save}><label>{t("Płacący")}<select aria-label={t("Płacący")} value={payerId} onChange={e => setPayerId(e.target.value)} disabled={busy}>{participants.map(person => <option key={person.participantId} value={person.participantId}>{person.displayName}{person.isVirtual ? t(" — bez konta") : ''}</option>)}</select></label><button className="secondary-button" disabled={busy}>{t("Zapisz płacącego")}</button><p className="helper-text">{t("Autor pozycji pozostanie bez zmian.")}</p>{error && !isNetworkError(error) && <p className="auth-error" role="alert">{t(error)}</p>}</form></details>
 }
 
 export function Expenses({ ref, eventId, participants, user, isOwner, refresh, active, onChanged, onEditing }) {
@@ -122,7 +123,7 @@ export function Expenses({ ref, eventId, participants, user, isOwner, refresh, a
   return <div className="event-expenses">
     <div className="section-heading"><h3>{t("Pozycje wydarzenia")}</h3>{active && !creating && !editing && <button className="primary-button" onClick={() => { setCreating(true); onEditing(true) }}>{t("Dodaj pozycję")}</button>}</div>
     {(creating || editing) && active && <CreateExpense key={editing?.id || 'new'} item={editing} eventId={eventId} participants={participants} user={user} isOwner={isOwner} onCancel={() => { setCreating(false); setEditing(null); onEditing(false) }} onCreated={item => { setItems(previous => [...(previous || []).filter(x => x.id !== item.id), item]); setCreating(false); setEditing(null); onEditing(false); onChanged() }} />}
-    {error && <p className="auth-error" role="alert">{t(error)}</p>}
+    {error && !isNetworkError(error) && <p className="auth-error" role="alert">{t(error)}</p>}
     {!items && !error ? <p>{t("Wczytywanie pozycji…")}</p> : items?.length === 0 ? <p>{t("Nie ma jeszcze pozycji. Każdy uczestnik może dodać pierwszą.")}</p> : <ul className="expense-list">{items?.map(item => <li className="expense-card" key={item.id}>
       <details className="expense-breakdown"><summary><span className="expense-symbol" aria-hidden="true">▤</span><span><strong>{item.name}</strong><small>{t("Zapłacił(a):")} {item.payerName || item.authorName} <span className="payer-mark" title={t("Płacący")}>(P)</span></small><small>{item.splitMethod === 'Percentage' ? t("Podział procentowy") : t("Podział kwotowy")}{item.balanced ? t(" · Wyrównano") : ''}</small></span><strong>{money(item.amountMinor)}</strong><span aria-hidden="true" className="chevron">⌄</span></summary>
       <p className="helper-text">{t("Dodał(a):")} {item.authorName}</p>

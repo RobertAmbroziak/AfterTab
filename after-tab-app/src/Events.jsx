@@ -7,8 +7,9 @@ import { Settlement } from './Settlement'
 import { money } from './expenseAllocation'
 import ParticipantManager from './ParticipantManager'
 import { focusAndReveal } from './focusAndReveal'
+import { isNetworkError } from './networkStatus'
 
-function ErrorMessage({ error }) { return error ? <p className="auth-error" role="alert">{t(error)}</p> : null }
+function ErrorMessage({ error }) { return error && !isNetworkError(error) ? <p className="auth-error" role="alert">{t(error)}</p> : null }
 
 function EventTabIcon({ name }) {
   return <svg className="event-tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" focusable="false">
@@ -50,7 +51,7 @@ export function Invitation({ token, session, onLogin }) {
           : session.user.requiresDisplayName ? <p>{t("Uzupełnij najpierw swoje imię powyżej.")}</p>
           : <button className="primary-button" onClick={join} disabled={busy}>{busy ? t("Dołączanie…") : t("Dołącz do wydarzenia")}</button>}
       </>}
-      <ErrorMessage error={t(error)} />
+      <ErrorMessage error={error} />
       <button className="text-button" onClick={showEvents}>{t("Wróć do listy")}</button>
     </section>
   )
@@ -68,7 +69,7 @@ function PasteInvitation() {
     <p>{t("Masz kod lub skopiowany link? Wpisz go tutaj. Kliknięcie otrzymanego linku otwiera zaproszenie bez ręcznego wklejania. Przeglądarka komunikatora może korzystać z osobnej sesji.")}</p>
     <label>{t("Link lub kod zaproszenia")}<input value={input} onChange={e => setInput(e.target.value)} required autoComplete="off" spellCheck={false} /></label>
     <button className="secondary-button">{t("Sprawdź zaproszenie")}</button>
-    <ErrorMessage error={t(error)} />
+    <ErrorMessage error={error} />
   </form>
 }
 
@@ -94,7 +95,7 @@ function CreateEvent({ onCreated, onCancel }) {
     <label>{t("Nazwa wydarzenia")}<input ref={nameInput} name="name" required maxLength={150} placeholder={t("Np. Pizza w piątek")} /></label>
     <label>{t("Opis (opcjonalnie)")}<textarea name="description" maxLength={2000} rows={3} /></label>
     <div className="form-actions"><button className="primary-button" disabled={busy}>{busy ? t("Tworzenie…") : t("Utwórz i wygeneruj zaproszenie")}</button><button type="button" className="secondary-button" onClick={onCancel} disabled={busy}>{t("Anuluj")}</button></div>
-    <ErrorMessage error={t(error)} />
+    <ErrorMessage error={error} />
   </form>
 }
 
@@ -143,7 +144,7 @@ function EventDetails({ id, knownToken, onToken, user }) {
     } catch (reason) { setError(reason.message) }
     finally { lock.current = false; setBusy(false) }
   }
-  if (!details) return <section className="workspace"><p>{t(error) || t("Wczytywanie wydarzenia…")}</p><button className="secondary-button" onClick={showEvents}>{t("Moje wydarzenia")}</button></section>
+  if (!details) return <section className="workspace"><p>{error && !isNetworkError(error) ? t(error) : t("Wczytywanie wydarzenia…")}</p><button className="secondary-button" onClick={showEvents}>{t("Moje wydarzenia")}</button></section>
   const eventUser = { ...user, participantId: details.participants.find(person => person.userId === user.id)?.participantId }
   const outgoing = summary?.transfers.filter(row => row.fromParticipantId === eventUser.participantId && !row.acknowledgement?.sent).reduce((sum, row) => sum + row.amountMinor, 0) || 0
   const incoming = summary?.transfers.filter(row => row.toParticipantId === eventUser.participantId && !row.acknowledgement?.received).reduce((sum, row) => sum + row.amountMinor, 0) || 0
@@ -176,7 +177,7 @@ function EventDetails({ id, knownToken, onToken, user }) {
       <div id="settlement-panel" className="settlement-panel" role="tabpanel" aria-labelledby="settlement-tab" hidden={tab !== 'settlement'}><Settlement eventId={id} user={eventUser} isOwner={details.event.isOwner} refresh={refresh} onData={setSummary} onChanged={() => { setEditing(false); setRefresh(value => value + 1) }} editing={editing} /></div>
     </div>
     {tab === 'expenses' && details.event.status === 'Active' && !editing && <button className="primary-button mobile-add" onClick={() => { expenseActions.current?.add(); document.getElementById('expenses-panel')?.scrollIntoView({ behavior: 'smooth', block: 'start' }) }}>{t("＋ Dodaj pozycję")}</button>}
-    <ErrorMessage error={t(error)} />
+    <ErrorMessage error={error} />
   </section>
 }
 
@@ -207,7 +208,7 @@ export function EventWorkspace({ route, user }) {
     <div className="section-heading"><h2>{t("Moje wydarzenia")}</h2><button className="text-button" onClick={() => { setError(''); setRefresh(x => x + 1) }}>{t("Odśwież")}</button></div>
     {creating ? <CreateEvent onCancel={() => setCreating(false)} onCreated={result => { onToken(result.details.event.id, result.inviteToken); setCreating(false); setPage(1); showEvent(result.details.event.id) }} />
       : <button className="primary-button" onClick={() => setCreating(true)}>{t("Utwórz wydarzenie")}</button>}
-    <ErrorMessage error={t(error)} />
+    <ErrorMessage error={error} />
     {!items && !error ? <p>{t("Wczytywanie wydarzeń…")}</p> : items?.length === 0 ? <p className="empty-state">{t("Nie masz jeszcze wydarzeń. Utwórz pierwsze albo dołącz przez zaproszenie.")}</p>
       : <ul className="event-list">{items?.map(event => <li key={event.id} className={event.status === 'Active' ? 'event-open' : 'event-closed'}><button onClick={() => showEvent(event.id)}><strong>{event.name}</strong><span className={`event-status ${event.status === 'Active' ? 'is-open' : 'is-closed'}`}>{event.status === 'Active' ? t("Otwarte") : t("Zamknięte")}</span><span>{event.isOwner ? t("Autor") : t("Uczestnik")} · {event.participantCount} {t("os. ·")} {event.status === 'Active' ? t("Otwarte") : t("Zamknięte")}</span></button></li>)}</ul>}
     {total > 0 && <nav className="pagination" aria-label={t("Strony wydarzeń")}>

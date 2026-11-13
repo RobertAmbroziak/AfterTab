@@ -359,9 +359,11 @@ Na Androidzie i obsługiwanych przeglądarkach komputerowych wywołuje instalacj
 a gdy przeglądarka jej nie udostępnia, pokazuje instrukcję.
 Na iPhonie użyj menu przeglądarki **Udostępnij → Dodaj do ekranu początkowego**.
 
-Do logowania, zapisywania danych i rozliczania potrzebne jest połączenie z API.
-Po dłuższej bezczynności pierwsze połączenie z serwerem może potrwać dłużej.
-Jeżeli pojawi się błąd oczekiwania, wybierz **Ponów połączenie**.
+PWA zapisuje pliki interfejsu, w tym logo, w cache, dzięki czemu po utracie internetu
+można ponownie otworzyć aplikację i zobaczyć jej ekran. Dane wydarzeń nie są dostępne
+offline: logowanie, pobieranie i zapisywanie danych oraz rozliczenia wymagają połączenia
+z API. Podczas żądań widać wspólny wskaźnik, a przy braku połączenia jeden komunikat.
+Po przywróceniu internetu odśwież widok, aby ponownie pobrać dane.
 
 ## Sprawdzenie projektu
 

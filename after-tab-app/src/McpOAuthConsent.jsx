@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react'
 import { api } from './api'
 import { getToken } from './auth'
 import { t } from './i18n'
+import { isNetworkError } from './networkStatus'
+import NetworkStatus from './NetworkStatus.jsx'
 
 export default function McpOAuthConsent({ requestId }) {
   const [request, setRequest] = useState(null)
@@ -30,9 +32,10 @@ export default function McpOAuthConsent({ requestId }) {
   }
 
   return <main className="app-shell">
+    <NetworkStatus />
     <section className="workspace mcp-oauth-consent" aria-labelledby="mcp-oauth-title">
       <h1 id="mcp-oauth-title">{t('Połącz AfterTab')}</h1>
-      {error && <div className="connection-status auth-error" role="alert">{t(error)}</div>}
+      {error && !isNetworkError(error) && <div className="connection-status auth-error" role="alert">{t(error)}</div>}
       {!request && !error && <p role="status">{t('Sprawdzam prośbę o dostęp…')}</p>}
       {request && <>
         <p>{t('Aplikacja prosi o połączenie z Twoim kontem AfterTab:')} <strong>{request.clientName}</strong></p>

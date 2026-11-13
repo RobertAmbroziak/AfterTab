@@ -1,6 +1,7 @@
 import { t } from './i18n.js'
 import { useRef, useState } from 'react'
 import { api } from './api'
+import { isNetworkError } from './networkStatus'
 
 function VirtualMember({ person, accounts, disabled, onAction }) {
   const [name, setName] = useState(person.displayName)
@@ -56,7 +57,7 @@ export default function ParticipantManager({ eventId, participants, active, edit
       </form>
       {virtual.map(person => <VirtualMember key={`${person.participantId}-${person.displayName}`} person={person} accounts={accounts} disabled={busy || editing} onAction={action} />)}
     </>}
-    {error && <p className="auth-error" role="alert">{t(error)}</p>}
+    {error && !isNetworkError(error) && <p className="auth-error" role="alert">{t(error)}</p>}
     {message && <p role="status">{t(message)}</p>}
   </details>
 }

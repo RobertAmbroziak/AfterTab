@@ -2,6 +2,7 @@ import { t, getLocale, formatCount } from './i18n.js'
 import { useEffect, useRef, useState } from 'react'
 import { api } from './api'
 import { money } from './expenseAllocation'
+import { isNetworkError } from './networkStatus'
 
 export function Settlement({ eventId, user, isOwner, refresh, onChanged, onData, editing }) {
   const [data, setData] = useState(null)
@@ -47,6 +48,6 @@ export function Settlement({ eventId, user, isOwner, refresh, onChanged, onData,
       {data.previousPayments?.length > 0 && <details className="settlement-warning"><summary><span>{t("Twoje oznaczenia poprzednich wersji")}</span></summary><p>{t("Wydarzenie ponownie otwarto. Nowy plan nie odejmuje automatycznie wcześniejszych płatności. Sprawdź historię, zanim wykonasz kolejny przelew.")}</p><ul>{data.previousPayments.map((row, index) => <li key={index}>{t("Wersja")} {row.version}: {row.fromName} → {row.toName}, {money(row.amountMinor)} · {row.sent ? t("wysłane") : t("nieoznaczone jako wysłane")} · {row.received ? t('odebrane') : t("nieoznaczone jako odebrane")}</li>)}</ul></details>}
       {isOwner && <div className="form-actions"><button className="primary-button" disabled={busy || (!data.isFinal && (data.unassignedMinor > 0 || editing)) || data.status === 'Archived'} onClick={changeStatus}>{busy ? t("Zapisywanie…") : data.isFinal ? t("Otwórz ponownie") : t("Zamknij i rozlicz")}</button>{editing && !data.isFinal && <span className="helper-text">{t("Najpierw zatwierdź lub anuluj otwarty formularz pozycji.")}</span>}</div>}
     </>}
-    {error && <p className="auth-error" role="alert">{t(error)}</p>}
+    {error && !isNetworkError(error) && <p className="auth-error" role="alert">{t(error)}</p>}
   </section>
 }

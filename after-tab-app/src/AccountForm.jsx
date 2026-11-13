@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from 'react'
 import { api } from './api'
 import { loginAccount, loginExternal } from './auth'
 import { focusAndReveal } from './focusAndReveal'
+import { isNetworkError } from './networkStatus'
 
 function emailAction() {
   const params = new URLSearchParams(location.hash.slice(1))
@@ -80,7 +81,7 @@ export default function AccountForm({ guest = false, onSession, onCancel }) {
       <p className="helper-text">{t("Logowanie jest zapamiętywane w tej przeglądarce do wylogowania lub wygaśnięcia sesji (maksymalnie rok).")}</p>
       <button className="primary-button" disabled={busy}>{busy ? t("Proszę czekać…") : mode === 'login' ? t("Zaloguj") : mode === 'register' ? t("Utwórz konto") : mode === 'confirm' ? t("Potwierdź e-mail") : mode === 'reset' ? t("Zapisz hasło") : t("Wyślij wiadomość")}</button>
     </form>
-    {error && <p className="auth-error" role="alert">{t(error)}</p>}
+    {error && !isNetworkError(error) && <p className="auth-error" role="alert">{t(error)}</p>}
     {message && <p role="status">{t(message)}</p>}
     <div className="form-actions">
       {mode !== 'login' && <button className="text-button" disabled={busy} onClick={() => change('login')}>{t("Mam konto — zaloguj")}</button>}
