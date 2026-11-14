@@ -1,5 +1,6 @@
 import { t, formatCount } from './i18n.js'
 import { useEffect, useRef, useState } from 'react'
+import { QRCodeSVG } from 'qrcode.react'
 import { api } from './api'
 import { invitationLink, openInvitation, showEvent, showEvents } from './navigation'
 import { Expenses, PersonAvatar } from './Expenses'
@@ -114,10 +115,13 @@ function EventDetails({ id, knownToken, onToken, user }) {
   const [eventCurrency, setEventCurrency] = useState('PLN')
   const [eventNameError, setEventNameError] = useState('')
   const [savingEventName, setSavingEventName] = useState(false)
+  const [qrOpen, setQrOpen] = useState(false)
   const [summary, setSummary] = useState(null)
   const [tab, setTab] = useState('expenses')
   const expenseActions = useRef(null)
   const linkInput = useRef(null)
+  const qrTrigger = useRef(null)
+  const qrModal = useRef(null)
   const lock = useRef(false)
   useEffect(() => {
     let active = true
@@ -132,6 +136,19 @@ function EventDetails({ id, knownToken, onToken, user }) {
     return () => { window.clearInterval(timer); window.removeEventListener('focus', update); document.removeEventListener('visibilitychange', update) }
   }, [])
   const link = knownToken ? invitationLink(knownToken) : ''
+  useEffect(() => {
+    if (!qrOpen) return
+    const previousOverflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    qrModal.current?.focus()
+    function closeOnEscape(event) { if (event.key === 'Escape') setQrOpen(false) }
+    window.addEventListener('keydown', closeOnEscape)
+    return () => {
+      document.body.style.overflow = previousOverflow
+      window.removeEventListener('keydown', closeOnEscape)
+      qrTrigger.current?.focus()
+    }
+  }, [qrOpen])
   async function copy() {
     try { await navigator.clipboard.writeText(link); setMessage(t("Link skopiowany do schowka.")) }
     catch { linkInput.current?.focus(); linkInput.current?.select(); setMessage(t("Zaznaczony link skopiuj ręcznie z pola powyżej.")) }
@@ -202,7 +219,7 @@ function EventDetails({ id, knownToken, onToken, user }) {
         {details.event.isOwner && <ParticipantManager eventId={id} participants={details.participants} active={details.event.status === 'Active'} editing={editing} onChanged={() => setRefresh(value => value + 1)} />}
         {details.event.isOwner && details.event.status === 'Active' && <details className="event-invite-tools">
           <summary><span>{t("Zaproś znajomych")}</span></summary>
-          {link ? <><label>{t("Link zaproszenia")}<input ref={linkInput} value={link} readOnly onFocus={e => e.target.select()} /></label><div className="form-actions"><button className="primary-button" onClick={copy}>{t("Kopiuj link")}</button><button className="secondary-button" onClick={share}>{t("Udostępnij")}</button></div></>
+          {link ? <><label>{t("Link zaproszenia")}<input ref={linkInput} value={link} readOnly onFocus={e => e.target.select()} /></label><div className="form-actions"><button className="primary-button" onClick={copy}>{t("Kopiuj link")}</button><button className="secondary-button" onClick={share}>{t("Udostępnij")}</button><button ref={qrTrigger} type="button" className="qr-open-button" aria-label={t("Pokaż kod QR")} title={t("Pokaż kod QR")} onClick={() => setQrOpen(true)}><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M3 3h7v7H3zM14 3h7v7h-7zM3 14h7v7H3zM14 14h3v3h-3zM19 14h2v2h-2zM19 19h2v2h-2zM14 19h3v2h-3z" /></svg></button></div></>
             : <p>{t("Jeśli masz wcześniej skopiowany link, możesz nadal go udostępniać. Nowy link unieważni poprzedni.")}</p>}
           <div className="form-actions"><button className="secondary-button" disabled={busy} onClick={() => manageInvite(false)}>{t("Wygeneruj nowy link")}</button><button className="text-button" disabled={busy} onClick={() => manageInvite(true)}>{t("Unieważnij link")}</button></div>
           <p className="helper-text">{t("Każda osoba z aktywnym linkiem może dołączyć po zalogowaniu. Link nie dopisuje uczestnika bez jego potwierdzenia.")}</p>
@@ -214,6 +231,13 @@ function EventDetails({ id, knownToken, onToken, user }) {
     </div>
     {tab === 'expenses' && details.event.status === 'Active' && !editing && <button className="primary-button mobile-add" onClick={() => { expenseActions.current?.add(); document.getElementById('expenses-panel')?.scrollIntoView({ behavior: 'smooth', block: 'start' }) }}>{t("＋ Dodaj wydatek")}</button>}
     <ErrorMessage error={error} />
+    {qrOpen && <div ref={qrModal} className="qr-modal" role="dialog" aria-modal="true" aria-label={t("Kod QR zaproszenia")} tabIndex={-1} onClick={() => setQrOpen(false)}>
+      <div className="qr-modal-content">
+        <h2>{details.event.name}</h2>
+        <QRCodeSVG value={link} size={320} level="H" marginSize={4} imageSettings={{ src: '/aftertab-mark-mono.svg', width: 52, height: 52, excavate: true }} />
+        <p>{t("Zeskanuj, aby dołączyć · kliknij, aby zamknąć")}</p>
+      </div>
+    </div>}
   </section>
 }
 

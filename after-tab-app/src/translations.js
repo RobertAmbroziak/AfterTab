@@ -77,6 +77,8 @@ export const english = {
   'Konto trwałe': 'Registered account', 'Konto użytkownika': 'User account',
   'Kontynuuj z Facebook': 'Continue with Facebook', 'Kontynuuj z Google': 'Continue with Google',
   'Kopiuj link': 'Copy link', 'Kto komu oddaje': 'Who pays whom',
+  'Pokaż kod QR': 'Show QR code', 'Kod QR zaproszenia': 'Invitation QR code',
+  'Zeskanuj, aby dołączyć · kliknij, aby zamknąć': 'Scan to join · tap to close',
   'Kwota pozycji (zł)': 'Expense amount (PLN)', 'Kwotowo': 'By amount',
   'Link lub kod zaproszenia': 'Invitation link or code', 'Link zaproszenia': 'Invitation link',
   'Link skopiowany do schowka.': 'Link copied to clipboard.', 'Link został unieważniony.': 'The link has been revoked.',
