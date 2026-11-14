@@ -106,6 +106,10 @@ function EventDetails({ id, knownToken, onToken, user }) {
   const [busy, setBusy] = useState(false)
   const [refresh, setRefresh] = useState(0)
   const [editing, setEditing] = useState(false)
+  const [editingEventName, setEditingEventName] = useState(false)
+  const [eventName, setEventName] = useState('')
+  const [eventNameError, setEventNameError] = useState('')
+  const [savingEventName, setSavingEventName] = useState(false)
   const [summary, setSummary] = useState(null)
   const [tab, setTab] = useState('expenses')
   const expenseActions = useRef(null)
@@ -144,6 +148,16 @@ function EventDetails({ id, knownToken, onToken, user }) {
     } catch (reason) { setError(reason.message) }
     finally { lock.current = false; setBusy(false) }
   }
+  async function saveEventName(event) {
+    event.preventDefault()
+    if (savingEventName) return
+    setSavingEventName(true); setEventNameError('')
+    try {
+      const value = await api(`events/${id}`, { method: 'PUT', body: { name: eventName.trim() } })
+      setDetails(value); setEditingEventName(false)
+    } catch (reason) { setEventNameError(reason.message) }
+    finally { setSavingEventName(false) }
+  }
   if (!details) return <section className="workspace"><p>{error && !isNetworkError(error) ? t(error) : t("Wczytywanie wydarzenia…")}</p><button className="secondary-button" onClick={showEvents}>{t("Moje wydarzenia")}</button></section>
   const eventUser = { ...user, participantId: details.participants.find(person => person.userId === user.id)?.participantId }
   const outgoing = summary?.transfers.filter(row => row.fromParticipantId === eventUser.participantId && !row.acknowledgement?.sent).reduce((sum, row) => sum + row.amountMinor, 0) || 0
@@ -151,9 +165,11 @@ function EventDetails({ id, knownToken, onToken, user }) {
   return <section className={`event-page tab-${tab}`} aria-label={t("Szczegóły wydarzenia")}>
     <div className="event-hero">
     <div className="section-heading"><button className="text-button" onClick={showEvents}>{t("← Moje wydarzenia")}</button><button className="text-button" onClick={() => { setError(''); setRefresh(x => x + 1) }}>{t("Odśwież")}</button></div>
-    <div className="event-title"><h2>{details.event.name}</h2>{details.event.isOwner && <span className="badge">{t("Twoje wydarzenie")}</span>}</div>
+    <div className="event-title">{editingEventName
+      ? <form className="event-name-form" onSubmit={saveEventName}><label className="sr-only" htmlFor="event-name-edit">{t("Nazwa wydarzenia")}</label><input id="event-name-edit" autoFocus required maxLength={150} value={eventName} onChange={event => setEventName(event.target.value)} /><button className="icon-button" disabled={savingEventName} aria-label={t("Zapisz nazwę")}>✓</button><button type="button" className="icon-button" onClick={() => setEditingEventName(false)} aria-label={t("Anuluj")}>×</button>{eventNameError && <ErrorMessage error={eventNameError} />}</form>
+      : <><h2>{details.event.name}</h2>{details.event.isOwner && details.event.status === 'Active' && <button type="button" className="icon-button" title={t("Edytuj nazwę wydarzenia")} aria-label={t("Edytuj nazwę wydarzenia")} onClick={() => { setEventName(details.event.name); setEditingEventName(true); setEventNameError('') }}>✎</button>}{details.event.isOwner && <span className="badge">{t("Twoje wydarzenie")}</span>}</>}</div>
     <p className="event-meta">{t("Autor:")} {details.event.ownerName}{details.event.isOwner ? t(" · Twoje wydarzenie") : ''}</p>
-    {details.event.status !== 'Active' && <p className="settlement-warning">{t("Wydarzenie zamknięte — dodawanie pozycji, zmiana podziałów i dołączanie są zablokowane.")}</p>}
+    {details.event.status !== 'Active' && <p className="settlement-warning">{t("Wydarzenie zamknięte — edycja nazwy i wydatków, dodawanie pozycji, zmiana podziałów i dołączanie są zablokowane.")}</p>}
     {details.event.description && <p className="event-description">{details.event.description}</p>}
     <h3 className="sr-only">{t("Uczestnicy (")}{details.participants.length})</h3>
     <ul className="participant-list">{details.participants.map(person => <li key={person.participantId}><PersonAvatar person={person} /><span>{person.displayName}</span>{person.isOwner && <span className="badge">{t("Autor")}</span>}{person.isVirtual && <span className="badge virtual-badge">{t("Bez konta")}</span>}</li>)}</ul>
@@ -176,7 +192,7 @@ function EventDetails({ id, knownToken, onToken, user }) {
       <div id="expenses-panel" className="expenses-panel" role="tabpanel" aria-labelledby="expenses-tab" hidden={tab !== 'expenses'}><Expenses ref={expenseActions} key={`${id}-${details.event.status}`} eventId={id} participants={details.participants} user={eventUser} isOwner={details.event.isOwner} refresh={refresh} active={details.event.status === 'Active'} onChanged={() => setRefresh(value => value + 1)} onEditing={setEditing} /></div>
       <div id="settlement-panel" className="settlement-panel" role="tabpanel" aria-labelledby="settlement-tab" hidden={tab !== 'settlement'}><Settlement eventId={id} user={eventUser} isOwner={details.event.isOwner} refresh={refresh} onData={setSummary} onChanged={() => { setEditing(false); setRefresh(value => value + 1) }} editing={editing} /></div>
     </div>
-    {tab === 'expenses' && details.event.status === 'Active' && !editing && <button className="primary-button mobile-add" onClick={() => { expenseActions.current?.add(); document.getElementById('expenses-panel')?.scrollIntoView({ behavior: 'smooth', block: 'start' }) }}>{t("＋ Dodaj pozycję")}</button>}
+    {tab === 'expenses' && details.event.status === 'Active' && !editing && <button className="primary-button mobile-add" onClick={() => { expenseActions.current?.add(); document.getElementById('expenses-panel')?.scrollIntoView({ behavior: 'smooth', block: 'start' }) }}>{t("＋ Dodaj wydatek")}</button>}
     <ErrorMessage error={error} />
   </section>
 }

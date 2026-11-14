@@ -18,6 +18,8 @@ function BalanceButton({ name, selected, disabled, onClick }) {
 }
 
 function CreateExpense({ eventId, participants, user, isOwner, onCreated, onCancel, item }) {
+  const canEditSplits = !item || item.authorUserId === user.id
+  const canEditDetails = !item || canEditSplits || isOwner || item.paidByParticipantId === user.participantId
   const [name, setName] = useState(item?.name || '')
   const [amount, setAmount] = useState(item ? (item.amountMinor / 100).toFixed(2) : '')
   const [method, setMethod] = useState(item?.splitMethod || 'Percentage')
@@ -46,7 +48,8 @@ function CreateExpense({ eventId, participants, user, isOwner, onCreated, onCanc
     if (lock.current || calculation.error) return
     lock.current = true; setBusy(true); setError('')
     try {
-      const result = await api(`events/${eventId}/expenses${item ? `/${item.id}/split` : ''}`, { method: item ? 'PUT' : 'POST', body: {
+      const detailsOnly = item && !canEditSplits
+      const result = await api(`events/${eventId}/expenses${item ? `/${item.id}/${detailsOnly ? 'details' : 'split'}` : ''}`, { method: item ? 'PUT' : 'POST', body: {
         rowVersion: item?.rowVersion,
         paidByParticipantId: payerId,
         name: name.trim(), amountMinor: parseHundredths(amount), splitMethod: method, balanceParticipantId: selectedBalance,
@@ -59,12 +62,12 @@ function CreateExpense({ eventId, participants, user, isOwner, onCreated, onCanc
     finally { lock.current = false; setBusy(false) }
   }
   return <form className="app-form expense-form" onSubmit={submit}>
-    <h3>{item ? t("Popraw podział") : t("Dodaj pozycję")}</h3>
+    <h3>{item ? t("Edytuj wydatek") : t("Dodaj wydatek")}</h3>
     <fieldset disabled={busy}>
-      <label>{t("Nazwa pozycji")}<input ref={nameInput} value={name} readOnly={!!item} onChange={e => setName(e.target.value)} required maxLength={200} placeholder={t("Np. Pizza")} /></label>
-      <label>{t("Kwota pozycji (zł)")}<input inputMode="decimal" value={amount} readOnly={!!item} onChange={e => change(() => setAmount(e.target.value))} required placeholder="62,50" /></label>
+      <label>{t("Nazwa pozycji")}<input ref={nameInput} value={name} disabled={!canEditDetails} onChange={e => setName(e.target.value)} required maxLength={200} placeholder={t("Np. Pizza")} /></label>
+      <label>{t("Kwota pozycji (zł)")}<input inputMode="decimal" value={amount} disabled={!canEditDetails} onChange={e => change(() => setAmount(e.target.value))} required placeholder="62,50" /></label>
       {!item && isOwner && <label>{t("Płacący")}<select aria-label={t("Płacący")} value={payerId} onChange={e => setPayerId(e.target.value)}>{participants.map(person => <option key={person.participantId} value={person.participantId}>{person.displayName}{person.isVirtual ? t(" — bez konta") : ''}</option>)}</select></label>}
-      <div className="form-actions" role="group" aria-label={t("Rodzaj podziału")}>
+      {canEditSplits && <><div className="form-actions" role="group" aria-label={t("Rodzaj podziału")}>
         {['Percentage', 'Amount'].map(value => <button key={value} type="button" className={method === value ? 'primary-button' : 'secondary-button'} aria-pressed={method === value} onClick={() => { if (value !== method) change(() => { setMethod(value); setShares(value === 'Percentage' ? equalPercentages(Object.keys(shares)) : Object.fromEntries(Object.keys(shares).map(id => [id, '']))) }) }}>{value === 'Amount' ? t("Kwotowo") : t("Procentowo")}</button>)}
       </div>
       <p>{t("Wybierz osoby do podziału. Kolor i litera pomagają je rozpoznać.")}</p>
@@ -77,7 +80,8 @@ function CreateExpense({ eventId, participants, user, isOwner, onCreated, onCanc
           {selectedBalance && <p>{t("Wyrównanie")} {money(calculation.balanceAmount)}: <strong>{people.get(selectedBalance)?.displayName}</strong>{t(". Kliknij przy innej osobie, aby przenieść tę samą resztę, albo ponownie przy wybranej, aby ją wycofać.")}</p>}
         </>}
       </div>
-      <p className="helper-text">{t("Nierozdzielona kwota pojawia się w wierszu „Przypisz”. Osobę bez telefonu autor wydarzenia może dodać jako uczestnika bez konta. Dodanie osoby nie zmienia już zapisanych podziałów.")}</p>
+      <p className="helper-text">{t("Nierozdzielona kwota pojawia się w wierszu „Przypisz”. Osobę bez telefonu autor wydarzenia może dodać jako uczestnika bez konta. Dodanie osoby nie zmienia już zapisanych podziałów.")}</p></>}
+      {item && !canEditSplits && <><p className="helper-text">{t("Edycja kwoty przeliczy podział procentowy. Udziały kwotowe pozostaną bez zmian, a różnica trafi do „Przypisz”. Jeśli suma udziałów przekroczy nową kwotę, autor pozycji musi poprawić podział przed zmianą kwoty.")}</p><div className="allocation-preview" aria-live="polite"><h4>{t("Podgląd podziału")}</h4>{calculation.error ? <p>{t(calculation.error)}</p> : <ul className="allocation-list">{calculation.splits.map(row => <li key={row.participantId}><span>{people.get(row.participantId)?.displayName || user.displayName}</span><strong>{money(row.amountMinor)}</strong></li>)}<li><span>{t("Przypisz")}</span><strong>{money(calculation.others)}</strong></li><li className="allocation-total"><span>{t("Razem")}</span><strong>{money(calculation.total)}</strong></li></ul>}</div></>}
       <div className="form-actions"><button className="primary-button" disabled={!!calculation.error}>{busy ? t("Zapisywanie…") : t("Zatwierdź")}</button><button type="button" className="text-button" onClick={onCancel}>{t("Anuluj")}</button></div>
     </fieldset>
     {error && !isNetworkError(error) && <p className="auth-error" role="alert">{t(error)}</p>}
@@ -121,13 +125,13 @@ export function Expenses({ ref, eventId, participants, user, isOwner, refresh, a
   }, [eventId, refresh, user.displayName])
   useEffect(() => () => onEditing(false), [onEditing])
   return <div className="event-expenses">
-    <div className="section-heading"><h3>{t("Pozycje wydarzenia")}</h3>{active && !creating && !editing && <button className="primary-button" onClick={() => { setCreating(true); onEditing(true) }}>{t("Dodaj pozycję")}</button>}</div>
+    <div className="section-heading"><h3>{t("Wydatki")}</h3>{active && !creating && !editing && <button className="primary-button" onClick={() => { setCreating(true); onEditing(true) }}>{t("Dodaj wydatek")}</button>}</div>
     {(creating || editing) && active && <CreateExpense key={editing?.id || 'new'} item={editing} eventId={eventId} participants={participants} user={user} isOwner={isOwner} onCancel={() => { setCreating(false); setEditing(null); onEditing(false) }} onCreated={item => { setItems(previous => [...(previous || []).filter(x => x.id !== item.id), item]); setCreating(false); setEditing(null); onEditing(false); onChanged() }} />}
     {error && !isNetworkError(error) && <p className="auth-error" role="alert">{t(error)}</p>}
     {!items && !error ? <p>{t("Wczytywanie pozycji…")}</p> : items?.length === 0 ? <p>{t("Nie ma jeszcze pozycji. Każdy uczestnik może dodać pierwszą.")}</p> : <ul className="expense-list">{items?.map(item => <li className="expense-card" key={item.id}>
       <details className="expense-breakdown"><summary><span className="expense-symbol" aria-hidden="true">▤</span><span><strong>{item.name}</strong><small>{t("Zapłacił(a):")} {item.payerName || item.authorName} <span className="payer-mark" title={t("Płacący")}>(P)</span></small><small>{item.splitMethod === 'Percentage' ? t("Podział procentowy") : t("Podział kwotowy")}{item.balanced ? t(" · Wyrównano") : ''}</small></span><strong>{money(item.amountMinor)}</strong><span aria-hidden="true" className="chevron">⌄</span></summary>
+      {active && !creating && !editing && (item.authorUserId === user.id || isOwner || item.paidByParticipantId === user.participantId) && <button type="button" className="text-button" onClick={() => { setEditing(item); onEditing(true) }}>{t("Edytuj wydatek")}</button>}
       <p className="helper-text">{t("Dodał(a):")} {item.authorName}</p>
-      {active && item.authorUserId === user.id && (!item.balanceParticipantId || isOwner || item.paidByParticipantId === user.participantId) && !creating && !editing && <button className="text-button" onClick={() => { setEditing(item); onEditing(true) }}>{t("Popraw podział")}</button>}
       <ul className="allocation-list">{item.splits.map(person => <li key={person.participantId}><span className="split-person"><PersonAvatar person={person} /><span>{person.displayName}{person.participantId === item.paidByParticipantId && <span className="payer-mark" title={t("Płacący")}>(P)</span>}{person.percentageBps != null && <small>{t("zadano")} {(person.percentageBps / 100).toLocaleString(getLocale())}%</small>}</span></span><span className="split-amount"><strong>{money(person.amountMinor)}</strong><BalanceButton name={person.displayName} selected={item.balanceParticipantId === person.participantId} disabled={!active || !!balancing || creating || !!editing || !(isOwner || item.paidByParticipantId === user.participantId) || !((item.othersAmountMinor || 0) + (item.balanceAmountMinor || 0) > 0)} onClick={() => balance(item, person.participantId)} /></span></li>)}<li><span>{t("Przypisz")}</span><strong>{money(item.othersAmountMinor)}</strong></li><li className="allocation-total"><span>{t("Razem")}</span><strong>{money(item.amountMinor)}</strong></li></ul>
       {item.balanceParticipantId && <p className="helper-text">{t("Wyrównanie")} {money(item.balanceAmountMinor)}: {item.splits.find(person => person.participantId === item.balanceParticipantId)?.displayName}{t(". Podświetlony przycisk wskazuje wybraną osobę.")}</p>}
       {item.balanced && !item.balanceParticipantId && <p className="helper-text">{t("Pozycja została wyrównana w starszej wersji aplikacji. Zapisane kwoty pozostają bez zmian; aby wybrać osobę do nowego wyrównania, autor pozycji musi najpierw poprawić podział.")}</p>}

@@ -21,7 +21,11 @@ public sealed class ExpensesController(IExpenseService expenses, PublicIds ids) 
     public async Task<IActionResult> UpdateSplit(Guid eventId, Guid expenseId, PublicUpdateExpenseSplit input, CancellationToken ct)
         => Ok(await expenses.UpdateSplitAsync(await ids.ResolveAsync<Event>(eventId, ct), await ids.ResolveAsync<Expense>(expenseId, ct),
             new UpdateExpenseSplitDto(input.SplitMethod, await ids.SharesAsync(input.Shares, ct), input.Balance, input.RowVersion,
-                await ids.ParticipantAsync(input.BalanceParticipantId, ct)), ct));
+                await ids.ParticipantAsync(input.BalanceParticipantId, ct), input.Name, input.AmountMinor), ct));
+    [HttpPut("{expenseId:guid}/details")]
+    public async Task<IActionResult> UpdateDetails(Guid eventId, Guid expenseId, PublicUpdateExpenseDetails input, CancellationToken ct)
+        => Ok(await expenses.UpdateDetailsAsync(await ids.ResolveAsync<Event>(eventId, ct), await ids.ResolveAsync<Expense>(expenseId, ct),
+            new UpdateExpenseDetailsDto(input.Name, input.AmountMinor, input.RowVersion), ct));
     [HttpPut("{expenseId:guid}/balance")]
     public async Task<IActionResult> UpdateBalance(Guid eventId, Guid expenseId, PublicUpdateExpenseBalance input, CancellationToken ct)
         => Ok(await expenses.UpdateBalanceAsync(await ids.ResolveAsync<Event>(eventId, ct), await ids.ResolveAsync<Expense>(expenseId, ct),
