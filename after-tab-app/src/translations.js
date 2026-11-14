@@ -67,7 +67,7 @@ export const english = {
   'Pobierz aplikację Android (APK)': 'Download the Android app (APK)',
   'Pobierz APK': 'Download APK',
   'Anuluj': 'Cancel', 'Autor': 'Owner', 'Autor:': 'Owner:', 'Bez konta': 'No account',
-  'Do oddania': 'You owe', 'Do otrzymania': 'You are owed', 'Dodaj': 'Add',
+  'Do oddania': 'You owe', 'Do otrzymania': 'You are owed', 'Zostało': 'Remaining', 'Dodaj': 'Add',
   'Dodał(a):': 'Added by:',
   'Dołącz do wydarzenia': 'Join event', 'Dołącz do wydarzenia w AfterTab': 'Join an event in AfterTab',
   'Dołącz linkiem lub kodem': 'Join with a link or code', 'Dołączanie…': 'Joining…',

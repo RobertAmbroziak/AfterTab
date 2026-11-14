@@ -165,8 +165,13 @@ function EventDetails({ id, knownToken, onToken, user }) {
   }
   if (!details) return <section className="workspace"><p>{error && !isNetworkError(error) ? t(error) : t("Wczytywanie wydarzenia…")}</p><button className="secondary-button" onClick={showEvents}>{t("Moje wydarzenia")}</button></section>
   const eventUser = { ...user, participantId: details.participants.find(person => person.userId === user.id)?.participantId }
-  const outgoing = summary?.transfers.filter(row => row.fromParticipantId === eventUser.participantId && !row.acknowledgement?.sent).reduce((sum, row) => sum + row.amountMinor, 0) || 0
-  const incoming = summary?.transfers.filter(row => row.toParticipantId === eventUser.participantId && !row.acknowledgement?.received).reduce((sum, row) => sum + row.amountMinor, 0) || 0
+  const outgoingTransfers = summary?.transfers.filter(row => row.fromParticipantId === eventUser.participantId) || []
+  const incomingTransfers = summary?.transfers.filter(row => row.toParticipantId === eventUser.participantId) || []
+  const outgoingTotal = outgoingTransfers.reduce((sum, row) => sum + row.amountMinor, 0)
+  const incomingTotal = incomingTransfers.reduce((sum, row) => sum + row.amountMinor, 0)
+  const outgoing = outgoingTransfers.filter(row => !row.acknowledgement?.sent).reduce((sum, row) => sum + row.amountMinor, 0)
+  const incoming = incomingTransfers.filter(row => !row.acknowledgement?.received).reduce((sum, row) => sum + row.amountMinor, 0)
+  const balanceTone = outgoing > 0 ? 'is-due' : incoming > 0 ? 'is-incoming' : 'is-settled'
   return <section className={`event-page tab-${tab}`} aria-label={t("Szczegóły wydarzenia")}>
     <div className="event-hero">
     <div className="section-heading"><button className="text-button" onClick={showEvents}>{t("← Moje wydarzenia")}</button><button className="text-button" onClick={() => { setError(''); setRefresh(x => x + 1) }}>{t("Odśwież")}</button></div>
@@ -180,7 +185,17 @@ function EventDetails({ id, knownToken, onToken, user }) {
     <ul className="participant-list">{details.participants.map(person => <li key={person.participantId}><PersonAvatar person={person} /><span>{person.displayName}</span>{person.isOwner && <span className="badge">{t("Autor")}</span>}{person.isVirtual && <span className="badge virtual-badge">{t("Bez konta")}</span>}</li>)}</ul>
     <div className="event-stats"><div><span>{t("Łączne wydatki")}</span><strong>{summary ? money(summary.totalMinor, details.event.currency) : '—'}</strong></div><div><span>{t("Pozycje")}</span><strong>{summary?.expenseCount ?? '—'}</strong></div><div><span>{t("Uczestnicy")}</span><strong>{details.participants.length}</strong></div></div>
     </div>
-    <div className="personal-balance"><span>{outgoing > 0 ? t("Do oddania") : incoming > 0 ? t("Do otrzymania") : t("Twoje przelewy")}</span><strong>{summary ? money(outgoing > 0 ? outgoing : incoming, details.event.currency) : '—'}</strong><small>{summary?.isFinal ? t("Na podstawie zatwierdzonego rozliczenia i Twoich oznaczeń.") : t("Na podstawie bieżącego rozliczenia.")}</small></div>
+    <div className="personal-balance">
+      <div className="personal-balance-main">
+        <span>{outgoing > 0 ? t("Do oddania") : incoming > 0 ? t("Do otrzymania") : t("Twoje przelewy")}</span>
+        <strong className={balanceTone}>{summary ? money(outgoing > 0 ? outgoing : incoming, details.event.currency) : '—'}</strong>
+        <small>{summary?.isFinal ? t("Na podstawie zatwierdzonego rozliczenia i Twoich oznaczeń.") : t("Na podstawie bieżącego rozliczenia.")}</small>
+      </div>
+      <div className="personal-balance-breakdown">
+        <div><span>{t("Do oddania")}</span><span className="personal-balance-values"><strong>{summary ? money(outgoingTotal, details.event.currency) : '—'}</strong><small>{t("Zostało")}</small><strong>{summary ? money(outgoing, details.event.currency) : '—'}</strong></span></div>
+        <div><span>{t("Do otrzymania")}</span><span className="personal-balance-values"><strong>{summary ? money(incomingTotal, details.event.currency) : '—'}</strong><small>{t("Zostało")}</small><strong>{summary ? money(incoming, details.event.currency) : '—'}</strong></span></div>
+      </div>
+    </div>
     <div className="event-tabs" role="tablist" aria-label={t("Widok wydarzenia")}><button role="tab" aria-selected={tab === 'participants'} aria-controls="participants-panel" id="participants-tab" onClick={() => setTab('participants')}><EventTabIcon name="participants" /><span>{t("Uczestnicy")}</span></button><button role="tab" aria-selected={tab === 'expenses'} aria-controls="expenses-panel" id="expenses-tab" onClick={() => setTab('expenses')}><EventTabIcon name="expenses" /><span>{t("Wydatki")}</span></button><button role="tab" aria-selected={tab === 'settlement'} aria-controls="settlement-panel" id="settlement-tab" onClick={() => setTab('settlement')}><EventTabIcon name="settlement" /><span>{t("Rozliczenia")}</span></button></div>
     <div className="event-columns">
       <div id="participants-panel" className="participants-panel" role="tabpanel" aria-labelledby="participants-tab" hidden={tab !== 'participants'}>
