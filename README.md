@@ -31,7 +31,10 @@ Przy pierwszej wizycie główny język przeglądarki wybiera PL dla polskiego, a
 pozostałych języków; przy braku informacji używany jest PL. Ręczny wybór jest
 zapamiętywany na tym urządzeniu i ma pierwszeństwo przy kolejnych wizytach.
 Zmiana języka nie wylogowuje, nie usuwa zaproszenia i nie czyści formularzy.
-Kwoty pozostają w PLN; format liczb i dat dopasowuje się do języka.
+Nowe wydarzenia domyślnie używają PLN; przy tworzeniu lub edycji można wybrać USD,
+EUR, GBP, CNY, CHF albo brak waluty. Kwoty są formatowane według języka;
+przy pustej walucie wyświetlana jest sama liczba. Kwoty mają dokładność do dwóch
+miejsc po przecinku; zmiana waluty nie przelicza zapisanych już wartości.
 
 Strony prywatności, usuwania danych i zasad korzystania mają obie wersje pod
 dotychczasowymi adresami. Parametr `?lang=pl` lub `?lang=en` wskazuje wersję.

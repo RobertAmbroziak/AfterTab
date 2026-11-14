@@ -13,6 +13,7 @@ namespace AfterTab.BL.Services.Events;
 
 public sealed class EventService(IEventRepository events, IUserRepository users, ICurrentUser actor, TimeProvider clock) : IEventService
 {
+    private static readonly HashSet<string> SupportedCurrencies = ["", "PLN", "USD", "EUR", "GBP", "CNY", "CHF"];
     private async Task<long> ActorAsync(bool requireName, CancellationToken ct)
     {
         var user = actor.UserId is long id ? await users.GetByIdAsync(id, ct) : null;
@@ -47,7 +48,10 @@ public sealed class EventService(IEventRepository events, IUserRepository users,
         var name = input.Name?.Trim();
         if (string.IsNullOrEmpty(name) || name.Length > 150 || name.Any(char.IsControl))
             throw new AppException(ErrorKind.Validation, "Nazwa wydarzenia musi mieć od 1 do 150 znaków.");
-        await events.RenameAsync(id, userId, name, ct);
+        var current = await events.GetAsync(id, ct) ?? throw new AppException(ErrorKind.NotFound, "Nie znaleziono wydarzenia.");
+        var currency = input.Currency ?? current.Event.Currency;
+        ValidateCurrency(currency);
+        await events.RenameAsync(id, userId, name, currency, ct);
         return await GetAsync(id, ct);
     }
     public async Task<CreatedEventDto> CreateAsync(CreateEventDto input, CancellationToken ct)
@@ -58,7 +62,9 @@ public sealed class EventService(IEventRepository events, IUserRepository users,
         if (string.IsNullOrEmpty(name) || name.Length > 150 || name.Any(char.IsControl))
             throw new AppException(ErrorKind.Validation, "Nazwa wydarzenia musi mieć od 1 do 150 znaków.");
         if (description?.Length > 2000) throw new AppException(ErrorKind.Validation, "Opis może mieć najwyżej 2000 znaków.");
-        var ev = new Event { Name = name, Description = description, Currency = "PLN", OwnerUserId = userId };
+        var currency = input.Currency;
+        ValidateCurrency(currency);
+        var ev = new Event { Name = name, Description = description, Currency = currency, OwnerUserId = userId };
         var token = Secret();
         await events.CreateAsync(ev, new EventParticipant { EventId = ev.Id, UserId = userId, JoinedAtUtc = clock.GetUtcNow() },
             new EventInvite { EventId = ev.Id, TokenHash = Hash(token) }, ct);
@@ -112,6 +118,11 @@ public sealed class EventService(IEventRepository events, IUserRepository users,
     private static string ValidateToken(string? token)
         => token is { Length: 64 } && token.All(Uri.IsHexDigit) ? Hash(token.ToUpperInvariant())
             : throw new AppException(ErrorKind.NotFound, "Nieprawidłowy link lub kod zaproszenia.");
+    private static void ValidateCurrency(string? currency)
+    {
+        if (currency is null || !SupportedCurrencies.Contains(currency))
+            throw new AppException(ErrorKind.Validation, "Wybierz obsługiwaną walutę.");
+    }
     private static string Secret() => Convert.ToHexString(RandomNumberGenerator.GetBytes(32));
     private static string Hash(string token) => Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(token)));
 }

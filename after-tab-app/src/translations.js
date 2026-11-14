@@ -2,6 +2,13 @@ import { backendEnglish } from './backendMessages.js'
 // Polish source messages are stable keys. Never pass user-created content to t().
 export const english = {
   ...backendEnglish,
+  'Waluta': 'Currency',
+  'Bez waluty': 'No currency',
+  'Kwota pozycji': 'Expense amount',
+  'Zapisz zmiany': 'Save changes',
+  'Edytuj nazwę i walutę wydarzenia': 'Edit event name and currency',
+  'Zmiana waluty nie przeliczy istniejących wydatków. Ich zapisane wartości zostaną potraktowane jako kwoty w nowej walucie. Kontynuować?': 'Changing the currency will not convert existing expenses. Their saved values will be treated as amounts in the new currency. Continue?',
+  'Podaj dodatnią kwotę (najwyżej dwa miejsca po przecinku), do 1 000 000 000 jednostek waluty.': 'Enter a positive amount with up to two decimal places, no more than 1,000,000,000 currency units.',
   'Edytuj nazwę wydarzenia': 'Edit event name',
   'Edytuj nazwę i kwotę': 'Edit name and amount',
   'Edytuj wydatek': 'Edit expense', '＋ Dodaj wydatek': '＋ Add expense',
