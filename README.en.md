@@ -32,9 +32,12 @@ Use **PL / EN** in the header to change language without signing out, losing an
 invitation or clearing a form. On the first visit, the browser's primary language
 selects Polish for Polish settings and English for other languages. If no language
 is available, Polish is used. Your manual choice is remembered on the device and
-takes priority on later visits. Amounts remain in PLN; number and date formatting
-follows the selected language. Event names, descriptions and participant names are
-user content and are not translated.
+takes priority on later visits. New events default to PLN; when creating or editing
+an event, you can choose USD, EUR, GBP, CNY, CHF or no currency. Amounts follow
+the selected language's number formatting; when currency is blank, only the number
+is shown. Amounts use two decimal places, and changing an event's
+currency does not convert saved values. Event names, descriptions and participant
+names are user content and are not translated.
 
 Privacy, data deletion and terms pages contain both languages at their original
 URLs. `?lang=pl` and `?lang=en` select a version. Without JavaScript, both complete

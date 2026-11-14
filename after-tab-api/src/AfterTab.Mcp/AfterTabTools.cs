@@ -74,12 +74,12 @@ public sealed class AfterTabTools(IAfterTabMcpApplication app, IMcpWriteStore wr
 
     [McpServerTool(Name = "preview_expense", ReadOnly = true, OpenWorld = false),
      McpMeta("securitySchemes", JsonValue = ReadSecurity),
-     Description("Calculate a proposed split without saving. Money uses integer grosze: 100 PLN = 10000. splitMethod is Amount or Percentage. Percentage shares use basis points: 33% = 3300, with amountMinor=0. Amount shares use grosze with percentageBps=0. Optional balanceParticipantId must be in shares and receives only the remainder. Verify participants and totals before creating an expense.")]
+     Description("Calculate a proposed split without saving. Money uses integer hundredths of the event currency unit: 100 currency units = 10000. splitMethod is Amount or Percentage. Percentage shares use basis points: 33% = 3300, with amountMinor=0. Amount shares use hundredths of the event currency unit with percentageBps=0. Optional balanceParticipantId must be in shares and receives only the remainder. Verify participants and totals before creating an expense.")]
     public Task<CallToolResult> PreviewExpense(Guid eventId, ExpenseInput expense, CancellationToken ct) => Read(() => app.PreviewExpenseAsync(eventId, expense, ct));
 
     [McpServerTool(Name = "create_expense", ReadOnly = false, Destructive = false, Idempotent = true, OpenWorld = false),
      McpMeta("securitySchemes", JsonValue = WriteSecurity),
-     Description("Save a named expense and its shares atomically in an open event. Use preview_expense first. Money is integer grosze, percentageBps is 1/100 percent. Optional balanceParticipantId explicitly receives the unallocated remainder; null leaves it unassigned. Payer defaults to the author; only the event owner can choose another payer. Fresh operationId per intended expense; reuse exactly for retries.")]
+     Description("Save a named expense and its shares atomically in an open event. Use preview_expense first. Money uses integer hundredths of the event currency unit; percentageBps is 1/100 percent. Optional balanceParticipantId explicitly receives the unallocated remainder; null leaves it unassigned. Payer defaults to the author; only the event owner can choose another payer. Fresh operationId per intended expense; reuse exactly for retries.")]
     public Task<CallToolResult> CreateExpense(Guid operationId, Guid eventId, ExpenseInput expense, CancellationToken ct)
         => Write(operationId, "create_expense", new { eventId, expense }, () => app.CreateExpenseAsync(eventId, expense, ct), ct, eventId);
 

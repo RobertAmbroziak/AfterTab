@@ -106,6 +106,7 @@ details:not(.expense-breakdown)[open] > summary::before { transform: rotate(90de
 .icon-button:hover { border-color: var(--mint); }
 .event-name-form { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; width: min(100%, 620px); }
 .event-name-form input { flex: 1 1 220px; min-width: 0; }
+.event-name-form select { flex: 0 0 150px; width: auto; }
 .event-hero { position: relative; padding-right: 440px; min-height: 230px; }
 .event-hero > .section-heading { margin-right: -416px; }
 .event-stats { display: grid; grid-template-columns: 1.4fr 1fr 1fr; gap: 10px; }

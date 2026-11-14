@@ -10,6 +10,8 @@ import { focusAndReveal } from './focusAndReveal'
 import { isNetworkError } from './networkStatus'
 
 function ErrorMessage({ error }) { return error && !isNetworkError(error) ? <p className="auth-error" role="alert">{t(error)}</p> : null }
+const currencies = ['', 'PLN', 'USD', 'EUR', 'GBP', 'CNY', 'CHF']
+function CurrencyOptions() { return <>{currencies.map(currency => <option key={currency || 'none'} value={currency}>{currency || t("Bez waluty")}</option>)}</> }
 
 function EventTabIcon({ name }) {
   return <svg className="event-tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" focusable="false">
@@ -85,7 +87,7 @@ function CreateEvent({ onCreated, onCancel }) {
     const fields = new FormData(event.currentTarget)
     lock.current = true; setBusy(true); setError('')
     try {
-      const result = await api('events', { method: 'POST', body: { name: fields.get('name').trim(), description: fields.get('description').trim() } })
+      const result = await api('events', { method: 'POST', body: { name: fields.get('name').trim(), description: fields.get('description').trim(), currency: fields.get('currency') } })
       onCreated(result)
     } catch (reason) { setError(reason.message) }
     finally { lock.current = false; setBusy(false) }
@@ -93,6 +95,7 @@ function CreateEvent({ onCreated, onCancel }) {
   return <form className="app-form" onSubmit={submit}>
     <h2>{t("Utwórz wydarzenie")}</h2>
     <label>{t("Nazwa wydarzenia")}<input ref={nameInput} name="name" required maxLength={150} placeholder={t("Np. Pizza w piątek")} /></label>
+    <label>{t("Waluta")}<select name="currency" defaultValue="PLN"><CurrencyOptions /></select></label>
     <label>{t("Opis (opcjonalnie)")}<textarea name="description" maxLength={2000} rows={3} /></label>
     <div className="form-actions"><button className="primary-button" disabled={busy}>{busy ? t("Tworzenie…") : t("Utwórz i wygeneruj zaproszenie")}</button><button type="button" className="secondary-button" onClick={onCancel} disabled={busy}>{t("Anuluj")}</button></div>
     <ErrorMessage error={error} />
@@ -108,6 +111,7 @@ function EventDetails({ id, knownToken, onToken, user }) {
   const [editing, setEditing] = useState(false)
   const [editingEventName, setEditingEventName] = useState(false)
   const [eventName, setEventName] = useState('')
+  const [eventCurrency, setEventCurrency] = useState('PLN')
   const [eventNameError, setEventNameError] = useState('')
   const [savingEventName, setSavingEventName] = useState(false)
   const [summary, setSummary] = useState(null)
@@ -151,9 +155,10 @@ function EventDetails({ id, knownToken, onToken, user }) {
   async function saveEventName(event) {
     event.preventDefault()
     if (savingEventName) return
+    if (eventCurrency !== details.event.currency && !window.confirm(t("Zmiana waluty nie przeliczy istniejących wydatków. Ich zapisane wartości zostaną potraktowane jako kwoty w nowej walucie. Kontynuować?"))) return
     setSavingEventName(true); setEventNameError('')
     try {
-      const value = await api(`events/${id}`, { method: 'PUT', body: { name: eventName.trim() } })
+      const value = await api(`events/${id}`, { method: 'PUT', body: { name: eventName.trim(), currency: eventCurrency } })
       setDetails(value); setEditingEventName(false)
     } catch (reason) { setEventNameError(reason.message) }
     finally { setSavingEventName(false) }
@@ -166,16 +171,16 @@ function EventDetails({ id, knownToken, onToken, user }) {
     <div className="event-hero">
     <div className="section-heading"><button className="text-button" onClick={showEvents}>{t("← Moje wydarzenia")}</button><button className="text-button" onClick={() => { setError(''); setRefresh(x => x + 1) }}>{t("Odśwież")}</button></div>
     <div className="event-title">{editingEventName
-      ? <form className="event-name-form" onSubmit={saveEventName}><label className="sr-only" htmlFor="event-name-edit">{t("Nazwa wydarzenia")}</label><input id="event-name-edit" autoFocus required maxLength={150} value={eventName} onChange={event => setEventName(event.target.value)} /><button className="icon-button" disabled={savingEventName} aria-label={t("Zapisz nazwę")}>✓</button><button type="button" className="icon-button" onClick={() => setEditingEventName(false)} aria-label={t("Anuluj")}>×</button>{eventNameError && <ErrorMessage error={eventNameError} />}</form>
-      : <><h2>{details.event.name}</h2>{details.event.isOwner && details.event.status === 'Active' && <button type="button" className="icon-button" title={t("Edytuj nazwę wydarzenia")} aria-label={t("Edytuj nazwę wydarzenia")} onClick={() => { setEventName(details.event.name); setEditingEventName(true); setEventNameError('') }}>✎</button>}{details.event.isOwner && <span className="badge">{t("Twoje wydarzenie")}</span>}</>}</div>
+      ? <form className="event-name-form" onSubmit={saveEventName}><label className="sr-only" htmlFor="event-name-edit">{t("Nazwa wydarzenia")}</label><input id="event-name-edit" autoFocus required maxLength={150} value={eventName} onChange={event => setEventName(event.target.value)} /><label className="sr-only" htmlFor="event-currency-edit">{t("Waluta")}</label><select id="event-currency-edit" value={eventCurrency} onChange={event => setEventCurrency(event.target.value)}><CurrencyOptions /></select><button className="icon-button" disabled={savingEventName} aria-label={t("Zapisz zmiany")}>✓</button><button type="button" className="icon-button" onClick={() => setEditingEventName(false)} aria-label={t("Anuluj")}>×</button>{eventNameError && <ErrorMessage error={eventNameError} />}</form>
+      : <><h2>{details.event.name}</h2>{details.event.isOwner && details.event.status === 'Active' && <button type="button" className="icon-button" title={t("Edytuj nazwę i walutę wydarzenia")} aria-label={t("Edytuj nazwę i walutę wydarzenia")} onClick={() => { setEventName(details.event.name); setEventCurrency(details.event.currency || ''); setEditingEventName(true); setEventNameError('') }}>✎</button>}{details.event.isOwner && <span className="badge">{t("Twoje wydarzenie")}</span>}</>}</div>
     <p className="event-meta">{t("Autor:")} {details.event.ownerName}{details.event.isOwner ? t(" · Twoje wydarzenie") : ''}</p>
     {details.event.status !== 'Active' && <p className="settlement-warning">{t("Wydarzenie zamknięte — edycja nazwy i wydatków, dodawanie pozycji, zmiana podziałów i dołączanie są zablokowane.")}</p>}
     {details.event.description && <p className="event-description">{details.event.description}</p>}
     <h3 className="sr-only">{t("Uczestnicy (")}{details.participants.length})</h3>
     <ul className="participant-list">{details.participants.map(person => <li key={person.participantId}><PersonAvatar person={person} /><span>{person.displayName}</span>{person.isOwner && <span className="badge">{t("Autor")}</span>}{person.isVirtual && <span className="badge virtual-badge">{t("Bez konta")}</span>}</li>)}</ul>
-    <div className="event-stats"><div><span>{t("Łączne wydatki")}</span><strong>{summary ? money(summary.totalMinor) : '—'}</strong></div><div><span>{t("Pozycje")}</span><strong>{summary?.expenseCount ?? '—'}</strong></div><div><span>{t("Uczestnicy")}</span><strong>{details.participants.length}</strong></div></div>
+    <div className="event-stats"><div><span>{t("Łączne wydatki")}</span><strong>{summary ? money(summary.totalMinor, details.event.currency) : '—'}</strong></div><div><span>{t("Pozycje")}</span><strong>{summary?.expenseCount ?? '—'}</strong></div><div><span>{t("Uczestnicy")}</span><strong>{details.participants.length}</strong></div></div>
     </div>
-    <div className="personal-balance"><span>{outgoing > 0 ? t("Do oddania") : incoming > 0 ? t("Do otrzymania") : t("Twoje przelewy")}</span><strong>{summary ? money(outgoing > 0 ? outgoing : incoming) : '—'}</strong><small>{summary?.isFinal ? t("Na podstawie zatwierdzonego rozliczenia i Twoich oznaczeń.") : t("Na podstawie bieżącego rozliczenia.")}</small></div>
+    <div className="personal-balance"><span>{outgoing > 0 ? t("Do oddania") : incoming > 0 ? t("Do otrzymania") : t("Twoje przelewy")}</span><strong>{summary ? money(outgoing > 0 ? outgoing : incoming, details.event.currency) : '—'}</strong><small>{summary?.isFinal ? t("Na podstawie zatwierdzonego rozliczenia i Twoich oznaczeń.") : t("Na podstawie bieżącego rozliczenia.")}</small></div>
     <div className="event-tabs" role="tablist" aria-label={t("Widok wydarzenia")}><button role="tab" aria-selected={tab === 'participants'} aria-controls="participants-panel" id="participants-tab" onClick={() => setTab('participants')}><EventTabIcon name="participants" /><span>{t("Uczestnicy")}</span></button><button role="tab" aria-selected={tab === 'expenses'} aria-controls="expenses-panel" id="expenses-tab" onClick={() => setTab('expenses')}><EventTabIcon name="expenses" /><span>{t("Wydatki")}</span></button><button role="tab" aria-selected={tab === 'settlement'} aria-controls="settlement-panel" id="settlement-tab" onClick={() => setTab('settlement')}><EventTabIcon name="settlement" /><span>{t("Rozliczenia")}</span></button></div>
     <div className="event-columns">
       <div id="participants-panel" className="participants-panel" role="tabpanel" aria-labelledby="participants-tab" hidden={tab !== 'participants'}>
@@ -189,8 +194,8 @@ function EventDetails({ id, knownToken, onToken, user }) {
           <p role="status">{t(message)}</p>
         </details>}
       </div>
-      <div id="expenses-panel" className="expenses-panel" role="tabpanel" aria-labelledby="expenses-tab" hidden={tab !== 'expenses'}><Expenses ref={expenseActions} key={`${id}-${details.event.status}`} eventId={id} participants={details.participants} user={eventUser} isOwner={details.event.isOwner} refresh={refresh} active={details.event.status === 'Active'} onChanged={() => setRefresh(value => value + 1)} onEditing={setEditing} /></div>
-      <div id="settlement-panel" className="settlement-panel" role="tabpanel" aria-labelledby="settlement-tab" hidden={tab !== 'settlement'}><Settlement eventId={id} user={eventUser} isOwner={details.event.isOwner} refresh={refresh} onData={setSummary} onChanged={() => { setEditing(false); setRefresh(value => value + 1) }} editing={editing} /></div>
+      <div id="expenses-panel" className="expenses-panel" role="tabpanel" aria-labelledby="expenses-tab" hidden={tab !== 'expenses'}><Expenses ref={expenseActions} key={`${id}-${details.event.status}`} eventId={id} currency={details.event.currency} participants={details.participants} user={eventUser} isOwner={details.event.isOwner} refresh={refresh} active={details.event.status === 'Active'} onChanged={() => setRefresh(value => value + 1)} onEditing={setEditing} /></div>
+      <div id="settlement-panel" className="settlement-panel" role="tabpanel" aria-labelledby="settlement-tab" hidden={tab !== 'settlement'}><Settlement eventId={id} currency={details.event.currency} user={eventUser} isOwner={details.event.isOwner} refresh={refresh} onData={setSummary} onChanged={() => { setEditing(false); setRefresh(value => value + 1) }} editing={editing} /></div>
     </div>
     {tab === 'expenses' && details.event.status === 'Active' && !editing && <button className="primary-button mobile-add" onClick={() => { expenseActions.current?.add(); document.getElementById('expenses-panel')?.scrollIntoView({ behavior: 'smooth', block: 'start' }) }}>{t("＋ Dodaj wydatek")}</button>}
     <ErrorMessage error={error} />
