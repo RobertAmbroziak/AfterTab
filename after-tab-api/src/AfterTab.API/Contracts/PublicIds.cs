@@ -111,7 +111,8 @@ public sealed record PublicExpenseShare(Guid ParticipantId, long AmountMinor = 0
 public sealed record PublicCreateExpense(string Name, long AmountMinor, string SplitMethod,
     IReadOnlyList<PublicExpenseShare> Shares, bool Balance = false, Guid? PaidByParticipantId = null, Guid? BalanceParticipantId = null);
 public sealed record PublicUpdateExpenseSplit(string SplitMethod, IReadOnlyList<PublicExpenseShare> Shares,
-    bool Balance, string RowVersion, Guid? BalanceParticipantId = null);
+    bool Balance, string RowVersion, Guid? BalanceParticipantId = null, string? Name = null, long? AmountMinor = null);
+public sealed record PublicUpdateExpenseDetails(string Name, long AmountMinor, string RowVersion);
 public sealed record PublicUpdateExpensePayer(Guid PaidByParticipantId, string RowVersion);
 public sealed record PublicUpdateExpenseBalance(Guid? ParticipantId, string RowVersion);
 public sealed record PublicLinkParticipant(Guid TargetParticipantId);

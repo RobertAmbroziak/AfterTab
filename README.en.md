@@ -275,19 +275,20 @@ the app. People are never merged automatically by name.
 
 ### Expenses and splits
 
-Add an expense name and amount. The event owner can select another participant as
-the payer; otherwise the author is the payer. Choose who shares the expense and
-split it by amount or percentage. Values accept a decimal comma or dot, with up
-to two decimal places. The preview shows allocated shares, the amount in the **Assign**
-row and the total.
+Choose **Add expense** and enter a name and amount. The event owner can select
+another participant as the payer; otherwise the author is the payer. Choose who
+shares the expense and split it by amount or percentage. Values accept a decimal
+comma or dot, with up to two decimal places. The preview shows allocated shares,
+the amount in the **Assign** row and the total.
 
 An unallocated amount appears in the **Assign** row. **Assign remainder** allocates it to a
 selected person included in the split. Selecting another person moves the same
 remainder; selecting the current person again removes the assignment. Changing
 the amount, shares, selected people or split method clears the pending remainder
 selection. Saved remainder assignments can be changed by the payer or event owner.
-The expense author can edit its split subject to permissions; the owner can change
-the payer without changing authorship. Concurrent edits require refreshing data.
+Open a saved expense and choose **Edit expense** while the event is open. Its author
+can edit the name, amount and split; the payer or event owner can edit the name and
+amount. Concurrent edits require refreshing data.
 
 ### Settlements and payment marks
 

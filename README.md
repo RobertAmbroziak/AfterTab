@@ -291,7 +291,7 @@ wcześniejsze płatności nadal nie są automatycznie odliczane od nowego planu.
 
 ### Dodawanie wydatków
 
-1. W wydarzeniu wybierz **Dodaj pozycję** i podaj nazwę oraz kwotę w złotych.
+1. W wydarzeniu wybierz **Dodaj wydatek** i podaj nazwę oraz kwotę w złotych.
 2. Wybierz osoby do podziału przez ich kolorowe ikonki.
 3. Ustal podział **Procentowo** lub **Kwotowo**. Domyślne procenty są równe
    dla zaznaczonych osób, np. 33%, 50% lub 25%, i można je ręcznie zmienić.
@@ -327,9 +327,10 @@ w pozycji dodanej przez inną osobę; nie uzyskują przez to prawa do dowolnej e
 jej udziałów. Gdy formularz pozycji jest otwarty, przyciski przy zapisanych pozycjach
 są zablokowane do jego zatwierdzenia lub anulowania.
 
-Szczegóły pozycji są rozwijane. Jej autor może wybrać **Popraw podział**, dopóki
-wydarzenie jest otwarte. Dołączenie nowych osób nie zmienia wcześniejszych podziałów
-automatycznie.
+Szczegóły pozycji są rozwijane. W otwartym wydarzeniu autor może wybrać
+**Edytuj wydatek**, aby zmienić nazwę, kwotę i podział. Płacący lub autor wydarzenia
+może zmienić nazwę i kwotę. Dołączenie nowych osób nie zmienia wcześniejszych
+podziałów automatycznie.
 
 ### Rozliczenie i płatności
 

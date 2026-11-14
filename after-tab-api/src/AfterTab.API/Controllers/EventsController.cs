@@ -23,6 +23,9 @@ public sealed class EventsController(IEventService events, PublicIds ids, AppDbC
     }
     [HttpGet("{id:guid}")]
     public async Task<IActionResult> Get(Guid id, CancellationToken ct) => Ok(await events.GetAsync(await ids.ResolveAsync<Event>(id, ct), ct));
+    [HttpPut("{id:guid}")]
+    public async Task<IActionResult> Rename(Guid id, UpdateEventNameDto input, CancellationToken ct)
+        => Ok(await events.RenameAsync(await ids.ResolveAsync<Event>(id, ct), input, ct));
     [HttpPost]
     public async Task<IActionResult> Create(CreateEventDto input, CancellationToken ct)
     {

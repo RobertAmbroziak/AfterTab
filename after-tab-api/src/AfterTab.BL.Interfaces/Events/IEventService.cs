@@ -6,6 +6,7 @@ public interface IEventService
 {
     Task<EventPageDto> ListAsync(int page, CancellationToken ct);
     Task<EventDetailsDto> GetAsync(long id, CancellationToken ct);
+    Task<EventDetailsDto> RenameAsync(long id, UpdateEventNameDto input, CancellationToken ct);
     Task<EventDetailsDto> AddVirtualAsync(long id, VirtualParticipantDto input, CancellationToken ct);
     Task<EventDetailsDto> RenameVirtualAsync(long id, long participantId, VirtualParticipantDto input, CancellationToken ct);
     Task<EventDetailsDto> RemoveVirtualAsync(long id, long participantId, CancellationToken ct);

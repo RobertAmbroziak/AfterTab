@@ -8,6 +8,7 @@ public interface IEventRepository
 {
     Task<(IReadOnlyList<EventReadModel> Items, int TotalCount)> ListAsync(long userId, int page, CancellationToken ct);
     Task<EventReadModel?> GetAsync(long id, CancellationToken ct);
+    Task RenameAsync(long eventId, long ownerId, string name, CancellationToken ct);
     Task<bool> IsMemberAsync(long eventId, long userId, CancellationToken ct);
     Task<IReadOnlyList<ExpenseParticipant>> ParticipantsAsync(long eventId, CancellationToken ct);
     Task AddVirtualAsync(long eventId, long ownerId, string name, DateTimeOffset now, CancellationToken ct);

@@ -41,6 +41,15 @@ public sealed class EventService(IEventRepository events, IUserRepository users,
         return new(Summary(data, userId), participants.Select(x => new EventMemberDto(x.Participant.Id, x.DisplayName, x.Participant.UserId == data.Event.OwnerUserId, x.Participant.UserId))
             .OrderByDescending(x => x.IsOwner).ThenBy(x => x.DisplayName).ToList());
     }
+    public async Task<EventDetailsDto> RenameAsync(long id, UpdateEventNameDto input, CancellationToken ct)
+    {
+        var userId = await ActorAsync(true, ct);
+        var name = input.Name?.Trim();
+        if (string.IsNullOrEmpty(name) || name.Length > 150 || name.Any(char.IsControl))
+            throw new AppException(ErrorKind.Validation, "Nazwa wydarzenia musi mieć od 1 do 150 znaków.");
+        await events.RenameAsync(id, userId, name, ct);
+        return await GetAsync(id, ct);
+    }
     public async Task<CreatedEventDto> CreateAsync(CreateEventDto input, CancellationToken ct)
     {
         var userId = await ActorAsync(true, ct);
