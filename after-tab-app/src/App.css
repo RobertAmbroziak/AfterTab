@@ -119,9 +119,18 @@ details:not(.expense-breakdown)[open] > summary::before { transform: rotate(90de
 .participant-list { display: flex; flex-wrap: wrap; gap: 8px; margin: 16px 0 0; }
 .participant-list li, .person-chip { display: flex; align-items: center; gap: 9px; border: 1px solid var(--line); border-radius: 28px; padding: 6px 12px 6px 6px; min-width: 0; max-width: 100%; }
 .participant-list .badge { padding: 2px 6px; font-size: 11px; }
-.personal-balance { display: grid; grid-template-columns: 1fr auto; gap: 8px 20px; margin: 18px 0; padding: 18px 22px; background: #1d2d2d; border: 1px solid #34574f; border-radius: 14px; }
-.personal-balance > strong { grid-row: span 2; align-self: center; color: var(--mint); font-size: 28px; }
-.personal-balance small { color: var(--muted); }
+.personal-balance { display: flex; justify-content: space-between; align-items: center; gap: 24px; margin: 18px 0; padding: 18px 22px; background: #1d2d2d; border: 1px solid #34574f; border-radius: 14px; }
+.personal-balance-main { display: grid; gap: 8px; min-width: 0; }
+.personal-balance-main > strong { font-size: 28px; }
+.personal-balance-main > strong.is-due { color: #ff5968; }
+.personal-balance-main > strong.is-incoming { color: #39e879; }
+.personal-balance-main > strong.is-settled { color: #b7c0c5; }
+.personal-balance-main > small { color: var(--muted); }
+.personal-balance-breakdown { display: grid; gap: 8px; min-width: 190px; }
+.personal-balance-breakdown > div { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: 4px 12px; color: var(--muted); font-size: 13px; }
+.personal-balance-values { display: flex; align-items: baseline; gap: 6px; margin-left: auto; color: #aebcc2; white-space: nowrap; }
+.personal-balance-values strong { font-size: 14px; font-weight: 600; }
+.personal-balance-values small { color: var(--muted); font-size: 11px; }
 .event-columns { display: block; }
 .event-expenses > .section-heading { flex-wrap: wrap; }
 .expense-list { display: grid; gap: 12px; margin-bottom: 0; }
@@ -217,8 +226,9 @@ details[open] > summary .chevron { transform: rotate(180deg); }
   .event-stats > div { border: 0; border-right: 1px solid var(--line); border-radius: 0; padding: 14px 10px; gap: 8px; }
   .event-stats > div:last-child { border-right: 0; }
   .event-stats span { font-size: 11px; } .event-stats strong { font-size: 18px; }
-  .personal-balance { grid-template-columns: 1fr; gap: 10px; }
-  .personal-balance > strong { grid-row: auto; font-size: 32px; }
+  .personal-balance { align-items: stretch; flex-direction: column; gap: 14px; padding: 16px; }
+  .personal-balance-main > strong { font-size: 32px; }
+  .personal-balance-breakdown { min-width: 0; }
   .event-tabs button { gap: 5px; padding: 12px 4px; font-size: 12px; }
   .event-tab-icon { width: 18px; height: 18px; flex-basis: 18px; }
   .mobile-add { display: block; position: fixed; bottom: max(16px, env(safe-area-inset-bottom)); left: 16px; right: 16px; width: calc(100% - 32px); z-index: 15; box-shadow: 0 6px 26px #0009; }
