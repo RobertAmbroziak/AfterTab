@@ -32,9 +32,12 @@ Use **PL / EN** in the header to change language without signing out, losing an
 invitation or clearing a form. On the first visit, the browser's primary language
 selects Polish for Polish settings and English for other languages. If no language
 is available, Polish is used. Your manual choice is remembered on the device and
-takes priority on later visits. Amounts remain in PLN; number and date formatting
-follows the selected language. Event names, descriptions and participant names are
-user content and are not translated.
+takes priority on later visits. New events default to PLN; when creating or editing
+an event, you can choose USD, EUR, GBP, CNY, CHF or no currency. Amounts follow
+the selected language's number formatting; when currency is blank, only the number
+is shown. Amounts use two decimal places, and changing an event's
+currency does not convert saved values. Event names, descriptions and participant
+names are user content and are not translated.
 
 Privacy, data deletion and terms pages contain both languages at their original
 URLs. `?lang=pl` and `?lang=en` select a version. Without JavaScript, both complete
@@ -224,7 +227,7 @@ a guest or clearing browser data can remove access; entering the same name does
 not recover the same identity. These actions do not delete server data.
 
 Choose **SIGN IN / CREATE ACCOUNT** for an email account or an available Google or
-Facebook provider. Email registration requires a name and a 12–128 character
+Facebook provider. Email registration requires a name and an 8–128 character
 password. Confirm the email address with the one-time link, valid for 24 hours,
 before signing in. Password recovery links last 30 minutes. Resetting a password
 revokes previous sessions and other reset links; the link itself does not sign you
@@ -256,6 +259,11 @@ stop working; existing participants stay in the event. A closed event cannot be
 joined. **My events** lists 10 events per page, newest first, with Previous/Next
 navigation and Open/Closed indicators.
 
+Use the event tabs **Participants**, **Expenses** and **Settlements** to switch
+between these views. **Participants** contains the collapsible **Participants
+without accounts** and **Invite friends** sections. Their tools are available to
+the event owner according to their permissions.
+
 ### Participants without accounts
 
 The owner of an open event can add someone without a phone or account. They can
@@ -270,31 +278,32 @@ the app. People are never merged automatically by name.
 
 ### Expenses and splits
 
-Add an expense name and amount. The event owner can select another participant as
-the payer; otherwise the author is the payer. Choose who shares the expense and
-split it by amount or percentage. Values accept a decimal comma or dot, with up
-to two decimal places. The preview shows allocated shares, **Others** and the total.
+Choose **Add expense** and enter a name and amount. The event owner can select
+another participant as the payer; otherwise the author is the payer. Choose who
+shares the expense and split it by amount or percentage. Values accept a decimal
+comma or dot, with up to two decimal places. The preview shows allocated shares,
+the amount in the **Assign** row and the total.
 
-An unallocated amount goes to **Others**. **Assign remainder** allocates it to a
+An unallocated amount appears in the **Assign** row. **Assign remainder** allocates it to a
 selected person included in the split. Selecting another person moves the same
 remainder; selecting the current person again removes the assignment. Changing
 the amount, shares, selected people or split method clears the pending remainder
 selection. Saved remainder assignments can be changed by the payer or event owner.
-The expense author can edit its split subject to permissions; the owner can change
-the payer without changing authorship. Concurrent edits require refreshing data.
+Open a saved expense and choose **Edit expense** while the event is open. Its author
+can edit the name, amount and split; the payer or event owner can edit the name and
+amount. Concurrent edits require refreshing data.
 
 ### Settlements and payment marks
 
 The settlement offsets mutual debts to simplify transfers. If A owes B PLN 12 and
 B owes A PLN 3, the result is one PLN 9 transfer. Your amount owed or receivable
-appears above the expenses. Desktop shows expenses and settlement side by side;
-mobile uses **Expenses / Settlement** tabs.
+appears above the event tabs. Open the **Settlements** tab to view the settlement.
 
 - **Preview** follows saved data. Refresh manually or wait for the automatic
   15-second update while the screen is visible.
 - **Close and settle** finalises the current plan and locks adding expenses,
   editing splits and joining. Only the owner can close it, after every expense's
-  **Others** amount reaches zero and any expense form has been saved or cancelled.
+  amount in the **Assign** row reaches zero and any expense form has been saved or cancelled.
 - In a final settlement, the sender can mark **Sent** and the recipient **Received**.
   Each edits only their own mark. Both marks are private to those two parties and
   are statements, not bank confirmations.
@@ -306,9 +315,12 @@ mobile uses **Expenses / Settlement** tabs.
 
 Use the install button in the header. Supported Android and desktop browsers show
 an installation prompt; otherwise the app shows instructions. On iPhone, use the
-browser's **Share → Add to Home Screen** menu. Signing in, saving and fetching
-settlements requires the API. The first connection after inactivity can take up
-to two minutes. Use **Retry connection** after a timeout.
+browser's **Share → Add to Home Screen** menu. The PWA caches its interface files,
+including the logo, so its screen can be reopened after losing internet access.
+Event data is not available offline: signing in, fetching or saving data, and
+settlements require the API. A shared indicator appears during requests, with one
+notice when the connection is unavailable. After internet access returns, refresh
+the view to fetch the data again.
 
 ## Configure registered accounts
 

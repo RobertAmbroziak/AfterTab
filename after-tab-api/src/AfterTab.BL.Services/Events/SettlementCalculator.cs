@@ -16,7 +16,7 @@ public static class SettlementCalculator
         {
             if (e.AmountMinor <= 0 || e.OthersAmountMinor < 0 || e.Splits.Any(s => s.AmountMinor < 0)
                 || checked(e.Splits.Sum(s => s.AmountMinor) + e.OthersAmountMinor) != e.AmountMinor)
-                throw new InvalidOperationException("Niespójny podział pozycji. Popraw podział przed rozliczeniem.");
+                throw new InvalidOperationException("Niespójny podział pozycji. Edytuj wydatek przed rozliczeniem.");
             var payerId = e.PaidByParticipantId ?? e.AuthorUserId;
             names[payerId] = e.PayerName ?? e.AuthorName;
             paid[payerId] = checked(paid.GetValueOrDefault(payerId) + e.AmountMinor);

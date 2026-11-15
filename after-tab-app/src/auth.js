@@ -2,6 +2,7 @@ import { t, getLanguage } from './i18n.js'
 import { captureInvitation } from './navigation'
 import { redirectForAuthentication } from './authNavigation'
 import { fetchSessionResponse, SESSION_CHECK_MS } from './sessionCheck'
+import { fetchWithNetworkStatus, NETWORK_ERROR } from './networkStatus'
 import { rememberExternalFlow, recoverExternalFlow, forgetExternalFlow } from './externalLoginFlow'
 
 const tokenKey = 'aftertab.session'
@@ -31,7 +32,7 @@ async function request(path, options = {}, check) {
   const token = getToken()
   let response
   try {
-    const fetchResponse = check ? (url, init) => fetchSessionResponse(url, init, check) : fetch
+    const fetchResponse = check ? (url, init) => fetchSessionResponse(url, init, { fetchImpl: fetchWithNetworkStatus, ...check }) : fetchWithNetworkStatus
     response = await fetchResponse(`${apiBase}/api/auth/${path}`, {
       ...options,
       signal: AbortSignal.timeout(25000),
@@ -40,13 +41,15 @@ async function request(path, options = {}, check) {
     })
   } catch (error) {
     if (check) throw error
-    if (error.name === 'TimeoutError' || error.name === 'AbortError') throw new Error(t("Serwer potrzebuje więcej czasu na uruchomienie. Ponów próbę — Twoje konto pozostaje zapamiętane."), { cause: error })
+    if (error.message === NETWORK_ERROR) throw error
+    if (error.name === 'TimeoutError' || error.name === 'AbortError') throw new Error(NETWORK_ERROR, { cause: error })
     throw new Error(t("Nie można połączyć się z serwerem. Sprawdź połączenie i spróbuj ponownie."), { cause: error })
   }
   if (response.status === 401) {
     clearToken()
     return null
   }
+  if ([502, 503, 504].includes(response.status)) throw new Error(NETWORK_ERROR)
   if (!response.ok) {
     const problem = await response.json().catch(() => null)
     throw new Error(response.status === 429

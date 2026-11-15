@@ -138,11 +138,12 @@ dołączania przez zaproszenie, scalania uczestników ani zarządzania kontami.
 Do istniejącego wydarzenia trzeba najpierw dołączyć normalnie w AfterTab.
 „Otwórz wydarzenie” odczytuje je; ponowne otwarcie rozliczenia to osobne narzędzie.
 
-Kwoty są całkowitymi groszami: `100 PLN = 10000 amountMinor`. Udziały procentowe
+Kwoty są przechowywane jako setne części jednostki waluty wydarzenia: `100 jednostek waluty = 10000 amountMinor`. Udziały procentowe
 to punkty bazowe: `33% = 3300 percentageBps`. `splitMethod` to `Amount` lub `Percentage`.
+Waluta wydarzenia jest zwracana przez `get_event`; wydarzenia tworzone przez MCP domyślnie używają PLN.
 W metodzie procentowej `amountMinor` każdego udziału wynosi 0, a przy kwotowej
 `percentageBps` wynosi 0. `balanceParticipantId` wskazuje osobę już obecną w podziale;
-brak wartości pozostawia resztę jako „Inni”. Wyrównanie nigdy nie wybiera osoby samo.
+brak wartości pozostawia resztę nieprzypisaną. Wyrównanie nigdy nie wybiera osoby samo.
 
 Edycja wymaga aktualnego `rowVersion` z listy wydatków. Oznaczenie przelewu wymaga
 aktualnej wersji, pary osób i kwoty z planu rozliczenia. Oznaczenie to deklaracja

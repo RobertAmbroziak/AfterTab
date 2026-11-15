@@ -138,11 +138,12 @@ access. This version has no expense deletion/renaming, invitation joining,
 participant merging or account-management tools. Join an existing event in
 AfterTab first. Opening an event reads it; reopening a settlement is a separate tool.
 
-Money uses integer grosze: `100 PLN = 10000 amountMinor`. Percentage shares use
+Money uses integer hundredths of the event currency unit: `100 currency units = 10000 amountMinor`. Percentage shares use
 basis points: `33% = 3300 percentageBps`. `splitMethod` is `Amount` or `Percentage`.
+The event currency is returned by `get_event`; MCP-created events default to PLN.
 Each percentage share has `amountMinor=0`; each amount share has `percentageBps=0`.
 `balanceParticipantId` must identify someone already in the shares. Omitting it
-leaves the remainder as Others. The server never picks a remainder recipient automatically.
+leaves the remainder unassigned. The server never picks a remainder recipient automatically.
 
 Editing requires the current `rowVersion` from the expense list. Payment marking
 requires the current settlement version, exact participant pair and amount.

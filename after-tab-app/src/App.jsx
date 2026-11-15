@@ -9,7 +9,8 @@ import NameForm from './NameForm'
 import AccountForm from './AccountForm'
 import { hasEmailAction } from './auth'
 import InstallButton from './InstallButton'
-import SessionStatus from './SessionStatus'
+import NetworkStatus from './NetworkStatus.jsx'
+import { isNetworkError } from './networkStatus'
 import McpTokens from './McpTokens'
 import McpOAuthConsent from './McpOAuthConsent'
 import { githubUrl, androidApkUrl } from './distributionLinks'
@@ -19,7 +20,6 @@ export default function App() {
   const language = useLanguage()
   const [session, setSession] = useState(null)
   const [busy, setBusy] = useState(true)
-  const [checking, setChecking] = useState(true)
   const [error, setError] = useState('')
   const [remembered, setRemembered] = useState(hasRememberedGuest)
   const [authForm, setAuthForm] = useState(() => hasEmailAction() ? 'account' : null)
@@ -29,7 +29,16 @@ export default function App() {
   const [route, setRoute] = useState(readRoute)
   const [attempt, setAttempt] = useState(0)
   const inFlight = useRef(false)
+  const accountControlRef = useRef(null)
   const mcpOAuthRoute = location.hash.match(/^#mcp-oauth=([a-f\d-]{36})$/i)
+  useEffect(() => {
+    if (!menu) return
+    function closeOnOutsidePointer(event) {
+      if (!accountControlRef.current?.contains(event.target)) setMenu(false)
+    }
+    document.addEventListener('pointerdown', closeOnOutsidePointer)
+    return () => document.removeEventListener('pointerdown', closeOnOutsidePointer)
+  }, [menu])
   useEffect(() => {
     let active = true
     captureInvitation()
@@ -38,13 +47,13 @@ export default function App() {
     window.addEventListener('hashchange', syncRoute)
     window.addEventListener('aftertab:session-expired', expired)
     restoreSession().then(value => { if (active) { setSession(value); setRemembered(hasRememberedGuest()); setRoute(readRoute()) } })
-      .catch(reason => { if (active) setError(reason.message) }).finally(() => { if (active) { setBusy(false); setChecking(false) } })
+      .catch(reason => { if (active) setError(reason.message) }).finally(() => { if (active) setBusy(false) })
     return () => { active = false; window.removeEventListener('hashchange', syncRoute); window.removeEventListener('aftertab:session-expired', expired) }
   }, [attempt])
   if (mcpOAuthRoute) return <McpOAuthConsent requestId={mcpOAuthRoute[1]} />
   async function handleSession(action) {
     if (inFlight.current) return
-    inFlight.current = true; setBusy(true); setChecking(false); setError('')
+    inFlight.current = true; setBusy(true); setError('')
     try { setSession(await action() ?? null); setRemembered(hasRememberedGuest()); setAuthForm(null) }
     catch (reason) { setError(reason.message) }
     finally { inFlight.current = false; setBusy(false) }
@@ -67,7 +76,7 @@ export default function App() {
         <button type="button" lang="pl" aria-label="Polski" aria-pressed={language === 'pl'} onClick={() => setLanguage('pl')}>PL</button>
         <button type="button" lang="en" aria-label="English" aria-pressed={language === 'en'} onClick={() => setLanguage('en')}>EN</button>
       </div>
-      <div className="account-control"><button className="account-button" aria-label={session?.user.displayName || t("Konto")} aria-expanded={menu} aria-controls="account-menu" onClick={() => setMenu(value => !value)}><span className="account-avatar" aria-hidden="true">{session ? [...session.user.displayName][0]?.toLocaleUpperCase(getLocale()) : <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M5 6h14M5 12h14M5 18h14" /></svg>}</span><span>{session?.user.displayName || t("Konto")}</span></button>
+      <div className="account-control" ref={accountControlRef}><button className="account-button" aria-label={session?.user.displayName || t("Konto")} aria-expanded={menu} aria-controls="account-menu" onClick={() => setMenu(value => !value)}><span className="account-avatar" aria-hidden="true">{session ? [...session.user.displayName][0]?.toLocaleUpperCase(getLocale()) : <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M5 6h14M5 12h14M5 18h14" /></svg>}</span><span>{session?.user.displayName || t("Konto")}</span></button>
         {menu && <section className="account-menu" id="account-menu" aria-label={t("Konto użytkownika")}>
           {session ? <><strong>{session.user.displayName}</strong><p className="helper-text">{session.user.isGuest ? t("Gość zapamiętany w tej przeglądarce") : t("Konto trwałe")}</p><div className="account-menu-group"><button className="text-button" onClick={() => { setEditingName(true); setMenu(false) }}>{t("Zmień imię")}</button>{session.user.isGuest && <button className="text-button" onClick={startAccountLogin}>{t("Zachowaj konto / Zaloguj")}</button>}{session.user.isGuest && remembered && <button className="text-button danger" disabled={busy} onClick={() => { setMenu(false); handleForget() }}>{t("Zapomnij gościa")}</button>}<button className="text-button" disabled={busy} onClick={() => { setMenu(false); handleSession(logout) }}>{t("Wyloguj")}</button></div>{!needsName && import.meta.env.VITE_MCP_ENABLED === 'true' && <div className="account-menu-integration"><button className="text-button" onClick={() => { setMcpTokens(true); setMenu(false) }}>{t('Integracje AI')}</button></div>}</>
             : <><button className="primary-button" disabled={busy} onClick={startLogin}>{remembered ? t("WRÓĆ JAKO GOŚĆ") : t("ZALOGUJ JAKO GOŚĆ")}</button><button className="text-button" disabled={busy} onClick={startAccountLogin}>{t("Zaloguj / Utwórz konto")}</button></>}
@@ -76,8 +85,8 @@ export default function App() {
       </div>
     </header>
     <div className="page-content">
-      {busy && (checking ? <SessionStatus key={attempt} /> : <div className="connection-status" role="status"><span className="spinner" />{t("Łączenie z kontem…")}</div>)}
-      {error && <div className="connection-status auth-error" role="alert"><span>{t(error)}</span><button className="secondary-button" disabled={busy} onClick={() => { setError(''); setChecking(true); setBusy(true); setAttempt(value => value + 1) }}>{t("Ponów połączenie")}</button></div>}
+      <NetworkStatus />
+      {error && !isNetworkError(error) && <div className="connection-status auth-error" role="alert"><span>{t(error)}</span><button className="secondary-button" disabled={busy} onClick={() => { setError(''); setBusy(true); setAttempt(value => value + 1) }}>{t("Ponów połączenie")}</button></div>}
       {!session && !busy && route.kind !== 'invite' && <section className="login-card"><img src="/pwa-192x192.png" width="64" height="64" alt="" /><h1>{t("Wspólne wyjścia.")}<br />{t("Proste rozliczenia.")}</h1><p>{t("Zaproś znajomych, dodaj wydatki i zobacz, kto komu oddaje.")}</p><div className="form-actions"><button className="primary-button" disabled={busy} onClick={startLogin}>{remembered ? t("WRÓĆ JAKO GOŚĆ") : t("ZALOGUJ JAKO GOŚĆ")}</button><button className="secondary-button" disabled={busy} onClick={startAccountLogin}>{t("ZALOGUJ / UTWÓRZ KONTO")}</button></div></section>}
       {authForm === 'account' && <AccountForm key={location.hash.startsWith('#account-') ? location.hash : 'account'} guest={Boolean(session?.user.isGuest)} onSession={() => setAttempt(value => value + 1)} onCancel={() => setAuthForm(null)} />}
       {!session && authForm === 'guest' && <section className="workspace"><NameForm title={t("Zaloguj się jako gość")} submitLabel={t("Zapisz imię i wejdź")} onSubmit={name => handleSession(() => loginAsGuest(name))} onCancel={() => setAuthForm(null)} busy={busy} /></section>}

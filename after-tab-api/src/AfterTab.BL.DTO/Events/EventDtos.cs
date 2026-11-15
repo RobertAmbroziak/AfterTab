@@ -1,6 +1,7 @@
 namespace AfterTab.BL.DTO.Events;
 
-public sealed record CreateEventDto(string Name, string? Description = null);
+public sealed record CreateEventDto(string Name, string? Description = null, string Currency = "PLN");
+public sealed record UpdateEventNameDto(string Name, string? Currency = null);
 public sealed record EventPageDto(IReadOnlyList<EventSummaryDto> Items, int Page, int PageSize, int TotalCount);
 public sealed record EventSummaryDto(long Id, string Name, string? Description, string Currency,
     string OwnerName, bool IsOwner, string Status, int ParticipantCount);

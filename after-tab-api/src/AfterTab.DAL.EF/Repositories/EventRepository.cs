@@ -29,6 +29,18 @@ public sealed class EventRepository(AppDbContext db) : IEventRepository
 
     public Task<EventReadModel?> GetAsync(long id, CancellationToken ct)
         => ReadQuery(db.Events.AsNoTracking().Where(x => x.Id == id)).SingleOrDefaultAsync(ct);
+    public Task RenameAsync(long eventId, long ownerId, string name, string currency, CancellationToken ct)
+        => InTransaction(async () =>
+        {
+            var ev = await db.Events.SingleOrDefaultAsync(x => x.Id == eventId, ct)
+                ?? throw new AppException(ErrorKind.NotFound, "Nie znaleziono wydarzenia.");
+            if (ev.OwnerUserId != ownerId) throw new AppException(ErrorKind.Forbidden, "Tylko autor wydarzenia może zmienić jego nazwę.");
+            if (ev.Status != EventStatus.Active) throw new AppException(ErrorKind.Conflict, "Najpierw otwórz wydarzenie.");
+            ev.Name = name;
+            ev.Currency = currency;
+            await db.SaveChangesAsync(ct);
+            return true;
+        }, ct);
     public Task<bool> IsMemberAsync(long eventId, long userId, CancellationToken ct)
         => db.EventParticipants.AnyAsync(p => p.EventId == eventId && p.UserId == userId && p.Status == ParticipantStatus.Active, ct);
     public async Task<IReadOnlyList<ExpenseParticipant>> ParticipantsAsync(long eventId, CancellationToken ct)

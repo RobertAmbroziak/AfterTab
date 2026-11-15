@@ -1,13 +1,26 @@
 import { t, formatCount } from './i18n.js'
 import { useEffect, useRef, useState } from 'react'
+import { QRCodeSVG } from 'qrcode.react'
 import { api } from './api'
 import { invitationLink, openInvitation, showEvent, showEvents } from './navigation'
 import { Expenses, PersonAvatar } from './Expenses'
 import { Settlement } from './Settlement'
 import { money } from './expenseAllocation'
 import ParticipantManager from './ParticipantManager'
+import { focusAndReveal } from './focusAndReveal'
+import { isNetworkError } from './networkStatus'
 
-function ErrorMessage({ error }) { return error ? <p className="auth-error" role="alert">{t(error)}</p> : null }
+function ErrorMessage({ error }) { return error && !isNetworkError(error) ? <p className="auth-error" role="alert">{t(error)}</p> : null }
+const currencies = ['', 'PLN', 'USD', 'EUR', 'GBP', 'CNY', 'CHF']
+function CurrencyOptions() { return <>{currencies.map(currency => <option key={currency || 'none'} value={currency}>{currency || t("Bez waluty")}</option>)}</> }
+
+function EventTabIcon({ name }) {
+  return <svg className="event-tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" focusable="false">
+    {name === 'participants' && <><circle cx="12" cy="8" r="3.5" /><path d="M5 21a7 7 0 0 1 14 0" /></>}
+    {name === 'expenses' && <><path d="M2.5 5c5-2 11-.4 15 3.5L9 21 2.5 5Z" /><path d="M2.5 5c4-1 8 .2 11 3" /><circle cx="6.5" cy="9" r=".7" /><circle cx="9.5" cy="13" r=".7" /><path d="M18 3h4l-.5 5a2 2 0 0 1-4 0L17 3M19 10v10m-2.5 0h5" /></>}
+    {name === 'settlement' && <><rect x="2.5" y="4.5" width="19" height="15" rx="2" /><circle cx="12" cy="12" r="3.5" /><path d="M7 8H6v1m11-1h1v1M7 16H6v-1m11 1h1v-1M12 9.5v5m1.5-4.2c-.5-.9-3-.8-3 .2s3 .9 3 2-2.5 1.1-3 .1" /></>}
+  </svg>
+}
 
 export function Invitation({ token, session, onLogin }) {
   const [preview, setPreview] = useState(null)
@@ -41,7 +54,7 @@ export function Invitation({ token, session, onLogin }) {
           : session.user.requiresDisplayName ? <p>{t("Uzupełnij najpierw swoje imię powyżej.")}</p>
           : <button className="primary-button" onClick={join} disabled={busy}>{busy ? t("Dołączanie…") : t("Dołącz do wydarzenia")}</button>}
       </>}
-      <ErrorMessage error={t(error)} />
+      <ErrorMessage error={error} />
       <button className="text-button" onClick={showEvents}>{t("Wróć do listy")}</button>
     </section>
   )
@@ -59,7 +72,7 @@ function PasteInvitation() {
     <p>{t("Masz kod lub skopiowany link? Wpisz go tutaj. Kliknięcie otrzymanego linku otwiera zaproszenie bez ręcznego wklejania. Przeglądarka komunikatora może korzystać z osobnej sesji.")}</p>
     <label>{t("Link lub kod zaproszenia")}<input value={input} onChange={e => setInput(e.target.value)} required autoComplete="off" spellCheck={false} /></label>
     <button className="secondary-button">{t("Sprawdź zaproszenie")}</button>
-    <ErrorMessage error={t(error)} />
+    <ErrorMessage error={error} />
   </form>
 }
 
@@ -67,23 +80,26 @@ function CreateEvent({ onCreated, onCancel }) {
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
   const lock = useRef(false)
+  const nameInput = useRef(null)
+  useEffect(() => focusAndReveal(nameInput.current), [])
   async function submit(event) {
     event.preventDefault()
     if (lock.current) return
     const fields = new FormData(event.currentTarget)
     lock.current = true; setBusy(true); setError('')
     try {
-      const result = await api('events', { method: 'POST', body: { name: fields.get('name').trim(), description: fields.get('description').trim() } })
+      const result = await api('events', { method: 'POST', body: { name: fields.get('name').trim(), description: fields.get('description').trim(), currency: fields.get('currency') } })
       onCreated(result)
     } catch (reason) { setError(reason.message) }
     finally { lock.current = false; setBusy(false) }
   }
   return <form className="app-form" onSubmit={submit}>
     <h2>{t("Utwórz wydarzenie")}</h2>
-    <label>{t("Nazwa wydarzenia")}<input name="name" required maxLength={150} placeholder={t("Np. Pizza w piątek")} autoFocus /></label>
+    <label>{t("Nazwa wydarzenia")}<input ref={nameInput} name="name" required maxLength={150} placeholder={t("Np. Pizza w piątek")} /></label>
+    <label>{t("Waluta")}<select name="currency" defaultValue="PLN"><CurrencyOptions /></select></label>
     <label>{t("Opis (opcjonalnie)")}<textarea name="description" maxLength={2000} rows={3} /></label>
     <div className="form-actions"><button className="primary-button" disabled={busy}>{busy ? t("Tworzenie…") : t("Utwórz i wygeneruj zaproszenie")}</button><button type="button" className="secondary-button" onClick={onCancel} disabled={busy}>{t("Anuluj")}</button></div>
-    <ErrorMessage error={t(error)} />
+    <ErrorMessage error={error} />
   </form>
 }
 
@@ -94,10 +110,18 @@ function EventDetails({ id, knownToken, onToken, user }) {
   const [busy, setBusy] = useState(false)
   const [refresh, setRefresh] = useState(0)
   const [editing, setEditing] = useState(false)
+  const [editingEventName, setEditingEventName] = useState(false)
+  const [eventName, setEventName] = useState('')
+  const [eventCurrency, setEventCurrency] = useState('PLN')
+  const [eventNameError, setEventNameError] = useState('')
+  const [savingEventName, setSavingEventName] = useState(false)
+  const [qrOpen, setQrOpen] = useState(false)
   const [summary, setSummary] = useState(null)
   const [tab, setTab] = useState('expenses')
   const expenseActions = useRef(null)
   const linkInput = useRef(null)
+  const qrTrigger = useRef(null)
+  const qrModal = useRef(null)
   const lock = useRef(false)
   useEffect(() => {
     let active = true
@@ -112,6 +136,19 @@ function EventDetails({ id, knownToken, onToken, user }) {
     return () => { window.clearInterval(timer); window.removeEventListener('focus', update); document.removeEventListener('visibilitychange', update) }
   }, [])
   const link = knownToken ? invitationLink(knownToken) : ''
+  useEffect(() => {
+    if (!qrOpen) return
+    const previousOverflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    qrModal.current?.focus()
+    function closeOnEscape(event) { if (event.key === 'Escape') setQrOpen(false) }
+    window.addEventListener('keydown', closeOnEscape)
+    return () => {
+      document.body.style.overflow = previousOverflow
+      window.removeEventListener('keydown', closeOnEscape)
+      qrTrigger.current?.focus()
+    }
+  }, [qrOpen])
   async function copy() {
     try { await navigator.clipboard.writeText(link); setMessage(t("Link skopiowany do schowka.")) }
     catch { linkInput.current?.focus(); linkInput.current?.select(); setMessage(t("Zaznaczony link skopiuj ręcznie z pola powyżej.")) }
@@ -132,38 +169,75 @@ function EventDetails({ id, knownToken, onToken, user }) {
     } catch (reason) { setError(reason.message) }
     finally { lock.current = false; setBusy(false) }
   }
-  if (!details) return <section className="workspace"><p>{t(error) || t("Wczytywanie wydarzenia…")}</p><button className="secondary-button" onClick={showEvents}>{t("Moje wydarzenia")}</button></section>
+  async function saveEventName(event) {
+    event.preventDefault()
+    if (savingEventName) return
+    if (eventCurrency !== details.event.currency && !window.confirm(t("Zmiana waluty nie przeliczy istniejących wydatków. Ich zapisane wartości zostaną potraktowane jako kwoty w nowej walucie. Kontynuować?"))) return
+    setSavingEventName(true); setEventNameError('')
+    try {
+      const value = await api(`events/${id}`, { method: 'PUT', body: { name: eventName.trim(), currency: eventCurrency } })
+      setDetails(value); setEditingEventName(false)
+    } catch (reason) { setEventNameError(reason.message) }
+    finally { setSavingEventName(false) }
+  }
+  if (!details) return <section className="workspace"><p>{error && !isNetworkError(error) ? t(error) : t("Wczytywanie wydarzenia…")}</p><button className="secondary-button" onClick={showEvents}>{t("Moje wydarzenia")}</button></section>
   const eventUser = { ...user, participantId: details.participants.find(person => person.userId === user.id)?.participantId }
-  const outgoing = summary?.transfers.filter(row => row.fromParticipantId === eventUser.participantId && !row.acknowledgement?.sent).reduce((sum, row) => sum + row.amountMinor, 0) || 0
-  const incoming = summary?.transfers.filter(row => row.toParticipantId === eventUser.participantId && !row.acknowledgement?.received).reduce((sum, row) => sum + row.amountMinor, 0) || 0
+  const outgoingTransfers = summary?.transfers.filter(row => row.fromParticipantId === eventUser.participantId) || []
+  const incomingTransfers = summary?.transfers.filter(row => row.toParticipantId === eventUser.participantId) || []
+  const outgoingTotal = outgoingTransfers.reduce((sum, row) => sum + row.amountMinor, 0)
+  const incomingTotal = incomingTransfers.reduce((sum, row) => sum + row.amountMinor, 0)
+  const outgoing = outgoingTransfers.filter(row => !row.acknowledgement?.sent).reduce((sum, row) => sum + row.amountMinor, 0)
+  const incoming = incomingTransfers.filter(row => !row.acknowledgement?.received).reduce((sum, row) => sum + row.amountMinor, 0)
+  const balanceTone = outgoing > 0 ? 'is-due' : incoming > 0 ? 'is-incoming' : 'is-settled'
   return <section className={`event-page tab-${tab}`} aria-label={t("Szczegóły wydarzenia")}>
     <div className="event-hero">
     <div className="section-heading"><button className="text-button" onClick={showEvents}>{t("← Moje wydarzenia")}</button><button className="text-button" onClick={() => { setError(''); setRefresh(x => x + 1) }}>{t("Odśwież")}</button></div>
-    <div className="event-title"><h2>{details.event.name}</h2>{details.event.isOwner && <span className="badge">{t("Twoje wydarzenie")}</span>}</div>
+    <div className="event-title">{editingEventName
+      ? <form className="event-name-form" onSubmit={saveEventName}><label className="sr-only" htmlFor="event-name-edit">{t("Nazwa wydarzenia")}</label><input id="event-name-edit" autoFocus required maxLength={150} value={eventName} onChange={event => setEventName(event.target.value)} /><label className="sr-only" htmlFor="event-currency-edit">{t("Waluta")}</label><select id="event-currency-edit" value={eventCurrency} onChange={event => setEventCurrency(event.target.value)}><CurrencyOptions /></select><button className="icon-button" disabled={savingEventName} aria-label={t("Zapisz zmiany")}>✓</button><button type="button" className="icon-button" onClick={() => setEditingEventName(false)} aria-label={t("Anuluj")}>×</button>{eventNameError && <ErrorMessage error={eventNameError} />}</form>
+      : <><h2>{details.event.name}</h2>{details.event.isOwner && details.event.status === 'Active' && <button type="button" className="icon-button" title={t("Edytuj nazwę i walutę wydarzenia")} aria-label={t("Edytuj nazwę i walutę wydarzenia")} onClick={() => { setEventName(details.event.name); setEventCurrency(details.event.currency || ''); setEditingEventName(true); setEventNameError('') }}>✎</button>}{details.event.isOwner && <span className="badge">{t("Twoje wydarzenie")}</span>}</>}</div>
     <p className="event-meta">{t("Autor:")} {details.event.ownerName}{details.event.isOwner ? t(" · Twoje wydarzenie") : ''}</p>
-    {details.event.status !== 'Active' && <p className="settlement-warning">{t("Wydarzenie zamknięte — dodawanie pozycji, zmiana podziałów i dołączanie są zablokowane.")}</p>}
+    {details.event.status !== 'Active' && <p className="settlement-warning">{t("Wydarzenie zamknięte — edycja nazwy i wydatków, dodawanie pozycji, zmiana podziałów i dołączanie są zablokowane.")}</p>}
     {details.event.description && <p className="event-description">{details.event.description}</p>}
     <h3 className="sr-only">{t("Uczestnicy (")}{details.participants.length})</h3>
     <ul className="participant-list">{details.participants.map(person => <li key={person.participantId}><PersonAvatar person={person} /><span>{person.displayName}</span>{person.isOwner && <span className="badge">{t("Autor")}</span>}{person.isVirtual && <span className="badge virtual-badge">{t("Bez konta")}</span>}</li>)}</ul>
-    <div className="event-stats"><div><span>{t("Łączne wydatki")}</span><strong>{summary ? money(summary.totalMinor) : '—'}</strong></div><div><span>{t("Pozycje")}</span><strong>{summary?.expenseCount ?? '—'}</strong></div><div><span>{t("Uczestnicy")}</span><strong>{details.participants.length}</strong></div></div>
+    <div className="event-stats"><div><span>{t("Łączne wydatki")}</span><strong>{summary ? money(summary.totalMinor, details.event.currency) : '—'}</strong></div><div><span>{t("Pozycje")}</span><strong>{summary?.expenseCount ?? '—'}</strong></div><div><span>{t("Uczestnicy")}</span><strong>{details.participants.length}</strong></div></div>
     </div>
-    {details.event.isOwner && <ParticipantManager eventId={id} participants={details.participants} active={details.event.status === 'Active'} editing={editing} onChanged={() => setRefresh(value => value + 1)} />}
-    <div className="personal-balance"><span>{outgoing > 0 ? t("Do oddania") : incoming > 0 ? t("Do otrzymania") : t("Twoje przelewy")}</span><strong>{summary ? money(outgoing > 0 ? outgoing : incoming) : '—'}</strong><small>{summary?.isFinal ? t("Na podstawie zatwierdzonego rozliczenia i Twoich oznaczeń.") : t("Na podstawie bieżącego rozliczenia.")}</small></div>
-    <div className="mobile-tabs" role="tablist" aria-label={t("Widok wydarzenia")}><button role="tab" aria-selected={tab === 'expenses'} aria-controls="expenses-panel" id="expenses-tab" onClick={() => setTab('expenses')}>{t("Wydatki")}</button><button role="tab" aria-selected={tab === 'settlement'} aria-controls="settlement-panel" id="settlement-tab" onClick={() => setTab('settlement')}>{t("Rozliczenie")}</button></div>
+    <div className="personal-balance">
+      <div className="personal-balance-main">
+        <span>{outgoing > 0 ? t("Do oddania") : incoming > 0 ? t("Do otrzymania") : t("Twoje przelewy")}</span>
+        <strong className={balanceTone}>{summary ? money(outgoing > 0 ? outgoing : incoming, details.event.currency) : '—'}</strong>
+        <small>{summary?.isFinal ? t("Na podstawie zatwierdzonego rozliczenia i Twoich oznaczeń.") : t("Na podstawie bieżącego rozliczenia.")}</small>
+      </div>
+      <div className="personal-balance-breakdown">
+        <div><span>{t("Do oddania")}</span><span className="personal-balance-values"><strong>{summary ? money(outgoingTotal, details.event.currency) : '—'}</strong><small>{t("Zostało")}</small><strong>{summary ? money(outgoing, details.event.currency) : '—'}</strong></span></div>
+        <div><span>{t("Do otrzymania")}</span><span className="personal-balance-values"><strong>{summary ? money(incomingTotal, details.event.currency) : '—'}</strong><small>{t("Zostało")}</small><strong>{summary ? money(incoming, details.event.currency) : '—'}</strong></span></div>
+      </div>
+    </div>
+    <div className="event-tabs" role="tablist" aria-label={t("Widok wydarzenia")}><button role="tab" aria-selected={tab === 'participants'} aria-controls="participants-panel" id="participants-tab" onClick={() => setTab('participants')}><EventTabIcon name="participants" /><span>{t("Uczestnicy")}</span></button><button role="tab" aria-selected={tab === 'expenses'} aria-controls="expenses-panel" id="expenses-tab" onClick={() => setTab('expenses')}><EventTabIcon name="expenses" /><span>{t("Wydatki")}</span></button><button role="tab" aria-selected={tab === 'settlement'} aria-controls="settlement-panel" id="settlement-tab" onClick={() => setTab('settlement')}><EventTabIcon name="settlement" /><span>{t("Rozliczenia")}</span></button></div>
     <div className="event-columns">
-      <div id="expenses-panel" className="expenses-panel" aria-labelledby="expenses-tab"><Expenses ref={expenseActions} key={`${id}-${details.event.status}`} eventId={id} participants={details.participants} user={eventUser} isOwner={details.event.isOwner} refresh={refresh} active={details.event.status === 'Active'} onChanged={() => setRefresh(value => value + 1)} onEditing={setEditing} /></div>
-      <div id="settlement-panel" className="settlement-panel" aria-labelledby="settlement-tab"><Settlement eventId={id} user={eventUser} isOwner={details.event.isOwner} refresh={refresh} onData={setSummary} onChanged={() => { setEditing(false); setRefresh(value => value + 1) }} editing={editing} /></div>
+      <div id="participants-panel" className="participants-panel" role="tabpanel" aria-labelledby="participants-tab" hidden={tab !== 'participants'}>
+        {details.event.isOwner && <ParticipantManager eventId={id} participants={details.participants} active={details.event.status === 'Active'} editing={editing} onChanged={() => setRefresh(value => value + 1)} />}
+        {details.event.isOwner && details.event.status === 'Active' && <details className="event-invite-tools">
+          <summary><span>{t("Zaproś znajomych")}</span></summary>
+          {link ? <><label>{t("Link zaproszenia")}<input ref={linkInput} value={link} readOnly onFocus={e => e.target.select()} /></label><div className="form-actions"><button className="primary-button" onClick={copy}>{t("Kopiuj link")}</button><button className="secondary-button" onClick={share}>{t("Udostępnij")}</button><button ref={qrTrigger} type="button" className="qr-open-button" aria-label={t("Pokaż kod QR")} title={t("Pokaż kod QR")} onClick={() => setQrOpen(true)}><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M3 3h7v7H3zM14 3h7v7h-7zM3 14h7v7H3zM14 14h3v3h-3zM19 14h2v2h-2zM19 19h2v2h-2zM14 19h3v2h-3z" /></svg></button></div></>
+            : <p>{t("Jeśli masz wcześniej skopiowany link, możesz nadal go udostępniać. Nowy link unieważni poprzedni.")}</p>}
+          <div className="form-actions"><button className="secondary-button" disabled={busy} onClick={() => manageInvite(false)}>{t("Wygeneruj nowy link")}</button><button className="text-button" disabled={busy} onClick={() => manageInvite(true)}>{t("Unieważnij link")}</button></div>
+          <p className="helper-text">{t("Każda osoba z aktywnym linkiem może dołączyć po zalogowaniu. Link nie dopisuje uczestnika bez jego potwierdzenia.")}</p>
+          <p role="status">{t(message)}</p>
+        </details>}
+      </div>
+      <div id="expenses-panel" className="expenses-panel" role="tabpanel" aria-labelledby="expenses-tab" hidden={tab !== 'expenses'}><Expenses ref={expenseActions} key={`${id}-${details.event.status}`} eventId={id} currency={details.event.currency} participants={details.participants} user={eventUser} isOwner={details.event.isOwner} refresh={refresh} active={details.event.status === 'Active'} onChanged={() => setRefresh(value => value + 1)} onEditing={setEditing} /></div>
+      <div id="settlement-panel" className="settlement-panel" role="tabpanel" aria-labelledby="settlement-tab" hidden={tab !== 'settlement'}><Settlement eventId={id} currency={details.event.currency} user={eventUser} isOwner={details.event.isOwner} refresh={refresh} onData={setSummary} onChanged={() => { setEditing(false); setRefresh(value => value + 1) }} editing={editing} /></div>
     </div>
-    {details.event.status === 'Active' && !editing && <button className="primary-button mobile-add" onClick={() => { setTab('expenses'); expenseActions.current?.add(); document.getElementById('expenses-panel')?.scrollIntoView({ behavior: 'smooth', block: 'start' }) }}>{t("＋ Dodaj pozycję")}</button>}
-    {details.event.isOwner && details.event.status === 'Active' && <details className="event-invite-tools">
-      <summary>{t("Zaproś znajomych")}</summary>
-      {link ? <><label>{t("Link zaproszenia")}<input ref={linkInput} value={link} readOnly onFocus={e => e.target.select()} /></label><div className="form-actions"><button className="primary-button" onClick={copy}>{t("Kopiuj link")}</button><button className="secondary-button" onClick={share}>{t("Udostępnij")}</button></div></>
-        : <p>{t("Jeśli masz wcześniej skopiowany link, możesz nadal go udostępniać. Nowy link unieważni poprzedni.")}</p>}
-      <div className="form-actions"><button className="secondary-button" disabled={busy} onClick={() => manageInvite(false)}>{t("Wygeneruj nowy link")}</button><button className="text-button" disabled={busy} onClick={() => manageInvite(true)}>{t("Unieważnij link")}</button></div>
-      <p className="helper-text">{t("Każda osoba z aktywnym linkiem może dołączyć po zalogowaniu. Link nie dopisuje uczestnika bez jego potwierdzenia.")}</p>
-      <p role="status">{t(message)}</p>
-    </details>}
-    <ErrorMessage error={t(error)} />
+    {tab === 'expenses' && details.event.status === 'Active' && !editing && <button className="primary-button mobile-add" onClick={() => { expenseActions.current?.add(); document.getElementById('expenses-panel')?.scrollIntoView({ behavior: 'smooth', block: 'start' }) }}>{t("＋ Dodaj wydatek")}</button>}
+    <ErrorMessage error={error} />
+    {qrOpen && <div ref={qrModal} className="qr-modal" role="dialog" aria-modal="true" aria-label={t("Kod QR zaproszenia")} tabIndex={-1} onClick={() => setQrOpen(false)}>
+      <div className="qr-modal-content">
+        <h2>{details.event.name}</h2>
+        <QRCodeSVG value={link} size={320} level="H" marginSize={4} imageSettings={{ src: '/aftertab-mark-mono.svg', width: 52, height: 52, excavate: true }} />
+        <p>{t("Zeskanuj, aby dołączyć · kliknij, aby zamknąć")}</p>
+      </div>
+    </div>}
   </section>
 }
 
@@ -194,7 +268,7 @@ export function EventWorkspace({ route, user }) {
     <div className="section-heading"><h2>{t("Moje wydarzenia")}</h2><button className="text-button" onClick={() => { setError(''); setRefresh(x => x + 1) }}>{t("Odśwież")}</button></div>
     {creating ? <CreateEvent onCancel={() => setCreating(false)} onCreated={result => { onToken(result.details.event.id, result.inviteToken); setCreating(false); setPage(1); showEvent(result.details.event.id) }} />
       : <button className="primary-button" onClick={() => setCreating(true)}>{t("Utwórz wydarzenie")}</button>}
-    <ErrorMessage error={t(error)} />
+    <ErrorMessage error={error} />
     {!items && !error ? <p>{t("Wczytywanie wydarzeń…")}</p> : items?.length === 0 ? <p className="empty-state">{t("Nie masz jeszcze wydarzeń. Utwórz pierwsze albo dołącz przez zaproszenie.")}</p>
       : <ul className="event-list">{items?.map(event => <li key={event.id} className={event.status === 'Active' ? 'event-open' : 'event-closed'}><button onClick={() => showEvent(event.id)}><strong>{event.name}</strong><span className={`event-status ${event.status === 'Active' ? 'is-open' : 'is-closed'}`}>{event.status === 'Active' ? t("Otwarte") : t("Zamknięte")}</span><span>{event.isOwner ? t("Autor") : t("Uczestnik")} · {event.participantCount} {t("os. ·")} {event.status === 'Active' ? t("Otwarte") : t("Zamknięte")}</span></button></li>)}</ul>}
     {total > 0 && <nav className="pagination" aria-label={t("Strony wydarzeń")}>

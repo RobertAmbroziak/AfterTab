@@ -1,6 +1,7 @@
 import { t } from './i18n.js'
 import { useRef, useState } from 'react'
 import { api } from './api'
+import { isNetworkError } from './networkStatus'
 
 function VirtualMember({ person, accounts, disabled, onAction }) {
   const [name, setName] = useState(person.displayName)
@@ -46,7 +47,7 @@ export default function ParticipantManager({ eventId, participants, active, edit
     finally { lock.current = false; setBusy(false) }
   }
   return <details className="participant-tools">
-    <summary>{t("Uczestnicy bez konta")}{virtual.length > 0 ? ` (${virtual.length})` : ''}</summary>
+    <summary><span>{t("Uczestnicy bez konta")}{virtual.length > 0 ? ` (${virtual.length})` : ''}</span></summary>
     <p>{t("Dodaj osobę bez telefonu lub konta. Będzie można uwzględnić ją w podziałach i wskazać jako płacącego. Jeśli później dołączy przez zaproszenie, połącz obie pozycje poniżej.")}</p>
     {!active ? <p className="helper-text">{t("Aby zmienić uczestników, najpierw otwórz wydarzenie ponownie.")}</p> : <>
       {editing && <p className="helper-text">{t("Najpierw zatwierdź lub anuluj formularz pozycji.")}</p>}
@@ -56,7 +57,7 @@ export default function ParticipantManager({ eventId, participants, active, edit
       </form>
       {virtual.map(person => <VirtualMember key={`${person.participantId}-${person.displayName}`} person={person} accounts={accounts} disabled={busy || editing} onAction={action} />)}
     </>}
-    {error && <p className="auth-error" role="alert">{t(error)}</p>}
+    {error && !isNetworkError(error) && <p className="auth-error" role="alert">{t(error)}</p>}
     {message && <p role="status">{t(message)}</p>}
   </details>
 }

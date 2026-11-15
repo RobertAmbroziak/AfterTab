@@ -77,24 +77,47 @@ public sealed class ExpenseRepository(AppDbContext db) : IExpenseRepository
             var canBalance = ev.OwnerUserId == userId || payer.UserId == userId;
             if (current.PaidByParticipantId != replacement.PaidByParticipantId || (balanceOnly ? !canBalance : current.AuthorUserId != userId))
                 throw new AppException(ErrorKind.Forbidden, "Nie masz uprawnień do zmiany tego podziału lub wyrównania.");
-            if (!canBalance && ((!current.Balanced && replacement.Balanced) || current.BalanceParticipantId != replacement.BalanceParticipantId || current.BalanceAmountMinor != replacement.BalanceAmountMinor))
+            var clearsOldBalanceAfterAmountChange = current.AmountMinor != replacement.AmountMinor && replacement.BalanceParticipantId is null;
+            if (!canBalance && ((!current.Balanced && replacement.Balanced) || (current.BalanceParticipantId != replacement.BalanceParticipantId && !clearsOldBalanceAfterAmountChange)))
                 throw new AppException(ErrorKind.Forbidden, "Wyrównanie może zmienić tylko autor wydarzenia albo płacący.");
             if (!current.RowVersion.SequenceEqual(expectedVersion))
                 throw new AppException(ErrorKind.Conflict, "Podział został zmieniony. Odśwież wydarzenie i spróbuj ponownie.");
-            current.SplitMethod = replacement.SplitMethod; current.Balanced = replacement.Balanced;
-            current.BalanceParticipantId = replacement.BalanceParticipantId; current.BalanceAmountMinor = replacement.BalanceAmountMinor;
-            current.OthersAmountMinor = replacement.OthersAmountMinor;
-            foreach (var old in current.Splits.ToList())
-            {
-                var next = replacement.Splits.SingleOrDefault(x => x.ParticipantId == old.ParticipantId);
-                if (next is null) db.ExpenseSplits.Remove(old);
-                else { old.AmountMinor = next.AmountMinor; old.PercentageBps = next.PercentageBps; }
-            }
-            foreach (var next in replacement.Splits.Where(x => !current.Splits.Any(s => s.ParticipantId == x.ParticipantId))) current.Splits.Add(next);
-            // Mark the aggregate modified even when only its children changed, updating its concurrency token.
-            db.Entry(current).Property(x => x.Balanced).IsModified = true;
+            ApplyReplacement(current, replacement, includeDetails: !balanceOnly);
             await db.SaveChangesAsync(ct);
         }, ct);
+    public Task UpdateDetailsAsync(Expense replacement, long userId, byte[] expectedVersion, CancellationToken ct)
+        => InTransaction(async () =>
+        {
+            await ValidateWrite(replacement, userId, ct);
+            var current = await db.Expenses.Include(x => x.Splits).SingleOrDefaultAsync(x => x.Id == replacement.Id && x.EventId == replacement.EventId, ct)
+                ?? throw new AppException(ErrorKind.NotFound, "Nie znaleziono pozycji.");
+            var ev = await db.Events.SingleAsync(x => x.Id == current.EventId, ct);
+            var payer = await db.EventParticipants.SingleAsync(x => x.Id == current.PaidByParticipantId, ct);
+            if (current.AuthorUserId != userId && ev.OwnerUserId != userId && payer.UserId != userId)
+                throw new AppException(ErrorKind.Forbidden, "Nie masz uprawnień do zmiany tej pozycji.");
+            if (current.PaidByParticipantId != replacement.PaidByParticipantId)
+                throw new AppException(ErrorKind.Forbidden, "Nie masz uprawnień do zmiany tej pozycji.");
+            if (!current.RowVersion.SequenceEqual(expectedVersion))
+                throw new AppException(ErrorKind.Conflict, "Pozycja została zmieniona. Odśwież wydarzenie.");
+            ApplyReplacement(current, replacement, includeDetails: true);
+            await db.SaveChangesAsync(ct);
+        }, ct);
+    private void ApplyReplacement(Expense current, Expense replacement, bool includeDetails)
+    {
+        current.SplitMethod = replacement.SplitMethod; current.Balanced = replacement.Balanced;
+        if (includeDetails) { current.Name = replacement.Name; current.AmountMinor = replacement.AmountMinor; }
+        current.BalanceParticipantId = replacement.BalanceParticipantId; current.BalanceAmountMinor = replacement.BalanceAmountMinor;
+        current.OthersAmountMinor = replacement.OthersAmountMinor;
+        foreach (var old in current.Splits.ToList())
+        {
+            var next = replacement.Splits.SingleOrDefault(x => x.ParticipantId == old.ParticipantId);
+            if (next is null) db.ExpenseSplits.Remove(old);
+            else { old.AmountMinor = next.AmountMinor; old.PercentageBps = next.PercentageBps; }
+        }
+        foreach (var next in replacement.Splits.Where(x => !current.Splits.Any(s => s.ParticipantId == x.ParticipantId))) current.Splits.Add(next);
+        // Mark the aggregate modified even when only its children changed, updating its concurrency token.
+        db.Entry(current).Property(x => x.Balanced).IsModified = true;
+    }
     public Task UpdatePayerAsync(long eventId, long expenseId, long userId, long payerId, byte[] expectedVersion, CancellationToken ct)
         => InTransaction(async () =>
         {

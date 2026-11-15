@@ -31,7 +31,10 @@ Przy pierwszej wizycie główny język przeglądarki wybiera PL dla polskiego, a
 pozostałych języków; przy braku informacji używany jest PL. Ręczny wybór jest
 zapamiętywany na tym urządzeniu i ma pierwszeństwo przy kolejnych wizytach.
 Zmiana języka nie wylogowuje, nie usuwa zaproszenia i nie czyści formularzy.
-Kwoty pozostają w PLN; format liczb i dat dopasowuje się do języka.
+Nowe wydarzenia domyślnie używają PLN; przy tworzeniu lub edycji można wybrać USD,
+EUR, GBP, CNY, CHF albo brak waluty. Kwoty są formatowane według języka;
+przy pustej walucie wyświetlana jest sama liczba. Kwoty mają dokładność do dwóch
+miejsc po przecinku; zmiana waluty nie przelicza zapisanych już wartości.
 
 Strony prywatności, usuwania danych i zasad korzystania mają obie wersje pod
 dotychczasowymi adresami. Parametr `?lang=pl` lub `?lang=en` wskazuje wersję.
@@ -241,8 +244,13 @@ imienia nie odzyskuje wcześniejszego konta.
 
 1. Przejdź do **Wydarzenia** i wybierz **Utwórz wydarzenie**.
 2. Wpisz nazwę i opcjonalny opis.
-3. Rozwiń **Zaproś znajomych**, a następnie skopiuj lub udostępnij link.
+3. Otwórz wydarzenie i wybierz **Uczestnicy**. Rozwiń **Zaproś znajomych**,
+   a następnie skopiuj lub udostępnij link.
 4. Odbiorca otwiera zaproszenie, loguje się i potwierdza **Dołącz do wydarzenia**.
+
+W widoku wydarzenia przełączaj zakładki **Uczestnicy**, **Wydatki** i **Rozliczenia**.
+Zakładka **Uczestnicy** zawiera zwijane sekcje **Uczestnicy bez konta** i
+**Zaproś znajomych**; narzędzia są dostępne dla autora wydarzenia zgodnie z jego uprawnieniami.
 
 Autor i dołączone osoby widzą wydarzenie na swoich listach.
 Formularz **Dołącz linkiem lub kodem** pozwala również wprowadzić zaproszenie ręcznie.
@@ -275,7 +283,8 @@ i wydatki obu wpisów; jeżeli oba były w tej samej pozycji, ich kwoty i zadane
 są sumowane. Płacący zostają przypisani do połączonego uczestnika, a autorzy wpisów
 pozostają bez zmian. Łączenie nie przenosi danych z innych wydarzeń ani nie łączy kont.
 Takie samo imię nigdy nie powoduje automatycznego połączenia. Dodanie lub połączenie
-uczestnika nie rozdziela automatycznie kwoty **Inni** — autor pozycji nadal poprawia podział.
+uczestnika nie przypisuje automatycznie kwoty widocznej w wierszu **Przypisz** — autor
+pozycji nadal poprawia podział.
 
 Uczestnik bez konta nie może sam oznaczać **Wysłane/Odebrane**. Zalogowana druga
 strona może oznaczyć wyłącznie własną stronę przelewu; autor wydarzenia nie uzyskuje
@@ -285,7 +294,7 @@ wcześniejsze płatności nadal nie są automatycznie odliczane od nowego planu.
 
 ### Dodawanie wydatków
 
-1. W wydarzeniu wybierz **Dodaj pozycję** i podaj nazwę oraz kwotę w złotych.
+1. W wydarzeniu wybierz **Dodaj wydatek** i podaj nazwę oraz kwotę w złotych.
 2. Wybierz osoby do podziału przez ich kolorowe ikonki.
 3. Ustal podział **Procentowo** lub **Kwotowo**. Domyślne procenty są równe
    dla zaznaczonych osób, np. 33%, 50% lub 25%, i można je ręcznie zmienić.
@@ -297,15 +306,17 @@ wprowadziła; płacący to osoba, która poniosła koszt. Domyślnie jest to ta 
 Tylko **autor wydarzenia** może wskazać innego płacącego lub zmienić go później
 w szczegółach pozycji przez **Zmień płacącego**.
 
-Nierozdzielona kwota trafia do **Inni**. Znane osoby bez konta warto dodać jako
-uczestników bez konta i wskazać je w podziale, zamiast pozostawiać ich koszt w „Inni”.
+Nierozdzielona kwota jest widoczna w wierszu **Przypisz**. Znane osoby bez konta warto
+dodać jako uczestników bez konta i wskazać je w podziale, zamiast pozostawiać ich koszt
+nieprzypisany.
 Mały przycisk **Wyrównaj** przy każdej osobie w podziale przypisuje resztę właśnie
 tej osobie — bez automatycznego wyboru największego udziału ani autora wpisu.
 Wybrany przycisk jest podświetlony. Kliknięcie przy innej osobie przenosi wyrównanie:
 poprzednia osoba wraca do swojego udziału bazowego, a nowa dostaje tę samą resztę.
-Ponowne kliknięcie podświetlonego przycisku wycofuje wyrównanie do **Inni**.
+Ponowne kliknięcie podświetlonego przycisku wycofuje wyrównanie, a kwota wraca do wiersza
+**Przypisz**.
 Gdy nie ma reszty ani wcześniej przypisanego wyrównania, przyciski są wyszarzone.
-Suma udziałów wraz z „Inni” zawsze odpowiada całej kwocie.
+Suma udziałów i kwoty w wierszu **Przypisz** zawsze odpowiada całej kwocie.
 
 Wyrównanie może zmienić tylko **autor wydarzenia lub wskazany płacący** i tylko
 w otwartym wydarzeniu. Samo autorstwo pozycji nie daje tego uprawnienia, jeżeli
@@ -319,22 +330,23 @@ w pozycji dodanej przez inną osobę; nie uzyskują przez to prawa do dowolnej e
 jej udziałów. Gdy formularz pozycji jest otwarty, przyciski przy zapisanych pozycjach
 są zablokowane do jego zatwierdzenia lub anulowania.
 
-Szczegóły pozycji są rozwijane. Jej autor może wybrać **Popraw podział**, dopóki
-wydarzenie jest otwarte. Dołączenie nowych osób nie zmienia wcześniejszych podziałów
-automatycznie.
+Szczegóły pozycji są rozwijane. W otwartym wydarzeniu autor może wybrać
+**Edytuj wydatek**, aby zmienić nazwę, kwotę i podział. Płacący lub autor wydarzenia
+może zmienić nazwę i kwotę. Dołączenie nowych osób nie zmienia wcześniejszych
+podziałów automatycznie.
 
 ### Rozliczenie i płatności
 
 Rozliczenie przelicza zapisane pozycje i kompensuje długi. Jeśli jedna osoba jest
 winna drugiej 12 zł, a druga pierwszej 3 zł, wynik to jeden przelew 9 zł.
 Kwota do oddania lub otrzymania jest widoczna nad listą wydatków.
-Na komputerze rozliczenie jest obok wydatków, na telefonie w zakładce **Rozliczenie**.
+Rozliczenie otworzysz w zakładce **Rozliczenia** w widoku wydarzenia.
 
 - **Podgląd** jest bieżącym planem, który może się zmieniać. Dane można odświeżyć
   przyciskiem **Odśwież**; widoczny ekran aktualizuje się także co 15 sekund.
 - **Zamknij i rozlicz** zatwierdza plan i blokuje dodawanie pozycji, zmianę podziałów
-  oraz dołączanie. Może to zrobić tylko autor wydarzenia, gdy „Inni” wynosi zero
-  we wszystkich pozycjach i formularz dodawania/edycji jest zakończony.
+  oraz dołączanie. Może to zrobić tylko autor wydarzenia, gdy we wszystkich pozycjach
+  kwota w wierszu **Przypisz** wynosi zero, a formularz dodawania/edycji jest zakończony.
 - Dopiero w zamkniętym rozliczeniu nadawca może zaznaczyć **Wysłane**, a odbiorca
   **Odebrane**. Każdy zmienia wyłącznie własne oznaczenie. Oba statusy widzą tylko
   strony przelewu; pozostali uczestnicy ich nie widzą.
@@ -351,9 +363,11 @@ Na Androidzie i obsługiwanych przeglądarkach komputerowych wywołuje instalacj
 a gdy przeglądarka jej nie udostępnia, pokazuje instrukcję.
 Na iPhonie użyj menu przeglądarki **Udostępnij → Dodaj do ekranu początkowego**.
 
-Do logowania, zapisywania danych i rozliczania potrzebne jest połączenie z API.
-Po dłuższej bezczynności pierwsze połączenie z serwerem może potrwać dłużej.
-Jeżeli pojawi się błąd oczekiwania, wybierz **Ponów połączenie**.
+PWA zapisuje pliki interfejsu, w tym logo, w cache, dzięki czemu po utracie internetu
+można ponownie otworzyć aplikację i zobaczyć jej ekran. Dane wydarzeń nie są dostępne
+offline: logowanie, pobieranie i zapisywanie danych oraz rozliczenia wymagają połączenia
+z API. Podczas żądań widać wspólny wskaźnik, a przy braku połączenia jeden komunikat.
+Po przywróceniu internetu odśwież widok, aby ponownie pobrać dane.
 
 ## Sprawdzenie projektu
 
@@ -379,7 +393,7 @@ nie uruchamia automatycznego deployu.
 Wybierz **ZALOGUJ / UTWÓRZ KONTO**. Możesz zarejestrować e-mail i hasło albo użyć
 Google/Facebooka, jeśli administrator skonfigurował danego dostawcę.
 
-- Rejestracja e-mail wymaga imienia i hasła o długości 12–128 znaków. Przed pierwszym
+- Rejestracja e-mail wymaga imienia i hasła o długości 8–128 znaków. Przed pierwszym
   logowaniem trzeba potwierdzić adres jednorazowym linkiem z wiadomości (ważność 24 godziny).
 - **Nie pamiętam hasła** wysyła link ważny 30 minut. Ustawienie nowego hasła unieważnia
   dotychczasowe sesje i pozostałe linki resetu. Link sam w sobie nie loguje użytkownika.
