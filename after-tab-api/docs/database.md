@@ -74,4 +74,4 @@ ponownie nadać dostęp i domyślne uprawnienia `aftertab_app`, ponieważ skrypt
 inicjalizacyjny działa tylko przy pierwszym utworzeniu wolumenu.
 
 `docker compose down -v` usuwa także dane bazy, logi i klucze Data Protection —
-nie jest zwykłym krokiem aktualizacji. Szczegóły: [wdrożenie mikr.us](../../deploy/mikrus/README.md).
+nie jest zwykłym krokiem aktualizacji. Szczegóły: [wdrożenie VPS](../../deploy/vps/README.md).

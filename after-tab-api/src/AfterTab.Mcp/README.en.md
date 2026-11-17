@@ -34,7 +34,7 @@ are unavailable while disabled. To enable:
    `Authorization` and `Mcp-*` headers, support POST and avoid buffering SSE responses.
    Do not log Authorization headers or responses containing token secrets.
 
-For [Docker Compose](../../../deploy/mikrus/README.en.md), set `MCP_ENABLED=true`
+For [Docker Compose](../../../deploy/vps/README.en.md), set `MCP_ENABLED=true`
 in your private `.env` and rebuild images using the deployment instructions.
 The supplied nginx forwards `/mcp` to the API. The default `false` keeps the
 integration disabled. Enabling MCP does not require changing the database provider

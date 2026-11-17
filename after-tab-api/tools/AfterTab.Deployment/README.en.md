@@ -61,7 +61,7 @@ dotnet run --project after-tab-api/tools/AfterTab.Deployment -- --migrate
 
 This example assumes TLS with a trusted certificate matching the hostname.
 Configure certificates for your server. Local examples and Docker Compose are
-covered by the root README and the [mikr.us/VPS guide](../../../deploy/mikrus/README.en.md).
+covered by the root README and the [VPS guide](../../../deploy/vps/README.en.md).
 
 ## Inspect state or use EF CLI
 

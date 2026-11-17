@@ -52,8 +52,15 @@ unit tests. Results and logs appear in the repository's **Actions** tab.
 The workflow does not run for `main`, run integration tests, require a database,
 or deploy the application.
 
-Optional frontend + API + PostgreSQL deployment on mikr.us/VPS:
-[Docker Compose](deploy/mikrus/README.en.md). Azure is an optional hosting choice.
+Optional self-hosted frontend + API + PostgreSQL deployment on a VPS:
+[Docker Compose](deploy/vps/README.en.md). Azure is an optional hosting choice.
+
+Set the operator name, contact address, hosting provider and email provider with
+`VITE_OPERATOR_NAME`, `VITE_CONTACT_EMAIL`, `VITE_HOSTING_PROVIDER` and
+`VITE_EMAIL_PROVIDER` before building the frontend. Keep them in
+`after-tab-app/.env.production.local` or the deployment's local `.env`. The build
+inserts them into the legal pages; visitors can see them after deployment, so
+they are public details rather than secrets.
 
 Optional footer links use `VITE_GITHUB_URL` and `VITE_ANDROID_APK_URL`. Blank values
 hide the corresponding link, so another deployment does not have to point to the

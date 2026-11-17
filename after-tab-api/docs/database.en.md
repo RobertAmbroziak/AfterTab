@@ -73,4 +73,4 @@ does not reset data. After recreating the database, restore `aftertab_app` acces
 and default grants: initialization scripts only run when a volume is first initialized.
 
 `docker compose down -v` also deletes database data, logs and Data Protection keys;
-it is not a normal update step. See the [mikr.us deployment guide](../../deploy/mikrus/README.en.md).
+it is not a normal update step. See the [VPS deployment guide](../../deploy/vps/README.en.md).

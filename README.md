@@ -53,8 +53,15 @@ instaluje zależności, buduje backend i frontend oraz wykonuje testy jednostkow
 Workflow nie uruchamia się dla `main`, nie wykonuje testów integracyjnych,
 nie potrzebuje bazy i nie publikuje aplikacji.
 
-Opcjonalne wdrożenie frontend + API + PostgreSQL na mikr.us/VPS:
-[Docker Compose](deploy/mikrus/README.md). Azure jest opcjonalnym wariantem hostingu.
+Opcjonalne samodzielne wdrożenie frontend + API + PostgreSQL na VPS:
+[Docker Compose](deploy/vps/README.md). Azure jest opcjonalnym wariantem hostingu.
+
+Dane operatora, adres kontaktowy i nazwy usługodawców hostingu oraz poczty ustaw
+przez `VITE_OPERATOR_NAME`, `VITE_CONTACT_EMAIL`, `VITE_HOSTING_PROVIDER` i
+`VITE_EMAIL_PROVIDER` przed budowaniem frontendu. Możesz trzymać je w
+`after-tab-app/.env.production.local` albo w lokalnym `.env` wdrożenia. Build
+wstawi je do stron prawnych; będą publicznie widoczne po wdrożeniu i nie są
+sekretami.
 
 Linki stopki można ustawić przez `VITE_GITHUB_URL` i `VITE_ANDROID_APK_URL`.
 Puste wartości ukrywają odpowiedni link, dzięki czemu inne wdrożenia nie muszą
