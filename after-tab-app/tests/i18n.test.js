@@ -62,7 +62,7 @@ test('public legal pages retain both full static articles and all existing desti
     assert.match(html, /<article lang="en" data-language="en"/)
     assert.match(html, /data-select-language="pl"/)
     assert.match(html, /data-select-language="en"/)
-    assert.match(html, /amb77ro@gmail.com/)
+    assert.match(html, /\{\{PUBLIC_CONTACT_EMAIL\}\}/)
     for (const destination of ['privacy', 'terms', 'data-deletion']) assert(html.includes(`/${destination}.html`))
   }
 })

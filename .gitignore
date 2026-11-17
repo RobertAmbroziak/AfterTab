@@ -47,7 +47,7 @@
 *.suo
 *.log
 **/logs/
-deploy/mikrus/backups/
+deploy/vps/backups/
 *.zip
 *.7z
 *.nupkg
