@@ -71,8 +71,7 @@ export default function App() {
   const needsName = Boolean(session?.user.requiresDisplayName)
   return <main className="app-shell">
     <header className="app-header">
-      <a className="brand" aria-label="AfterTab" href="#/" onClick={e => { e.preventDefault(); showEvents() }}><img src="/pwa-192x192.png" alt="" width="38" height="38" /><span>AfterTab</span></a>
-      <button className="header-events" aria-label={t("Wydarzenia")} title={t("Wydarzenia")} onClick={() => { showEvents(); setMenu(false) }}><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="3" /><path d="M7 3v4m10-4v4M3 11h18m-13 5h2m4 0h2" /></svg><span>{t("Wydarzenia")}</span></button>
+      <a className="brand" aria-label="AfterTab" href="#/" onClick={e => { e.preventDefault(); showEvents(); setMenu(false) }}><img src="/pwa-192x192.png" alt="" width="38" height="38" /><span>AfterTab</span></a>
       <div className="header-install"><InstallButton /></div>
       <div className="language-switch" role="group" aria-label={language === 'pl' ? 'Język aplikacji' : 'App language'}>
         <button type="button" lang="pl" aria-label="Polski" aria-pressed={language === 'pl'} onClick={() => setLanguage('pl')}>PL</button>

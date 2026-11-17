@@ -115,7 +115,7 @@ export const english = {
   'WRÓĆ JAKO GOŚĆ': 'RETURN AS GUEST', 'Wczytywanie pozycji…': 'Loading expenses…',
   'Wczytywanie wydarzenia…': 'Loading event…', 'Wczytywanie wydarzeń…': 'Loading events…',
   'Wersja': 'Version', 'Widok wydarzenia': 'Event view', 'Wróć do listy': 'Back to list',
-  'Wspólne wyjścia.': 'Go out together.', 'Wybierz': 'Choose', 'Wydarzenia': 'Events',
+  'Wspólne wyjścia.': 'Go out together.', 'Wybierz': 'Choose',
   'Wydarzenie zamknięte': 'Event closed', 'Wydatki': 'Expenses', 'Wygeneruj nowy link': 'Generate new link',
   'Wyloguj': 'Sign out', 'Wyrównaj': 'Assign remainder', 'Wyrównanie': 'Remainder', 'Wysłane': 'Sent',
   'Wyślij potwierdzenie e-mail': 'Resend confirmation email', 'Wyślij potwierdzenie ponownie': 'Resend confirmation',
