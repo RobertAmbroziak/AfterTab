@@ -18,6 +18,7 @@ export default function McpTokens({ onClose }) {
   const [busy, setBusy] = useState(true)
   const [error, setError] = useState('')
   const copyFeedback = useRef(null)
+  const mcpServerUrl = import.meta.env.VITE_MCP_SERVER_URL || ''
 
   useEffect(() => {
     let active = true
@@ -96,34 +97,38 @@ export default function McpTokens({ onClose }) {
   return <section className="workspace integration-panel" aria-label={t('Integracje AI')}>
     <div className="section-heading"><h2>{t('Integracje AI')}</h2><button type="button" className="text-button" onClick={event => { event.preventDefault(); event.stopPropagation(); onClose() }}>{t('Zamknij')}</button></div>
 
-    <div className="integration-notice" role="status">
-      <strong>{t('ChatGPT w przeglądarce')}</strong>
-      <p>{t('Dodaj adres serwera MCP do ChatGPT w przeglądarce i wybierz OAuth. Po zalogowaniu się w AfterTab zaakceptuj dostęp; token nie trzeba kopiować. Serwer musi być publicznie dostępny przez HTTPS.')}</p>
-      <p>{t('Ustawienia osobiste poniżej są przypisane do Twojego konta i mogą być odczytane przez połączonego asystenta.')}</p>
-    </div>
+    <details className="integration-section mcp-instructions">
+      <summary><span>{t('Instrukcje Asystenta')}</span></summary>
+      <form className="app-form" onSubmit={saveInstructions}>
+        <label htmlFor="mcp-instructions">{t('Osobiste instrukcje dla asystenta')}</label>
+        <textarea id="mcp-instructions" rows="5" maxLength={2000} value={instructions}
+          placeholder={t('Np. gdy piszę „ja” lub „mnie”, chodzi o moje konto AfterTab.')}
+          onChange={event => setInstructions(event.target.value)} />
+        <p className="helper-text">{t('Asystent odczyta te zasady z Twojego konta przed zmianami w wydarzeniach. Nie wpisuj tu haseł ani tokenów. Maksymalnie 2000 znaków.')}</p>
+        <button className="secondary-button" disabled={savingInstructions || instructions === savedInstructions}>{savingInstructions ? t('Zapisywanie…') : t('Zapisz zmiany')}</button>
+      </form>
+    </details>
 
-    <form className="mcp-instructions app-form" onSubmit={saveInstructions}>
-      <label htmlFor="mcp-instructions">{t('Osobiste instrukcje dla asystenta')}</label>
-      <textarea id="mcp-instructions" rows="5" maxLength={2000} value={instructions}
-        placeholder={t('Np. gdy piszę „ja” lub „mnie”, chodzi o moje konto AfterTab.')}
-        onChange={event => setInstructions(event.target.value)} />
-      <p className="helper-text">{t('Asystent odczyta te zasady z Twojego konta przed zmianami w wydarzeniach. Nie wpisuj tu haseł ani tokenów. Maksymalnie 2000 znaków.')}</p>
-      <button className="secondary-button" disabled={savingInstructions || instructions === savedInstructions}>{savingInstructions ? t('Zapisywanie…') : t('Zapisz instrukcje')}</button>
-    </form>
-
-    <section className="mcp-oauth-clients" aria-label={t('Połączone aplikacje OAuth')}>
-      <h3>{t('Połączone aplikacje OAuth')}</h3>
+    <details className="integration-section mcp-oauth-clients">
+      <summary><span>{t('Połączenie OAuth')}</span></summary>
+      <div className="mcp-server-address">
+        <span>{t('Adres serwera MCP:')}</span>
+        {mcpServerUrl && <code>{mcpServerUrl}</code>}
+      </div>
       {oauthClients.length === 0 && !busy && <p className="helper-text">{t('Nie ma połączonych aplikacji.')}</p>}
-      {oauthClients.map(client => <div className="mcp-oauth-client" key={client.clientId}>
-        <div><strong>{client.clientName}</strong></div>
+      <div className="mcp-oauth-list">{oauthClients.map(client => <article className="mcp-oauth-client" key={client.clientId}>
+        <div className="mcp-oauth-client-info">
+          <strong>{client.clientName || t('Aplikacja OAuth')}</strong>
+          <span className="helper-text">{t('Połączono:')} {client.connectedAtUtc ? new Date(client.connectedAtUtc).toLocaleString(getLocale()) : t('Data niedostępna')}</span>
+        </div>
         <button type="button" className="text-button danger" disabled={busy} onClick={() => disconnectOAuth(client.clientId)}>{t('Odłącz')}</button>
-      </div>)}
-    </section>
+      </article>)}</div>
+    </details>
 
     {error && !isNetworkError(error) && <p role="alert" className="auth-error">{t(error)}</p>}
 
-    <details className="manual-mcp" open={tokens.length === 0}>
-      <summary><span>{t('Ręczny token MCP dla testów')}</span></summary>
+    <details className="integration-section manual-mcp" open={tokens.length === 0}>
+      <summary><span>{t('Połączenie Token')}</span></summary>
       <p className="helper-text">{t('Token działa z uprawnieniami bieżącego konta AfterTab. Konto może być trwałe albo zapamiętanym gościem. Nie wklejaj tokenu do rozmowy z ChatGPT.')}</p>
       <form className="app-form" onSubmit={create}>
         <label>{t('Nazwa tokena')}<input value={name} maxLength={100} required onChange={event => setName(event.target.value)} /></label>
@@ -143,12 +148,11 @@ export default function McpTokens({ onClose }) {
           <button type="button" className="text-button" onClick={() => { setSecret(''); setCopied(false) }}>{t('Ukryj token')}</button>
         </div>
       </div>}
+      <ul className="integration-token-list">{tokens.map(token => <li key={token.id}>
+        <strong>{token.name}</strong> — {token.canWrite ? t('Odczyt i zapis') : t('Tylko odczyt')}
+        <p>{t('Ważny do:')} {new Date(token.expiresAtUtc).toLocaleString(getLocale())}</p>
+        {token.revokedAtUtc ? <span>{t('Unieważniony')}</span> : <button className="text-button danger" disabled={busy} onClick={() => revoke(token.id)}>{t('Unieważnij token')}</button>}
+      </li>)}</ul>
     </details>
-
-    <ul className="integration-token-list">{tokens.map(token => <li key={token.id}>
-      <strong>{token.name}</strong> — {token.canWrite ? t('Odczyt i zapis') : t('Tylko odczyt')}
-      <p>{t('Ważny do:')} {new Date(token.expiresAtUtc).toLocaleString(getLocale())}</p>
-      {token.revokedAtUtc ? <span>{t('Unieważniony')}</span> : <button className="text-button danger" disabled={busy} onClick={() => revoke(token.id)}>{t('Unieważnij token')}</button>}
-    </li>)}</ul>
   </section>
 }

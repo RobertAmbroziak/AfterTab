@@ -19,7 +19,7 @@ public sealed record McpOAuthClientRegistration(
     [property: JsonPropertyName("grant_types")] string[] GrantTypes,
     [property: JsonPropertyName("response_types")] string[] ResponseTypes);
 public sealed record McpOAuthAuthorizationRequest(Guid RequestId, string ClientName, string[] Scopes);
-public sealed record McpOAuthConnectedClient(string ClientId, string ClientName);
+public sealed record McpOAuthConnectedClient(string ClientId, string ClientName, DateTimeOffset? ConnectedAtUtc);
 public sealed record McpOAuthApproveRequest(Guid RequestId, bool Approve);
 public sealed record McpOAuthRedirect([property: JsonPropertyName("redirectUrl")] string RedirectUrl);
 public sealed record McpOAuthTokenResponse(string AccessToken, string TokenType, int ExpiresIn,
@@ -180,7 +180,7 @@ public sealed class McpOAuthService(AppDbContext db, IHttpContextAccessor http,
             var consumed = await db.McpOAuthAuthorizationCodes.Where(x => x.Id == grant.Id && x.ConsumedAtUtc == null)
                 .ExecuteUpdateAsync(set => set.SetProperty(x => x.ConsumedAtUtc, now), ct);
             if (consumed != 1) return null;
-            return await IssueTokensAsync(grant.UserId, grant.ClientId, grant.Scope, grant.Resource, Guid.NewGuid(), now, ct);
+            return await IssueTokensAsync(grant.UserId, grant.ClientId, grant.Scope, grant.Resource, Guid.NewGuid(), now, now, ct);
         }, ct);
     }
 
@@ -204,7 +204,8 @@ public sealed class McpOAuthService(AppDbContext db, IHttpContextAccessor http,
             var changed = await db.McpOAuthTokens.Where(x => x.Id == token.Id && x.RevokedAtUtc == null)
                 .ExecuteUpdateAsync(set => set.SetProperty(x => x.RevokedAtUtc, now), ct);
             if (changed != 1) return null;
-            return await IssueTokensAsync(token.UserId, token.ClientId, token.Scope, token.Resource, token.FamilyId, now, ct);
+            return await IssueTokensAsync(token.UserId, token.ClientId, token.Scope, token.Resource, token.FamilyId,
+                now, token.ConnectedAtUtc ?? now, ct);
         }, ct);
     }
 
@@ -228,10 +229,11 @@ public sealed class McpOAuthService(AppDbContext db, IHttpContextAccessor http,
             join client in db.McpOAuthClients.AsNoTracking() on token.ClientId equals client.ClientId
             where token.UserId == userId && token.TokenType == RefreshType
                 && token.RevokedAtUtc == null && token.ExpiresAtUtc > now
-            select new { token.ClientId, client.ClientName })
+            select new { token.ClientId, client.ClientName, token.ConnectedAtUtc })
             .ToListAsync(ct);
         return active.GroupBy(x => new { x.ClientId, x.ClientName })
-            .Select(group => new McpOAuthConnectedClient(group.Key.ClientId, group.Key.ClientName))
+            .Select(group => new McpOAuthConnectedClient(group.Key.ClientId, group.Key.ClientName,
+                group.Where(x => x.ConnectedAtUtc.HasValue).Min(x => x.ConnectedAtUtc)))
             .OrderBy(x => x.ClientName, StringComparer.OrdinalIgnoreCase).ToArray();
     }
 
@@ -251,7 +253,7 @@ public sealed class McpOAuthService(AppDbContext db, IHttpContextAccessor http,
     }
 
     public async Task<McpOAuthTokenResponse> IssueTokensAsync(long userId, string clientId, string scope,
-        string resource, Guid familyId, DateTimeOffset now, CancellationToken ct)
+        string resource, Guid familyId, DateTimeOffset now, DateTimeOffset connectedAtUtc, CancellationToken ct)
     {
         var scopes = scope.Split(' ', StringSplitOptions.RemoveEmptyEntries);
         var access = "atm_oauth_" + WebEncoders.Base64UrlEncode(RandomNumberGenerator.GetBytes(32));
@@ -259,9 +261,10 @@ public sealed class McpOAuthService(AppDbContext db, IHttpContextAccessor http,
         db.McpOAuthTokens.AddRange(
             new McpOAuthToken { TokenHash = Hash(access), TokenType = AccessType, ClientId = clientId, UserId = userId,
                 Scope = string.Join(' ', scopes.Where(x => x != "offline_access")), Resource = resource,
-                FamilyId = familyId, ExpiresAtUtc = now.AddMinutes(10) },
+                FamilyId = familyId, ConnectedAtUtc = connectedAtUtc, ExpiresAtUtc = now.AddMinutes(10) },
             new McpOAuthToken { TokenHash = Hash(refresh), TokenType = RefreshType, ClientId = clientId, UserId = userId,
-                Scope = scope, Resource = resource, FamilyId = familyId, ExpiresAtUtc = now.AddDays(30) });
+                Scope = scope, Resource = resource, FamilyId = familyId, ConnectedAtUtc = connectedAtUtc,
+                ExpiresAtUtc = now.AddDays(30) });
         await db.SaveChangesAsync(ct);
         return new(access, "Bearer", 600, refresh, string.Join(' ', scopes));
     }
