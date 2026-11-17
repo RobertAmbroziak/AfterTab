@@ -1,0 +1,106 @@
+name: Deploy API to VPS
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - after-tab-api/**
+      - deploy/vps/Dockerfile.api
+      - deploy/vps/compose.azure-frontend.yaml
+      - deploy/vps/api-only.nginx.conf
+      - deploy/vps/init-runtime-user.sql
+      - .github/workflows/deploy-vps-backend.yml
+  workflow_dispatch:
+    inputs:
+      confirm_production_deploy:
+        description: Type deploy to publish the selected main revision
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: vps-backend-production
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    if: github.ref == 'refs/heads/main' && (github.event_name == 'push' || inputs.confirm_production_deploy == 'deploy')
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Check deployment settings
+        env:
+          VPS_SSH_HOST: ${{ vars.VPS_SSH_HOST }}
+          VPS_SSH_PORT: ${{ vars.VPS_SSH_PORT }}
+          VPS_SSH_USER: ${{ vars.VPS_SSH_USER }}
+          VPS_APP_PATH: ${{ vars.VPS_APP_PATH }}
+          VPS_SSH_PRIVATE_KEY: ${{ secrets.VPS_SSH_PRIVATE_KEY }}
+          VPS_SSH_KNOWN_HOSTS: ${{ secrets.VPS_SSH_KNOWN_HOSTS }}
+        shell: bash
+        run: |
+          for name in VPS_SSH_HOST VPS_SSH_PORT VPS_SSH_USER VPS_APP_PATH VPS_SSH_PRIVATE_KEY VPS_SSH_KNOWN_HOSTS; do
+            if [ -z "${!name}" ]; then
+              echo "Missing GitHub Actions setting: $name" >&2
+              exit 1
+            fi
+          done
+
+      - name: Configure SSH
+        env:
+          VPS_SSH_HOST: ${{ vars.VPS_SSH_HOST }}
+          VPS_SSH_PORT: ${{ vars.VPS_SSH_PORT }}
+          VPS_SSH_PRIVATE_KEY: ${{ secrets.VPS_SSH_PRIVATE_KEY }}
+          VPS_SSH_KNOWN_HOSTS: ${{ secrets.VPS_SSH_KNOWN_HOSTS }}
+        shell: bash
+        run: |
+          install -d -m 700 "$RUNNER_TEMP/vps-ssh"
+          printf '%s\n' "$VPS_SSH_PRIVATE_KEY" > "$RUNNER_TEMP/vps-ssh/id_ed25519"
+          printf '%s\n' "$VPS_SSH_KNOWN_HOSTS" > "$RUNNER_TEMP/vps-ssh/known_hosts"
+          chmod 600 "$RUNNER_TEMP/vps-ssh/id_ed25519" "$RUNNER_TEMP/vps-ssh/known_hosts"
+          if [ "$VPS_SSH_PORT" = "22" ]; then
+            known_host="$VPS_SSH_HOST"
+          else
+            known_host="[$VPS_SSH_HOST]:$VPS_SSH_PORT"
+          fi
+          ssh-keygen -F "$known_host" -f "$RUNNER_TEMP/vps-ssh/known_hosts" >/dev/null
+
+      - name: Update API stack on VPS
+        env:
+          VPS_SSH_HOST: ${{ vars.VPS_SSH_HOST }}
+          VPS_SSH_PORT: ${{ vars.VPS_SSH_PORT }}
+          VPS_SSH_USER: ${{ vars.VPS_SSH_USER }}
+          VPS_APP_PATH: ${{ vars.VPS_APP_PATH }}
+        shell: bash
+        run: |
+          ssh \
+            -i "$RUNNER_TEMP/vps-ssh/id_ed25519" \
+            -p "$VPS_SSH_PORT" \
+            -o IdentitiesOnly=yes \
+            -o BatchMode=yes \
+            -o StrictHostKeyChecking=yes \
+            -o UserKnownHostsFile="$RUNNER_TEMP/vps-ssh/known_hosts" \
+            "$VPS_SSH_USER@$VPS_SSH_HOST" "bash -s -- '$VPS_APP_PATH'" <<'REMOTE'
+          set -euo pipefail
+          app_path="$1"
+
+          if [[ ! -d "$app_path/.git" ]]; then
+            echo "VPS_APP_PATH is not a Git checkout: $app_path" >&2
+            exit 1
+          fi
+
+          git -C "$app_path" switch main
+          git -C "$app_path" pull --ff-only origin main
+
+          if [[ ! -f "$app_path/deploy/vps/.env" ]]; then
+            echo "Missing deploy/vps/.env; copy the existing Compose environment file before enabling deployment" >&2
+            exit 1
+          fi
+
+          cd "$app_path/deploy/vps"
+          docker compose -f compose.azure-frontend.yaml config --quiet
+          docker compose -f compose.azure-frontend.yaml up -d --build
+          docker compose -f compose.azure-frontend.yaml ps -a
+          REMOTE
