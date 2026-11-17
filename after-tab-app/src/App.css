@@ -3,14 +3,12 @@
 .app-header { display: flex; align-items: center; gap: 26px; padding: 18px 24px; border: 1px solid var(--line); border-radius: 18px 18px 0 0; background: linear-gradient(120deg, #1b282c, #111a1d); }
 .brand { display: flex; align-items: center; gap: 12px; text-decoration: none; color: #fff; font-weight: 750; font-size: 26px; }
 .brand img { border-radius: 8px; }
-.header-events, .account-button { display: flex; align-items: center; gap: 10px; border: 0; color: #eef6f6; background: transparent; min-height: 44px; padding: 6px; }
-.header-events { border-left: 1px solid var(--line); padding-left: 24px; }
+.account-button { display: flex; align-items: center; gap: 10px; border: 0; color: #eef6f6; background: transparent; min-height: 44px; padding: 6px; }
 .header-install { margin-left: auto; }
 .language-switch { display: inline-flex; flex-shrink: 0; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
 .language-switch button { min-width: 40px; min-height: 44px; padding: 6px; border: 0; background: transparent; color: var(--muted); font-size: 13px; font-weight: 700; }
 .language-switch button[aria-pressed="true"] { background: var(--mint); color: #0d2721; }
 .header-install .install-button { display: inline-flex; align-items: center; justify-content: center; gap: 8px; border-color: #50776c; color: var(--mint); }
-.header-events svg { flex-shrink: 0; }
 .account-control { position: relative; }
 .account-button > span:nth-child(2) { max-width: 170px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .account-avatar, .person-avatar { display: inline-flex; flex: 0 0 34px; width: 34px; height: 34px; align-items: center; justify-content: center; border-radius: 50%; color: white; font-weight: 700; background: #087f8d; }
@@ -67,13 +65,13 @@ textarea { resize: vertical; }
 .network-status { color: #d9e8e8; }
 .network-status-dot { flex: 0 0 10px; width: 10px; height: 10px; border-radius: 50%; background: #f0bd67; box-shadow: 0 0 0 4px #f0bd6722; }
 .integration-panel { max-width: 760px; margin-inline: auto; }
-.integration-notice { padding: 16px 18px; border: 1px solid #6c5d3d; border-radius: 14px; background: #29271f; color: #f4e8c8; line-height: 1.6; }
-.integration-notice p { margin: 8px 0 0; font-size: 14px; }
-.mcp-instructions { margin-top: 20px; padding: 16px; border: 1px solid var(--line); border-radius: 14px; background: #151f22; }
+.integration-section { margin-top: 14px; padding: 16px; border: 1px solid var(--line); border-radius: 14px; background: #151f22; }
+.integration-section > summary { cursor: pointer; font-weight: 700; }
+.mcp-instructions { margin-top: 0; }
+.mcp-instructions form { margin-top: 16px; }
 .mcp-instructions textarea { max-width: 100%; }
 .mcp-instructions .helper-text { margin: 0; }
-.manual-mcp { margin-top: 20px; padding: 16px; border: 1px solid var(--line); border-radius: 14px; background: #151f22; }
-.manual-mcp > summary { cursor: pointer; font-weight: 700; }
+.manual-mcp { margin-top: 14px; }
 .expense-breakdown > summary::marker { content: ""; }
 details:not(.expense-breakdown) > summary { display: flex; align-items: center; gap: 10px; list-style: none; }
 details:not(.expense-breakdown) > summary::marker { content: ""; }
@@ -82,6 +80,14 @@ details:not(.expense-breakdown) > summary::before { content: ""; display: block;
 details:not(.expense-breakdown) > summary > span { flex: 1; min-width: 0; }
 details:not(.expense-breakdown)[open] > summary::before { transform: rotate(90deg); }
 .manual-mcp > .helper-text { margin: 12px 0 18px; }
+.mcp-server-address { display: grid; justify-items: start; gap: 6px; margin: 16px 0; padding: 12px 14px; border: 1px solid var(--line); border-radius: 10px; background: #101a1e; overflow-wrap: anywhere; }
+.mcp-server-address > span { color: var(--muted); }
+.mcp-server-address code { display: block; max-width: 100%; color: var(--mint); overflow-wrap: anywhere; }
+.mcp-oauth-list { display: grid; gap: 10px; }
+.mcp-oauth-client { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 14px; border: 1px solid #405358; border-radius: 12px; background: #1b282c; }
+.mcp-oauth-client-info { display: grid; gap: 4px; min-width: 0; }
+.mcp-oauth-client-info .helper-text { margin: 0; }
+@media (max-width: 520px) { .mcp-oauth-client { align-items: stretch; flex-direction: column; } .mcp-oauth-client > button { align-self: flex-start; } }
 .integration-access { display: grid; gap: 10px; min-width: 0; margin: 0; padding: 0; border: 0; }
 .integration-access legend { margin-bottom: 10px; color: #c5d6de; font-size: 14px; }
 .integration-access .access-option { display: flex; align-items: flex-start; gap: 12px; padding: 14px; border: 1px solid #405358; border-radius: 12px; background: #1b282c; cursor: pointer; }
@@ -208,8 +214,7 @@ details[open] > summary .chevron { transform: rotate(180deg); }
   .brand { gap: 8px; font-size: 18px; flex: 1 1 0; min-width: 0; }
   .brand span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .brand img { width: 34px; height: 34px; flex-shrink: 0; }
-  .header-events { margin-left: 0; flex: 0 0 44px; padding: 10px; width: 44px; justify-content: center; }
-  .header-events span, .header-install .install-button span { display: none; }
+  .header-install .install-button span { display: none; }
   .header-install { margin-left: 0; flex-shrink: 0; }
   .header-install .install-button { width: 44px; padding: 10px; }
   .account-control { position: static; margin-left: 0; flex: 0 0 44px; }

@@ -10,6 +10,7 @@ public sealed class McpOAuthToken
     public string Scope { get; set; } = string.Empty;
     public string Resource { get; set; } = string.Empty;
     public Guid FamilyId { get; set; }
+    public DateTimeOffset? ConnectedAtUtc { get; set; }
     public DateTimeOffset ExpiresAtUtc { get; set; }
     public DateTimeOffset? RevokedAtUtc { get; set; }
 }
