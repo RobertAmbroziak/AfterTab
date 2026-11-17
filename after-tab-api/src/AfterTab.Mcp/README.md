@@ -25,6 +25,9 @@ i zarządzanie tokenami nie są dostępne. Aby ją uruchomić:
    [główny README](../../../README.md).
 2. Ustaw `Mcp__Enabled=true` w środowisku API, np. w konfiguracji App Service.
 3. Ustaw `VITE_MCP_ENABLED=true` przy budowaniu frontendu, aby pokazać panel tokenów.
+   Opcjonalnie ustaw `VITE_MCP_SERVER_URL` na publiczny adres endpointu, np.
+   `https://api.example.com/mcp`; zostanie pokazany w sekcji połączenia OAuth.
+   Przy wdrożeniu przez GitHub Actions dodaj tę wartość jako zmienną repozytorium.
 4. Ustaw `Mcp__PublicOrigin` na publiczny origin API, np. `https://api.example.com`.
    To ten sam origin, pod którym są wystawione `/mcp`, endpointy OAuth i dokumenty
    `/.well-known`. Ustaw też istniejące `Authentication__FrontendOrigin` na origin

@@ -865,6 +865,9 @@ namespace AfterTab.DAL.EF.Migrations
                         .HasMaxLength(80)
                         .HasColumnType("nvarchar(80)");
 
+                    b.Property<DateTimeOffset?>("ConnectedAtUtc")
+                        .HasColumnType("datetimeoffset");
+
                     b.Property<DateTimeOffset>("ExpiresAtUtc")
                         .HasColumnType("datetimeoffset");
 

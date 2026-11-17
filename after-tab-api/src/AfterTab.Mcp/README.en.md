@@ -25,6 +25,9 @@ are unavailable while disabled. To enable:
    [main README](../../../README.en.md).
 2. Set `Mcp__Enabled=true` in the API environment, such as App Service configuration.
 3. Set `VITE_MCP_ENABLED=true` when building the frontend to show the token panel.
+   Optionally set `VITE_MCP_SERVER_URL` to the public endpoint URL, for example
+   `https://api.example.com/mcp`; it appears in the OAuth connection section.
+   For GitHub Actions deployments, add it as a repository variable.
 4. Set `Mcp__PublicOrigin` to the public API origin, for example
    `https://api.example.com`. This is the origin for `/mcp`, OAuth endpoints and
    `/.well-known` documents. Also set the existing
