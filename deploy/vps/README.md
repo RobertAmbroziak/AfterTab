@@ -1,4 +1,4 @@
-# Opcjonalne wdrożenie na mikr.us / VPS
+# Opcjonalne wdrożenie na własnym VPS
 
 [English](README.en.md)
 
@@ -24,13 +24,13 @@ docelowej domeny. PostgreSQL i API są dostępne tylko w sieci Compose. Nginx ma
 wewnętrzny port HTTP 8080 i domyślnie wystawia go wyłącznie na `127.0.0.1:8080` VPS.
 
 Wymagane są Docker Engine z kontenerami Linux, Docker Compose v2 oraz **publiczna
-domena z HTTPS**. HTTPS obsługuje reverse proxy hosta lub usługa proxy mikr.us,
+domena z HTTPS**. HTTPS obsługuje reverse proxy hosta lub proxy dostarczone przez dostawcę hostingu,
 przed frontendem Compose. PWA i bezpieczne ciasteczka wymagają HTTPS. Ten zestaw
 nie instaluje certyfikatu ani nie zamawia domeny. Nie wymaga Kubernetes ani Azure.
 
 ## Konfiguracja i pierwszy start
 
-Polecenia dla powłoki Linux, z katalogu `deploy/mikrus`:
+Polecenia dla powłoki Linux, z katalogu `deploy/vps`:
 
 ```sh
 cp .env.example .env
@@ -41,9 +41,13 @@ openssl rand -hex 32
 
 Wpisz dwa różne wygenerowane hasła do `DB_OWNER_PASSWORD` i `DB_APP_PASSWORD`.
 Ustaw `PUBLIC_ORIGIN` na własny adres HTTPS bez końcowego `/`, np.
-`https://aftertab.example.com`. Wartości produkcyjne pozostają w ignorowanym `.env`;
-nie są kopiowane do obrazów. Hasła hex nie zawierają separatorów connection stringa
-ani znaków interpolacji Compose. `.env` jest odczytywany przez Compose, nie przez API.
+`https://aftertab.example.com`. Hasła i ustawienia API pozostają w ignorowanym `.env`
+i są przekazywane do kontenerów podczas uruchamiania. Hasła hex nie zawierają
+separatorów connection stringa ani znaków interpolacji Compose. `.env` jest
+odczytywany przez Compose, nie przez API.
+W `.env` zastąp też przykładowe wartości `VITE_OPERATOR_NAME`, `VITE_CONTACT_EMAIL`,
+`VITE_HOSTING_PROVIDER` i `VITE_EMAIL_PROVIDER`. Compose przekazuje je jako argumenty
+builda, a frontend umieszcza w stronach prawnych; będą widoczne publicznie i nie są sekretami.
 
 Jeśli sieć `172.30.37.0/24` jest zajęta, zmień spójnie `DOCKER_SUBNET`,
 `DOCKER_GATEWAY`, `FRONTEND_IP` i `TRUSTED_PROXY_CIDR`. API ufa nagłówkom
@@ -63,7 +67,7 @@ utworzenie gościa i wydarzenia przez publiczny HTTPS.
 
 Budowanie obrazów wymaga więcej RAM niż ich uruchamianie. Na małym VPS można
 budować na własnym komputerze/CI i dostarczać obrazy zamiast kompilować na serwerze.
-Dobierz plan mikr.us obsługujący Docker i zasoby na API oraz bazę.
+Wybierz plan VPS obsługujący Docker i zapewniający zasoby na API oraz bazę.
 
 ## Domena, HTTPS i adres klienta
 
@@ -71,7 +75,7 @@ Przy proxy Nginx na VPS przykład jest w `host-nginx.example.conf`. Wymaga włas
 certyfikatu i dostępnych portów 80/443. Domyślne `TRUSTED_PROXY_CIDR` odpowiada
 bramie sieci Docker, przez którą proxy hosta łączy się z frontendem.
 
-Przy zewnętrznym proxy mikr.us dostosuj `HTTP_BIND` i `HTTP_PORT` do udostępnionego
+Przy zewnętrznym proxy dostawcy hostingu dostosuj `HTTP_BIND` i `HTTP_PORT` do udostępnionego
 portu oraz sposobu połączenia. Np. `HTTP_BIND=0.0.0.0` udostępnia port IPv4;
 `HTTP_BIND=[::]` wymaga działającego mapowania IPv6 w Dockerze. Ogranicz dostęp
 do tego portu do swojego proxy. Ustaw `TRUSTED_PROXY_CIDR` na rzeczywisty adres/CIDR
@@ -97,6 +101,11 @@ Zachowaj nazwę projektu Compose (`aftertab`), żeby używać tych samych wolume
 Wolumeny nie są backupem — utrata VPS może oznaczać utratę danych.
 
 Przed aktualizacją wykonaj backup. Po pobraniu zmian:
+
+Jeśli masz wcześniejszy checkout z `.env` w poprzednim katalogu wdrożenia, skopiuj
+ten plik do `deploy/vps/.env` przed uruchomieniem Compose. Pozostaw nazwy projektów
+Compose (`aftertab` i `aftertab-api`) bez zmian; dzięki temu Docker użyje istniejących
+wolumenów bazy i kluczy. Nie używaj `docker compose down -v`.
 
 ```sh
 docker compose build

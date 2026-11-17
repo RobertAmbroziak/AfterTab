@@ -31,7 +31,7 @@ services:
   migrate:
     build:
       context: ../..
-      dockerfile: deploy/mikrus/Dockerfile.api
+      dockerfile: deploy/vps/Dockerfile.api
       target: migrate
     restart: "no"
     environment:
@@ -47,7 +47,7 @@ services:
   api:
     build:
       context: ../..
-      dockerfile: deploy/mikrus/Dockerfile.api
+      dockerfile: deploy/vps/Dockerfile.api
       target: api
     restart: unless-stopped
     environment:
@@ -93,9 +93,13 @@ services:
   frontend:
     build:
       context: ../..
-      dockerfile: deploy/mikrus/Dockerfile.frontend
+      dockerfile: deploy/vps/Dockerfile.frontend
       args:
         VITE_MCP_ENABLED: ${MCP_ENABLED:-false}
+        VITE_OPERATOR_NAME: ${VITE_OPERATOR_NAME:?Set VITE_OPERATOR_NAME in .env}
+        VITE_CONTACT_EMAIL: ${VITE_CONTACT_EMAIL:?Set VITE_CONTACT_EMAIL in .env}
+        VITE_HOSTING_PROVIDER: ${VITE_HOSTING_PROVIDER:?Set VITE_HOSTING_PROVIDER in .env}
+        VITE_EMAIL_PROVIDER: ${VITE_EMAIL_PROVIDER:?Set VITE_EMAIL_PROVIDER in .env}
     restart: unless-stopped
     environment:
       TRUSTED_PROXY_CIDR: ${TRUSTED_PROXY_CIDR:-172.30.37.1/32}

@@ -33,7 +33,7 @@ i zarządzanie tokenami nie są dostępne. Aby ją uruchomić:
    `Authorization` oraz nagłówki `Mcp-*`, obsługiwać POST i odpowiedzi SSE bez buforowania.
    Nie zapisuj nagłówka Authorization ani treści odpowiedzi z tokenami w logach proxy.
 
-W wariancie [Docker Compose](../../../deploy/mikrus/README.md) wystarczy
+W wariancie [Docker Compose](../../../deploy/vps/README.md) wystarczy
 `MCP_ENABLED=true` w prywatnym `.env` oraz przebudowanie obrazów według instrukcji
 wdrożenia. Przygotowany nginx przekazuje `/mcp` do API. Domyślne `false` zachowuje
 wyłączoną integrację. Na Azure nie zmieniaj ustawień dostawcy bazy z tego powodu.

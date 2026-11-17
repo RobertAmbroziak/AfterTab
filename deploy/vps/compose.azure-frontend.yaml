@@ -30,7 +30,7 @@ services:
   migrate:
     build:
       context: ../..
-      dockerfile: deploy/mikrus/Dockerfile.api
+      dockerfile: deploy/vps/Dockerfile.api
       target: migrate
     restart: "no"
     environment:
@@ -45,7 +45,7 @@ services:
   api:
     build:
       context: ../..
-      dockerfile: deploy/mikrus/Dockerfile.api
+      dockerfile: deploy/vps/Dockerfile.api
       target: api
     restart: unless-stopped
     environment:

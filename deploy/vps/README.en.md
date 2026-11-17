@@ -1,4 +1,4 @@
-# Optional mikr.us / VPS deployment
+# Optional self-hosted VPS deployment
 
 [Polski](README.md)
 
@@ -21,13 +21,13 @@ This also applies when eventually publishing the new API to Azure SQL; pushing c
 The frontend uses relative `/api` URLs, so its image contains no Azure or target
 hostname. Only the frontend is published, by default on the VPS's `127.0.0.1:8080`.
 You need Linux containers, Docker Compose v2, and a **public HTTPS domain**.
-Terminate HTTPS at a host reverse proxy or a mikr.us proxy in front of this stack.
+Terminate HTTPS at a host reverse proxy or a proxy provided by your hosting provider.
 The stack does not provision certificates or domains. Secure cookies and PWA
 features require HTTPS. Kubernetes and Azure are not required.
 
 ## Configure and start
 
-Run these Linux shell commands from `deploy/mikrus`:
+Run these Linux shell commands from `deploy/vps`:
 
 ```sh
 cp .env.example .env
@@ -38,9 +38,14 @@ openssl rand -hex 32
 
 Put two different generated passwords in `DB_OWNER_PASSWORD` and `DB_APP_PASSWORD`.
 Set `PUBLIC_ORIGIN` to your HTTPS origin without a trailing slash, for example
-`https://aftertab.example.com`. Real configuration stays in the ignored `.env`
-and is excluded from image build contexts. Hex passwords avoid connection-string
-and Compose interpolation delimiters. Compose reads `.env`; the API does not.
+`https://aftertab.example.com`. Passwords and API settings stay in the ignored
+`.env` and are passed to containers at runtime. Hex passwords avoid
+connection-string and Compose interpolation delimiters. Compose reads `.env`;
+the API does not.
+Also replace the sample `VITE_OPERATOR_NAME`, `VITE_CONTACT_EMAIL`,
+`VITE_HOSTING_PROVIDER` and `VITE_EMAIL_PROVIDER` values in `.env`. Compose passes
+them as build arguments, and the frontend inserts them into legal pages, where
+visitors can see them; they are public details, not secrets.
 
 If `172.30.37.0/24` is already used, change `DOCKER_SUBNET`, `DOCKER_GATEWAY`,
 `FRONTEND_IP` and `TRUSTED_PROXY_CIDR` together. The API trusts forwarded headers
@@ -60,7 +65,7 @@ also verify creating a guest and an event through the public HTTPS URL.
 
 Building images needs more RAM than running them. For a small VPS, build on your
 computer/CI and deliver images rather than compiling on the server. Choose a
-mikr.us plan supporting Docker with enough resources for the API and database.
+VPS plan supporting Docker with enough resources for the API and database.
 
 ## HTTPS and client addresses
 
@@ -68,7 +73,7 @@ mikr.us plan supporting Docker with enough resources for the API and database.
 existing certificate. The default trusted proxy CIDR is the Docker gateway used
 by that host proxy.
 
-For an external mikr.us proxy, adapt `HTTP_BIND` and `HTTP_PORT` to the assigned
+For an external hosting-provider proxy, adapt `HTTP_BIND` and `HTTP_PORT` to the assigned
 port and connectivity. `HTTP_BIND=0.0.0.0` publishes IPv4; `HTTP_BIND=[::]` needs
 working Docker IPv6 port mapping. Restrict access to that port to your proxy.
 Set `TRUSTED_PROXY_CIDR` to its actual address/CIDR, never `0.0.0.0/0`.
@@ -92,7 +97,11 @@ and ordinary `docker compose down`. **`docker compose down -v` deletes them.**
 Keep the Compose project name (`aftertab`) to reuse the same volumes. Volumes are
 not backups and do not protect against losing the VPS.
 
-Back up before updating, then after pulling changes:
+Back up before updating. If an earlier checkout stores `.env` in its previous
+deployment directory, copy that file to `deploy/vps/.env` before starting Compose.
+Keep the Compose project names (`aftertab` and `aftertab-api`) unchanged so Docker
+reuses the existing database and key volumes. Do not run `docker compose down -v`.
+After pulling changes:
 
 ```sh
 docker compose build

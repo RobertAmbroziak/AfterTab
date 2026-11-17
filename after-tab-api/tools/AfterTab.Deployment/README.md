@@ -63,7 +63,7 @@ dotnet run --project after-tab-api/tools/AfterTab.Deployment -- --migrate
 
 Ten przykład zakłada TLS z zaufanym certyfikatem dla nazwy hosta. Dostosuj konfigurację
 certyfikatu do własnego serwera. Lokalny przykład i wariant Docker Compose są opisane
-w głównym README oraz [instrukcji mikr.us/VPS](../../../deploy/mikrus/README.md).
+w głównym README oraz [instrukcji VPS](../../../deploy/vps/README.md).
 
 ## Odczyt stanu i alternatywa EF CLI
 
