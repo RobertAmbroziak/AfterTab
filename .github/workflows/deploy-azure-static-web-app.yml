@@ -1,0 +1,77 @@
+name: Deploy frontend to Azure Static Web Apps
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - after-tab-app/**
+      - .github/workflows/deploy-azure-static-web-app.yml
+  workflow_dispatch:
+    inputs:
+      confirm_production_deploy:
+        description: Type deploy to publish the selected main revision
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    if: github.ref == 'refs/heads/main' && (github.event_name == 'push' || inputs.confirm_production_deploy == 'deploy')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: after-tab-app/package-lock.json
+
+      - name: Install frontend dependencies
+        working-directory: after-tab-app
+        run: npm ci
+
+      - name: Check required public settings
+        env:
+          VITE_API_BASE_URL: ${{ vars.VITE_API_BASE_URL }}
+          VITE_OPERATOR_NAME: ${{ vars.VITE_OPERATOR_NAME }}
+          VITE_CONTACT_EMAIL: ${{ vars.VITE_CONTACT_EMAIL }}
+          VITE_HOSTING_PROVIDER: ${{ vars.VITE_HOSTING_PROVIDER }}
+          VITE_EMAIL_PROVIDER: ${{ vars.VITE_EMAIL_PROVIDER }}
+        shell: bash
+        run: |
+          for name in VITE_API_BASE_URL VITE_OPERATOR_NAME VITE_CONTACT_EMAIL VITE_HOSTING_PROVIDER VITE_EMAIL_PROVIDER; do
+            if [ -z "${!name}" ]; then
+              echo "Missing GitHub Actions repository variable: $name" >&2
+              exit 1
+            fi
+          done
+
+      - name: Build frontend
+        working-directory: after-tab-app
+        env:
+          VITE_API_BASE_URL: ${{ vars.VITE_API_BASE_URL }}
+          VITE_MCP_ENABLED: ${{ vars.VITE_MCP_ENABLED }}
+          VITE_OPERATOR_NAME: ${{ vars.VITE_OPERATOR_NAME }}
+          VITE_CONTACT_EMAIL: ${{ vars.VITE_CONTACT_EMAIL }}
+          VITE_HOSTING_PROVIDER: ${{ vars.VITE_HOSTING_PROVIDER }}
+          VITE_EMAIL_PROVIDER: ${{ vars.VITE_EMAIL_PROVIDER }}
+        run: npm run build
+
+      - name: Deploy static files
+        uses: Azure/static-web-apps-deploy@v1
+        with:
+          azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN }}
+          action: upload
+          production_branch: main
+          app_location: after-tab-app/dist
+          api_location: ''
+          output_location: ''
+          skip_app_build: true
