@@ -59,6 +59,8 @@ jobs:
         env:
           VITE_API_BASE_URL: ${{ vars.VITE_API_BASE_URL }}
           VITE_MCP_ENABLED: ${{ vars.VITE_MCP_ENABLED }}
+          VITE_GITHUB_URL: ${{ vars.VITE_GITHUB_URL }}
+          VITE_ANDROID_APK_URL: ${{ vars.VITE_ANDROID_APK_URL }}
           VITE_OPERATOR_NAME: ${{ vars.VITE_OPERATOR_NAME }}
           VITE_CONTACT_EMAIL: ${{ vars.VITE_CONTACT_EMAIL }}
           VITE_HOSTING_PROVIDER: ${{ vars.VITE_HOSTING_PROVIDER }}
