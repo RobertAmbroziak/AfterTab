@@ -3,14 +3,12 @@
 .app-header { display: flex; align-items: center; gap: 26px; padding: 18px 24px; border: 1px solid var(--line); border-radius: 18px 18px 0 0; background: linear-gradient(120deg, #1b282c, #111a1d); }
 .brand { display: flex; align-items: center; gap: 12px; text-decoration: none; color: #fff; font-weight: 750; font-size: 26px; }
 .brand img { border-radius: 8px; }
-.header-events, .account-button { display: flex; align-items: center; gap: 10px; border: 0; color: #eef6f6; background: transparent; min-height: 44px; padding: 6px; }
-.header-events { border-left: 1px solid var(--line); padding-left: 24px; }
+.account-button { display: flex; align-items: center; gap: 10px; border: 0; color: #eef6f6; background: transparent; min-height: 44px; padding: 6px; }
 .header-install { margin-left: auto; }
 .language-switch { display: inline-flex; flex-shrink: 0; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
 .language-switch button { min-width: 40px; min-height: 44px; padding: 6px; border: 0; background: transparent; color: var(--muted); font-size: 13px; font-weight: 700; }
 .language-switch button[aria-pressed="true"] { background: var(--mint); color: #0d2721; }
 .header-install .install-button { display: inline-flex; align-items: center; justify-content: center; gap: 8px; border-color: #50776c; color: var(--mint); }
-.header-events svg { flex-shrink: 0; }
 .account-control { position: relative; }
 .account-button > span:nth-child(2) { max-width: 170px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .account-avatar, .person-avatar { display: inline-flex; flex: 0 0 34px; width: 34px; height: 34px; align-items: center; justify-content: center; border-radius: 50%; color: white; font-weight: 700; background: #087f8d; }
@@ -208,8 +206,7 @@ details[open] > summary .chevron { transform: rotate(180deg); }
   .brand { gap: 8px; font-size: 18px; flex: 1 1 0; min-width: 0; }
   .brand span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .brand img { width: 34px; height: 34px; flex-shrink: 0; }
-  .header-events { margin-left: 0; flex: 0 0 44px; padding: 10px; width: 44px; justify-content: center; }
-  .header-events span, .header-install .install-button span { display: none; }
+  .header-install .install-button span { display: none; }
   .header-install { margin-left: 0; flex-shrink: 0; }
   .header-install .install-button { width: 44px; padding: 10px; }
   .account-control { position: static; margin-left: 0; flex: 0 0 44px; }
