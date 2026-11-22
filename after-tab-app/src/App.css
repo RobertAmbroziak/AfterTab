@@ -110,6 +110,9 @@ details:not(.expense-breakdown)[open] > summary::before { transform: rotate(90de
 .event-title .badge { margin-top: 4px; }
 .icon-button { display: inline-grid; place-items: center; min-width: 38px; min-height: 38px; padding: 6px; border: 1px solid var(--line); border-radius: 10px; background: #203237; color: #eef6f6; cursor: pointer; font-size: 20px; line-height: 1; }
 .icon-button:hover { border-color: var(--mint); }
+.delete-event-button { color: #ffb4aa; }
+.delete-event-button svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.delete-event-button:hover { border-color: #ff8f81; background: #442925; }
 .event-name-form { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; width: min(100%, 620px); }
 .event-name-form input { flex: 1 1 220px; min-width: 0; }
 .event-name-form select { flex: 0 0 150px; width: auto; }

@@ -41,6 +41,22 @@ public sealed class EventRepository(AppDbContext db) : IEventRepository
             await db.SaveChangesAsync(ct);
             return true;
         }, ct);
+    public Task DeleteAsync(long eventId, long ownerId, CancellationToken ct)
+        => InTransaction(async () =>
+        {
+            var ev = await db.Events.SingleOrDefaultAsync(x => x.Id == eventId, ct)
+                ?? throw new AppException(ErrorKind.NotFound, "Nie znaleziono wydarzenia.");
+            if (ev.OwnerUserId != ownerId) throw new AppException(ErrorKind.Forbidden, "Tylko autor wydarzenia może je usunąć.");
+
+            await db.ExpenseSplits.Where(x => x.EventId == eventId).ExecuteDeleteAsync(ct);
+            await db.TransferConfirmations.Where(x => x.EventId == eventId).ExecuteDeleteAsync(ct);
+            await db.Expenses.Where(x => x.EventId == eventId).ExecuteDeleteAsync(ct);
+            await db.EventInvites.Where(x => x.EventId == eventId).ExecuteDeleteAsync(ct);
+            await db.EventParticipants.Where(x => x.EventId == eventId).ExecuteDeleteAsync(ct);
+            db.Events.Remove(ev);
+            await db.SaveChangesAsync(ct);
+            return true;
+        }, ct);
     public Task<bool> IsMemberAsync(long eventId, long userId, CancellationToken ct)
         => db.EventParticipants.AnyAsync(p => p.EventId == eventId && p.UserId == userId && p.Status == ParticipantStatus.Active, ct);
     public async Task<IReadOnlyList<ExpenseParticipant>> ParticipantsAsync(long eventId, CancellationToken ct)

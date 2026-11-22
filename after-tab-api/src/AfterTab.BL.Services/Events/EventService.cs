@@ -54,6 +54,8 @@ public sealed class EventService(IEventRepository events, IUserRepository users,
         await events.RenameAsync(id, userId, name, currency, ct);
         return await GetAsync(id, ct);
     }
+    public async Task DeleteAsync(long id, CancellationToken ct)
+        => await events.DeleteAsync(id, await ActorAsync(false, ct), ct);
     public async Task<CreatedEventDto> CreateAsync(CreateEventDto input, CancellationToken ct)
     {
         var userId = await ActorAsync(true, ct);

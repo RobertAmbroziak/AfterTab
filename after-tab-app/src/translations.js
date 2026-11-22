@@ -2,6 +2,8 @@ import { backendEnglish } from './backendMessages.js'
 // Polish source messages are stable keys. Never pass user-created content to t().
 export const english = {
   ...backendEnglish,
+  'Usu\u0144 wydarzenie': 'Delete event',
+  'Usun\u0105\u0107 wydarzenie \u201e{v0}\u201d? Usuni\u0119ci zostan\u0105 wszyscy uczestnicy, wydatki i historia rozlicze\u0144. Tej operacji nie mo\u017cna cofn\u0105\u0107.': 'Delete event "{v0}"? All participants, expenses, and settlement history will also be deleted. This cannot be undone.',
   'Waluta': 'Currency',
   'Bez waluty': 'No currency',
   'Kwota pozycji': 'Expense amount',
@@ -191,7 +193,7 @@ export const english = {
   'Najpierw zatwierdź lub anuluj otwarty formularz pozycji.': 'Save or cancel the open expense form first.',
   'Uczestnicy zostali połączeni. Wydatki i rozliczenie są przeliczane.': 'Participants merged. Expenses and the settlement are being recalculated.',
   'Uczestnicy zostali zaktualizowani.': 'Participants updated.',
-  'Usunąć uczestnika „{v0}”? Można usunąć tylko osobę bez zapisanych wydatków, udziałów i oznaczeń przelewów.': 'Remove participant “{v0}”? Only someone without saved expenses, shares or payment marks can be removed.',
+  'Usun\u0105\u0107 uczestnika \u201e{v0}\u201d? Mo\u017cna usun\u0105\u0107 tylko osob\u0119 bez zapisanych wydatk\u00f3w, udzia\u0142\u00f3w i oznacze\u0144 przelew\u00f3w.': 'Remove participant \u201c{v0}\u201d? Only someone without saved expenses, shares or payment marks can be removed.',
   'Połączyć „{v0}” z „{v1}”? Ich udziały i wydatki zostaną połączone. Konto tej osoby przejmie rozliczenie uczestnika bez konta. Tej operacji nie można cofnąć w aplikacji.': 'Merge “{v0}” with “{v1}”? Their shares and expenses will be combined. This account will take over the settlement of the participant without an account. This cannot be undone in the app.',
   'Zamknąć wydarzenie i zatwierdzić rozliczenie zapisanych pozycji? Dodawanie i zmiana podziałów zostaną zablokowane.': 'Close the event and finalise the settlement of saved expenses? Adding expenses and editing splits will be disabled.',
   'Otworzyć wydarzenie ponownie? Rozliczenie stanie się podglądem i może się zmienić. Jeśli ktoś już wykonał przelew, uwzględnij go przed kolejnym rozliczeniem.': 'Reopen the event? The settlement will become a preview and may change. Account for any payments already made before settling again.',
