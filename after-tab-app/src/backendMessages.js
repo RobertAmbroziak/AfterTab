@@ -91,4 +91,5 @@ export const backendEnglish = {
   'Zaloguj się ponownie.': 'Please sign in again.',
   'Zaproszenie jest nieprawidłowe, wygasło lub zostało unieważnione.': 'The invitation is invalid, expired or revoked.',
   'Dostawca logowania nie jest skonfigurowany.': 'The sign-in provider is not configured.',
+  'Tylko autor wydarzenia mo\u017ce je usun\u0105\u0107.': 'Only the event owner can delete it.',
 }
