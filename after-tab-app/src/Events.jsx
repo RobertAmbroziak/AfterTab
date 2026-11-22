@@ -180,6 +180,15 @@ function EventDetails({ id, knownToken, onToken, user }) {
     } catch (reason) { setEventNameError(reason.message) }
     finally { setSavingEventName(false) }
   }
+  async function deleteEvent() {
+    if (lock.current || !window.confirm(t("Usunąć wydarzenie „{v0}”? Usunięci zostaną wszyscy uczestnicy, wydatki i historia rozliczeń. Tej operacji nie można cofnąć.", { v0: details.event.name }))) return
+    lock.current = true; setBusy(true); setError('')
+    try {
+      await api(`events/${id}`, { method: 'DELETE' })
+      showEvents()
+    } catch (reason) { setError(reason.message) }
+    finally { lock.current = false; setBusy(false) }
+  }
   if (!details) return <section className="workspace"><p>{error && !isNetworkError(error) ? t(error) : t("Wczytywanie wydarzenia…")}</p><button className="secondary-button" onClick={showEvents}>{t("Moje wydarzenia")}</button></section>
   const eventUser = { ...user, participantId: details.participants.find(person => person.userId === user.id)?.participantId }
   const outgoingTransfers = summary?.transfers.filter(row => row.fromParticipantId === eventUser.participantId) || []
@@ -193,8 +202,8 @@ function EventDetails({ id, knownToken, onToken, user }) {
     <div className="event-hero">
     <div className="section-heading"><button className="text-button" onClick={showEvents}>{t("← Moje wydarzenia")}</button><button className="text-button" onClick={() => { setError(''); setRefresh(x => x + 1) }}>{t("Odśwież")}</button></div>
     <div className="event-title">{editingEventName
-      ? <form className="event-name-form" onSubmit={saveEventName}><label className="sr-only" htmlFor="event-name-edit">{t("Nazwa wydarzenia")}</label><input id="event-name-edit" autoFocus required maxLength={150} value={eventName} onChange={event => setEventName(event.target.value)} /><label className="sr-only" htmlFor="event-currency-edit">{t("Waluta")}</label><select id="event-currency-edit" value={eventCurrency} onChange={event => setEventCurrency(event.target.value)}><CurrencyOptions /></select><button className="icon-button" disabled={savingEventName} aria-label={t("Zapisz zmiany")}>✓</button><button type="button" className="icon-button" onClick={() => setEditingEventName(false)} aria-label={t("Anuluj")}>×</button>{eventNameError && <ErrorMessage error={eventNameError} />}</form>
-      : <><h2>{details.event.name}</h2>{details.event.isOwner && details.event.status === 'Active' && <button type="button" className="icon-button" title={t("Edytuj nazwę i walutę wydarzenia")} aria-label={t("Edytuj nazwę i walutę wydarzenia")} onClick={() => { setEventName(details.event.name); setEventCurrency(details.event.currency || ''); setEditingEventName(true); setEventNameError('') }}>✎</button>}{details.event.isOwner && <span className="badge">{t("Twoje wydarzenie")}</span>}</>}</div>
+      ? <form className="event-name-form" onSubmit={saveEventName}><label className="sr-only" htmlFor="event-name-edit">{t("Nazwa wydarzenia")}</label><input id="event-name-edit" autoFocus required maxLength={150} value={eventName} onChange={event => setEventName(event.target.value)} /><label className="sr-only" htmlFor="event-currency-edit">{t("Waluta")}</label><select id="event-currency-edit" value={eventCurrency} onChange={event => setEventCurrency(event.target.value)}><CurrencyOptions /></select><button className="icon-button" disabled={savingEventName} aria-label={t("Zapisz zmiany")}>✓</button><button type="button" className="icon-button" onClick={() => setEditingEventName(false)} aria-label={t("Anuluj")}>×</button>{details.event.isOwner && <button type="button" className="icon-button delete-event-button" title={t("Usu\u0144 wydarzenie")} aria-label={t("Usu\u0144 wydarzenie")} disabled={busy} onClick={deleteEvent}><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M3 6h18M8 6V4h8v2m3 0-1 14H6L5 6m4 4v6m6-6v6" /></svg></button>}{eventNameError && <ErrorMessage error={eventNameError} />}</form>
+      : <><h2>{details.event.name}</h2>{details.event.isOwner && details.event.status === 'Active' && <button type="button" className="icon-button" title={t("Edytuj nazwę i walutę wydarzenia")} aria-label={t("Edytuj nazwę i walutę wydarzenia")} onClick={() => { setEventName(details.event.name); setEventCurrency(details.event.currency || ''); setEditingEventName(true); setEventNameError('') }}>✎</button>}{details.event.isOwner && <button type="button" className="icon-button delete-event-button" title={t("Usuń wydarzenie")} aria-label={t("Usuń wydarzenie")} disabled={busy} onClick={deleteEvent}><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M3 6h18M8 6V4h8v2m3 0-1 14H6L5 6m4 4v6m6-6v6" /></svg></button>}{details.event.isOwner && <span className="badge">{t("Twoje wydarzenie")}</span>}</>}</div>
     <p className="event-meta">{t("Autor:")} {details.event.ownerName}{details.event.isOwner ? t(" · Twoje wydarzenie") : ''}</p>
     {details.event.status !== 'Active' && <p className="settlement-warning">{t("Wydarzenie zamknięte — edycja nazwy i wydatków, dodawanie pozycji, zmiana podziałów i dołączanie są zablokowane.")}</p>}
     {details.event.description && <p className="event-description">{details.event.description}</p>}

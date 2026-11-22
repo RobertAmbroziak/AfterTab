@@ -34,10 +34,26 @@ public sealed class EventRepository(AppDbContext db) : IEventRepository
         {
             var ev = await db.Events.SingleOrDefaultAsync(x => x.Id == eventId, ct)
                 ?? throw new AppException(ErrorKind.NotFound, "Nie znaleziono wydarzenia.");
-            if (ev.OwnerUserId != ownerId) throw new AppException(ErrorKind.Forbidden, "Tylko autor wydarzenia może zmienić jego nazwę.");
+            if (ev.OwnerUserId != ownerId) throw new AppException(ErrorKind.Forbidden, "Tylko autor wydarzenia mo\u017ce zmieni\u0107 jego nazw\u0119.");
             if (ev.Status != EventStatus.Active) throw new AppException(ErrorKind.Conflict, "Najpierw otwórz wydarzenie.");
             ev.Name = name;
             ev.Currency = currency;
+            await db.SaveChangesAsync(ct);
+            return true;
+        }, ct);
+    public Task DeleteAsync(long eventId, long ownerId, CancellationToken ct)
+        => InTransaction(async () =>
+        {
+            var ev = await db.Events.SingleOrDefaultAsync(x => x.Id == eventId, ct)
+                ?? throw new AppException(ErrorKind.NotFound, "Nie znaleziono wydarzenia.");
+            if (ev.OwnerUserId != ownerId) throw new AppException(ErrorKind.Forbidden, "Tylko autor wydarzenia mo\u017ce je usun\u0105\u0107.");
+
+            await db.ExpenseSplits.Where(x => x.EventId == eventId).ExecuteDeleteAsync(ct);
+            await db.TransferConfirmations.Where(x => x.EventId == eventId).ExecuteDeleteAsync(ct);
+            await db.Expenses.Where(x => x.EventId == eventId).ExecuteDeleteAsync(ct);
+            await db.EventInvites.Where(x => x.EventId == eventId).ExecuteDeleteAsync(ct);
+            await db.EventParticipants.Where(x => x.EventId == eventId).ExecuteDeleteAsync(ct);
+            db.Events.Remove(ev);
             await db.SaveChangesAsync(ct);
             return true;
         }, ct);

@@ -26,6 +26,12 @@ public sealed class EventsController(IEventService events, PublicIds ids, AppDbC
     [HttpPut("{id:guid}")]
     public async Task<IActionResult> Rename(Guid id, UpdateEventNameDto input, CancellationToken ct)
         => Ok(await events.RenameAsync(await ids.ResolveAsync<Event>(id, ct), input, ct));
+    [HttpDelete("{id:guid}")]
+    public async Task<IActionResult> Delete(Guid id, CancellationToken ct)
+    {
+        await events.DeleteAsync(await ids.ResolveAsync<Event>(id, ct), ct);
+        return NoContent();
+    }
     [HttpPost]
     public async Task<IActionResult> Create(CreateEventDto input, CancellationToken ct)
     {
