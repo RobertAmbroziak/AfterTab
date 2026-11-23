@@ -187,6 +187,7 @@ details[open] > summary .chevron { transform: rotate(180deg); }
 .balance-details summary { cursor: pointer; font-size: 18px; font-weight: 600; }
 .balance-details small { display: block; color: var(--muted); font-size: 12px; line-height: 1.6; }
 .settlement-warning { padding: 14px; border: 1px solid #89622c; border-radius: 12px; background: #352b1a; color: #f7d598; font-size: 13px; }
+.settlement-warning + .form-actions { margin-top: 14px; }
 .event-list { display: grid; gap: 12px; }
 .event-list button { width: 100%; display: grid; gap: 10px; text-align: left; padding: 20px; background: #1c2b30; border: 1px solid var(--line); border-radius: 14px; color: #f2f7f8; }
 .event-list strong { font-size: 19px; }
