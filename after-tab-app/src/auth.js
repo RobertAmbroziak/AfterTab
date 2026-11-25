@@ -67,13 +67,12 @@ function randomSecret() {
 async function beginFlow(action, displayName) {
   if (navigating) throw new Error(t("Trwa już próba logowania. Poczekaj na jej zakończenie."))
   navigating = true
-  let flowState
   try {
     captureInvitation()
     const verifier = randomSecret()
     const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(verifier))
     const challenge = Array.from(new Uint8Array(digest), x => x.toString(16).padStart(2, '0')).join('').toUpperCase()
-    const state = flowState = randomSecret()
+    const state = randomSecret()
     sessionStorage.setItem(flowKey, JSON.stringify({ state, verifier }))
     rememberGuestFlow({ state, verifier })
     const prepared = await request('guest/prepare', {
@@ -88,7 +87,6 @@ async function beginFlow(action, displayName) {
     navigating = false
     if (!location.hash.startsWith('#aftertab-code=')) {
       sessionStorage.removeItem(flowKey)
-      forgetGuestFlow(flowState)
     }
     throw error
   }
