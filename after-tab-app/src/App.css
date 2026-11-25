@@ -123,6 +123,13 @@ details:not(.expense-breakdown)[open] > summary::before { transform: rotate(90de
 .integration-access .access-option small { color: var(--muted); font-size: 12px; line-height: 1.5; }
 .new-secret { display: grid; gap: 12px; margin-top: 18px; padding: 16px; border: 1px solid #34574f; border-radius: 12px; background: #1b2a28; }
 .new-secret p { margin: 0; }
+.mcp-command-copy { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; margin-top: -2px; }
+.mcp-command-button { display: inline-flex; align-items: center; gap: 5px; min-height: 30px; padding: 5px 8px; border: 1px solid #405358; border-radius: 8px; background: #203237; color: #dbe8e8; cursor: pointer; font: inherit; font-size: 11px; line-height: 1; }
+.mcp-command-button:hover, .mcp-command-button:focus-visible { border-color: var(--mint); color: #fff; }
+.new-secret .form-actions { justify-content: center; }
+.mcp-command-button.is-copied { border-color: var(--mint); background: var(--mint); color: #0d2721; animation: copy-token-pulse 1.4s ease-out; }
+.mcp-command-glyph { font-family: ui-monospace, SFMono-Regular, Consolas, monospace; font-size: 12px; font-weight: 700; }
+.mcp-command-note { color: var(--muted); font-size: 11px; line-height: 1.4; }
 .copy-token-button.is-copied { border-color: var(--mint); background: var(--mint); color: #0d2721; animation: copy-token-pulse 1.4s ease-out; }
 @keyframes copy-token-pulse { 20% { box-shadow: 0 0 0 5px #88e5c477; transform: scale(1.03); } 100% { box-shadow: 0 0 0 0 #88e5c400; transform: scale(1); } }
 .integration-token-list { display: grid; gap: 12px; padding: 0; list-style: none; }
