@@ -9,6 +9,32 @@
 .language-switch button { min-width: 40px; min-height: 44px; padding: 6px; border: 0; background: transparent; color: var(--muted); font-size: 13px; font-weight: 700; }
 .language-switch button[aria-pressed="true"] { background: var(--mint); color: #0d2721; }
 .header-install .install-button { display: inline-flex; align-items: center; justify-content: center; gap: 8px; border-color: #50776c; color: var(--mint); }
+.help-guide-trigger { display: inline-flex; flex: 0 0 auto; align-items: center; justify-content: center; gap: 8px; min-height: 44px; padding: 8px 12px; border: 1px solid var(--line); border-radius: 10px; background: #172327; color: #d9eeee; font-weight: 650; }
+.help-guide-trigger:hover, .help-guide-close:hover { border-color: var(--mint); color: var(--mint); }
+.help-guide-trigger svg { display: block; width: 21px; height: 21px; }
+.help-guide-dialog { width: min(860px, calc(100vw - 32px)); max-width: none; max-height: min(88dvh, 900px); padding: 0; overflow: hidden; border: 1px solid #405358; border-radius: 18px; background: #111a1d; color: #eff5f5; box-shadow: 0 24px 90px #000a; }
+.help-guide-dialog::backdrop { background: #050a0cbb; backdrop-filter: blur(3px); }
+.help-guide-panel { display: flex; flex-direction: column; max-height: min(88dvh, 900px); }
+.help-guide-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 20px; padding: 24px 26px 18px; border-bottom: 1px solid var(--line); }
+.help-guide-header h2 { margin: 0 0 8px; font-size: 25px; }
+.help-guide-header p { margin: 0; color: var(--muted); font-size: 14px; line-height: 1.55; }
+.help-guide-header .help-guide-eyebrow { margin-bottom: 6px; color: var(--mint); font-size: 11px; font-weight: 750; letter-spacing: .1em; text-transform: uppercase; }
+.help-guide-close { display: inline-grid; flex: 0 0 42px; place-items: center; width: 42px; height: 42px; padding: 9px; border: 1px solid var(--line); border-radius: 10px; background: #172327; color: #eaf3f4; }
+.help-guide-close svg { display: block; width: 20px; height: 20px; }
+.help-guide-sections { display: flex; gap: 8px; padding: 14px 26px; border-bottom: 1px solid var(--line); }
+.help-guide-sections button { min-height: 42px; padding: 8px 14px; border: 1px solid var(--line); border-radius: 10px; background: #172327; color: #dce8e9; font-weight: 650; }
+.help-guide-sections button[aria-pressed="true"] { border-color: var(--mint); background: #204a3f; color: var(--mint); }
+.help-guide-list { flex: 1; min-height: 0; padding: 8px 26px 22px; overflow-y: auto; overscroll-behavior: contain; }
+.help-guide-item { border-bottom: 1px solid var(--line); }
+.help-guide-item summary { position: relative; padding: 16px 36px 16px 2px; color: #eff7f7; font-size: 15px; font-weight: 650; list-style: none; cursor: pointer; }
+.help-guide-item summary::-webkit-details-marker { display: none; }
+.help-guide-item summary::after { position: absolute; right: 8px; content: '+'; color: var(--mint); font-size: 22px; font-weight: 400; line-height: 1; }
+.help-guide-item[open] summary::after { content: '−'; }
+.help-guide-item-content { padding: 0 0 18px; }
+.help-guide-item-content > p { max-width: 740px; margin: 0 0 14px; color: #c0d0d3; font-size: 14px; line-height: 1.65; }
+.help-guide-images { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr)); gap: 12px; align-items: start; }
+.help-guide-images img { display: block; width: 100%; max-height: 54dvh; object-fit: contain; object-position: top center; border: 1px solid #34464b; border-radius: 10px; background: #0b1113; }
+.help-guide-footer { display: flex; justify-content: flex-end; padding: 14px 26px max(16px, env(safe-area-inset-bottom)); border-top: 1px solid var(--line); background: #111a1d; }
 .account-control { position: relative; }
 .account-button > span:nth-child(2) { max-width: 170px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .account-avatar, .person-avatar { display: inline-flex; flex: 0 0 34px; width: 34px; height: 34px; align-items: center; justify-content: center; border-radius: 50%; color: white; font-weight: 700; background: #087f8d; }
@@ -97,6 +123,13 @@ details:not(.expense-breakdown)[open] > summary::before { transform: rotate(90de
 .integration-access .access-option small { color: var(--muted); font-size: 12px; line-height: 1.5; }
 .new-secret { display: grid; gap: 12px; margin-top: 18px; padding: 16px; border: 1px solid #34574f; border-radius: 12px; background: #1b2a28; }
 .new-secret p { margin: 0; }
+.mcp-command-copy { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; margin-top: -2px; }
+.mcp-command-button { display: inline-flex; align-items: center; gap: 5px; min-height: 30px; padding: 5px 8px; border: 1px solid #405358; border-radius: 8px; background: #203237; color: #dbe8e8; cursor: pointer; font: inherit; font-size: 11px; line-height: 1; }
+.mcp-command-button:hover, .mcp-command-button:focus-visible { border-color: var(--mint); color: #fff; }
+.new-secret .form-actions { justify-content: center; }
+.mcp-command-button.is-copied { border-color: var(--mint); background: var(--mint); color: #0d2721; animation: copy-token-pulse 1.4s ease-out; }
+.mcp-command-glyph { font-family: ui-monospace, SFMono-Regular, Consolas, monospace; font-size: 12px; font-weight: 700; }
+.mcp-command-note { color: var(--muted); font-size: 11px; line-height: 1.4; }
 .copy-token-button.is-copied { border-color: var(--mint); background: var(--mint); color: #0d2721; animation: copy-token-pulse 1.4s ease-out; }
 @keyframes copy-token-pulse { 20% { box-shadow: 0 0 0 5px #88e5c477; transform: scale(1.03); } 100% { box-shadow: 0 0 0 0 #88e5c400; transform: scale(1); } }
 .integration-token-list { display: grid; gap: 12px; padding: 0; list-style: none; }
@@ -187,6 +220,7 @@ details[open] > summary .chevron { transform: rotate(180deg); }
 .balance-details summary { cursor: pointer; font-size: 18px; font-weight: 600; }
 .balance-details small { display: block; color: var(--muted); font-size: 12px; line-height: 1.6; }
 .settlement-warning { padding: 14px; border: 1px solid #89622c; border-radius: 12px; background: #352b1a; color: #f7d598; font-size: 13px; }
+.settlement-warning + .form-actions { margin-top: 14px; }
 .event-list { display: grid; gap: 12px; }
 .event-list button { width: 100%; display: grid; gap: 10px; text-align: left; padding: 20px; background: #1c2b30; border: 1px solid var(--line); border-radius: 14px; color: #f2f7f8; }
 .event-list strong { font-size: 19px; }
@@ -220,6 +254,18 @@ details[open] > summary .chevron { transform: rotate(180deg); }
   .header-install .install-button span { display: none; }
   .header-install { margin-left: 0; flex-shrink: 0; }
   .header-install .install-button { width: 44px; padding: 10px; }
+  .help-guide-trigger { width: 44px; padding: 10px; }
+  .help-guide-trigger span { display: none; }
+  .help-guide-dialog { width: 100%; max-width: none; max-height: 100dvh; height: 100dvh; margin: 0; border: 0; border-radius: 0; }
+  .help-guide-panel { max-height: 100dvh; height: 100dvh; }
+  .help-guide-header { padding: max(18px, env(safe-area-inset-top)) 16px 16px; }
+  .help-guide-header h2 { font-size: 21px; }
+  .help-guide-sections { gap: 6px; padding: 12px 14px; }
+  .help-guide-sections button { flex: 1; min-width: 0; padding: 8px 5px; font-size: 12px; }
+  .help-guide-list { padding: 4px 16px 18px; }
+  .help-guide-images { grid-template-columns: minmax(0, 1fr); }
+  .help-guide-images img { max-height: 58dvh; }
+  .help-guide-footer { padding: 12px 16px max(16px, env(safe-area-inset-bottom)); }
   .account-control { position: static; margin-left: 0; flex: 0 0 44px; }
   .account-button { width: 44px; height: 44px; padding: 5px; justify-content: center; }
   .account-button > span:nth-child(2) { display: none; }
