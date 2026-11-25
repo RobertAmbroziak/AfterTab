@@ -9,6 +9,7 @@ import NameForm from './NameForm'
 import AccountForm from './AccountForm'
 import { hasEmailAction } from './auth'
 import InstallButton from './InstallButton'
+import HelpGuide from './HelpGuide.jsx'
 import NetworkStatus from './NetworkStatus.jsx'
 import { isNetworkError } from './networkStatus'
 import McpTokens from './McpTokens'
@@ -73,6 +74,7 @@ export default function App() {
     <header className="app-header">
       <a className="brand" aria-label="AfterTab" href="#/" onClick={e => { e.preventDefault(); showEvents(); setMenu(false) }}><img src="/pwa-192x192.png" alt="" width="38" height="38" /><span>AfterTab</span></a>
       <div className="header-install"><InstallButton /></div>
+      <HelpGuide />
       <div className="language-switch" role="group" aria-label={language === 'pl' ? 'Język aplikacji' : 'App language'}>
         <button type="button" lang="pl" aria-label="Polski" aria-pressed={language === 'pl'} onClick={() => setLanguage('pl')}>PL</button>
         <button type="button" lang="en" aria-label="English" aria-pressed={language === 'en'} onClick={() => setLanguage('en')}>EN</button>
