@@ -4,6 +4,7 @@ import { redirectForAuthentication } from './authNavigation'
 import { fetchSessionResponse, SESSION_CHECK_MS } from './sessionCheck'
 import { fetchWithNetworkStatus, NETWORK_ERROR } from './networkStatus'
 import { rememberExternalFlow, recoverExternalFlow, forgetExternalFlow } from './externalLoginFlow'
+import { rememberGuestFlow, recoverGuestFlow, forgetGuestFlow } from './guestLoginFlow'
 
 const tokenKey = 'aftertab.session'
 const rememberedKey = 'aftertab.guestRemembered'
@@ -66,13 +67,15 @@ function randomSecret() {
 async function beginFlow(action, displayName) {
   if (navigating) throw new Error(t("Trwa już próba logowania. Poczekaj na jej zakończenie."))
   navigating = true
+  let flowState
   try {
     captureInvitation()
     const verifier = randomSecret()
     const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(verifier))
     const challenge = Array.from(new Uint8Array(digest), x => x.toString(16).padStart(2, '0')).join('').toUpperCase()
-    const state = randomSecret()
+    const state = flowState = randomSecret()
     sessionStorage.setItem(flowKey, JSON.stringify({ state, verifier }))
+    rememberGuestFlow({ state, verifier })
     const prepared = await request('guest/prepare', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -83,7 +86,10 @@ async function beginFlow(action, displayName) {
     return await navigateForAuthentication(`${apiBase}/api/auth/guest/continue?request=${encodeURIComponent(prepared.request)}#verifier=${encodeURIComponent(verifier)}`, flowKey)
   } catch (error) {
     navigating = false
-    sessionStorage.removeItem(flowKey)
+    if (!location.hash.startsWith('#aftertab-code=')) {
+      sessionStorage.removeItem(flowKey)
+      forgetGuestFlow(flowState)
+    }
     throw error
   }
 }
@@ -131,10 +137,13 @@ async function loadSession(check) {
   }
   if (location.hash.startsWith('#aftertab-code=')) {
     const callback = new URLSearchParams(location.hash.slice(1))
-    const pending = JSON.parse(sessionStorage.getItem(flowKey) || 'null')
+    const state = callback.get('state')
+    let pending = JSON.parse(sessionStorage.getItem(flowKey) || 'null')
+    if (!pending || pending.state !== state) pending = recoverGuestFlow(state)
+    else forgetGuestFlow(state)
     sessionStorage.removeItem(flowKey)
     history.replaceState(null, '', location.pathname + location.search)
-    if (!pending || pending.state !== callback.get('state')) {
+    if (!pending || pending.state !== state) {
       throw new Error(t("Próba logowania wygasła lub pochodzi z innej karty. Zaloguj się ponownie."))
     }
     const result = await request('guest/exchange', {
