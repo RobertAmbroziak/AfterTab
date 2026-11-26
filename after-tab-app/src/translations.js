@@ -22,6 +22,8 @@ export const english = {
   'Instrukcje Asystenta': 'Assistant instructions',
   'Połączenie OAuth': 'OAuth connection',
   'Połączenie Token': 'Token connection',
+  'Instrukcja OAuth': 'OAuth instructions',
+  'Instrukcja Token': 'Token instructions',
   'Adres serwera MCP:': 'MCP server address:',
   'Aplikacja OAuth': 'OAuth app',
   'Połączono:': 'Connected:',

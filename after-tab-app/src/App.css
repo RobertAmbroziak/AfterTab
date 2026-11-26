@@ -93,6 +93,9 @@ textarea { resize: vertical; }
 .integration-panel { max-width: 760px; margin-inline: auto; }
 .integration-section { margin-top: 14px; padding: 16px; border: 1px solid var(--line); border-radius: 14px; background: #151f22; }
 .integration-section > summary { cursor: pointer; font-weight: 700; }
+.mcp-guide-trigger { display: inline-grid; flex: 0 0 36px; place-items: center; width: 36px; height: 36px; padding: 7px; border: 1px solid var(--line); border-radius: 9px; background: #172327; color: var(--muted); cursor: pointer; }
+.mcp-guide-trigger:hover { border-color: var(--mint); color: var(--mint); }
+.mcp-guide-trigger svg { display: block; width: 20px; height: 20px; }
 .mcp-instructions { margin-top: 0; }
 .mcp-instructions form { margin-top: 16px; }
 .mcp-instructions textarea { max-width: 100%; }
