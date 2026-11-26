@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { api } from './api'
 import { getLocale, t } from './i18n'
 import { isNetworkError } from './networkStatus'
+import McpSetupGuide from './McpSetupGuide'
 
 export default function McpTokens({ onClose }) {
   const [tokens, setTokens] = useState([])
@@ -19,6 +20,7 @@ export default function McpTokens({ onClose }) {
   const [commandCopyPulse, setCommandCopyPulse] = useState(0)
   const [busy, setBusy] = useState(true)
   const [error, setError] = useState('')
+  const [guideType, setGuideType] = useState(null)
   const copyFeedback = useRef(null)
   const mcpServerUrl = import.meta.env.VITE_MCP_SERVER_URL || 'https://YOUR_MCP_SERVER_URL/mcp'
 
@@ -83,6 +85,12 @@ export default function McpTokens({ onClose }) {
     finally { setBusy(false) }
   }
 
+  function openGuide(event, type) {
+    event.preventDefault()
+    event.stopPropagation()
+    setGuideType(type)
+  }
+
   async function copySecret() {
     try {
       await navigator.clipboard.writeText(secret)
@@ -138,7 +146,9 @@ export default function McpTokens({ onClose }) {
     </details>
 
     <details className="integration-section mcp-oauth-clients">
-      <summary><span>{t('Połączenie OAuth')}</span></summary>
+      <summary><span>{t('Połączenie OAuth')}</span><button type="button" className="mcp-guide-trigger" aria-label={t('Instrukcja OAuth')} title={t('Instrukcja OAuth')} onClick={event => openGuide(event, 'oauth')}>
+        <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="9" /><path d="M9.6 9a2.5 2.5 0 0 1 4.8.8c0 1.7-2.4 2-2.4 3.7M12 17h.01" /></svg>
+      </button></summary>
       <div className="mcp-server-address">
         <span>{t('Adres serwera MCP:')}</span>
         {mcpServerUrl && <code>{mcpServerUrl}</code>}
@@ -156,7 +166,9 @@ export default function McpTokens({ onClose }) {
     {error && !isNetworkError(error) && <p role="alert" className="auth-error">{t(error)}</p>}
 
     <details className="integration-section manual-mcp">
-      <summary><span>{t('Połączenie Token')}</span></summary>
+      <summary><span>{t('Połączenie Token')}</span><button type="button" className="mcp-guide-trigger" aria-label={t('Instrukcja Token')} title={t('Instrukcja Token')} onClick={event => openGuide(event, 'token')}>
+        <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="9" /><path d="M9.6 9a2.5 2.5 0 0 1 4.8.8c0 1.7-2.4 2-2.4 3.7M12 17h.01" /></svg>
+      </button></summary>
       <p className="helper-text">{t('Token działa z uprawnieniami bieżącego konta AfterTab. Konto może być trwałe albo zapamiętanym gościem. Nie wklejaj tokenu do rozmowy z ChatGPT.')}</p>
       <form className="app-form" onSubmit={create}>
         <label>{t('Nazwa tokena')}<input value={name} maxLength={100} required onChange={event => setName(event.target.value)} /></label>
@@ -195,5 +207,6 @@ export default function McpTokens({ onClose }) {
         <button className="text-button danger" disabled={busy} onClick={() => revoke(token.id)}>{t('Unieważnij token')}</button>
       </li>)}</ul>
     </details>
+    {guideType && <McpSetupGuide type={guideType} onClose={() => setGuideType(null)} />}
   </section>
 }
